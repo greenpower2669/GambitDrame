@@ -111,7 +111,7 @@ class QueenGambitTheory {
                 m("b8d7", "…Cbd7", "Les Noirs préparent ...dxc4 et ...b5."),
                 m("f1d3", "Fd3", "Le fou vise h7 et soutient e4."),
                 m("d5c4", "…dxc4", "Les Noirs prennent c4 au bon moment."),
-                m("f1c4", "Fxc4", "Tu récupères le pion en développant.")
+                m("d3c4", "Fxc4", "Le fou récupère le pion depuis d3 en restant actif.")
             )
         ),
         TrainingLine(
@@ -187,7 +187,7 @@ class QueenGambitTheory {
                 m("c7c6", "…c6", "Les Noirs soutiennent d5."),
                 m("g1f3", "Cf3", "Tu continues ton développement."),
                 m("d8a5", "…Da5", "Le coup caractéristique de Cambridge Springs met une pression tactique sur c3 et a2."),
-                m("b1d2", "Cd2", "Tu réduis plusieurs idées tactiques de la dame noire.")
+                m("f3d2", "Cd2", "Tu réduis plusieurs idées tactiques de la dame noire.")
             )
         ),
         TrainingLine(
