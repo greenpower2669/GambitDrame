@@ -24,6 +24,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -46,6 +47,7 @@ import androidx.compose.ui.unit.sp
 import com.gambitdrame.app.data.ProgressStore
 import com.gambitdrame.app.domain.ChessBoard
 import com.gambitdrame.app.domain.QueenGambitTheory
+import com.gambitdrame.app.domain.TrainingComplexity
 import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
 
@@ -69,23 +71,29 @@ fun GambitTrainerScreen(
     var sessionCorrect by remember { mutableIntStateOf(0) }
     var totalAttempts by remember { mutableIntStateOf(progressStore.totalAttempts) }
     var totalCorrect by remember { mutableIntStateOf(progressStore.totalCorrect) }
+    var complexitySlider by remember { mutableStateOf(1f) }
     var lastExplanation by remember {
-        mutableStateOf("Commence par jouer d4. Le module te dira si tu restes dans l'arbre du Gambit Dame.")
+        mutableStateOf("Commence par jouer d4. Les Noirs choisiront une réponse dans le niveau sélectionné.")
     }
     var explanationVisible by remember { mutableStateOf(false) }
 
+    val complexity = when (complexitySlider.roundToInt().coerceIn(0, 2)) {
+        0 -> TrainingComplexity.MEDIUM
+        1 -> TrainingComplexity.ADVANCED
+        else -> TrainingComplexity.COMPLEX
+    }
     val whiteToMove = history.size % 2 == 0
     val sessionScore = if (sessionAttempts == 0) 1f else sessionCorrect.toFloat() / sessionAttempts
     val globalScore = if (totalAttempts == 0) 1f else totalCorrect.toFloat() / totalAttempts
 
-    fun resetLine() {
+    fun resetLine(message: String = "Nouvelle ligne. À toi : cherche les coups du Gambit Dame.") {
         board = ChessBoard.initial()
         history = emptyList()
         selectedSquare = null
         sessionAttempts = 0
         sessionCorrect = 0
         explanationVisible = false
-        lastExplanation = "Nouvelle ligne. À toi : cherche les coups du Gambit Dame."
+        lastExplanation = message
     }
 
     fun recordAttempt(correct: Boolean) {
@@ -97,7 +105,7 @@ fun GambitTrainerScreen(
     }
 
     fun playUserMove(uci: String) {
-        val candidate = theory.findCandidate(history, uci)
+        val candidate = theory.findCandidate(history, uci, complexity)
         if (candidate != null) {
             board = board.applyMove(uci)
             history = history + uci
@@ -109,9 +117,9 @@ fun GambitTrainerScreen(
             recordAttempt(correct = false)
             tone.startTone(ToneGenerator.TONE_PROP_NACK, 160)
             lastExplanation = buildString {
-                append("Là, tu t'éloignes de la théorie travaillée. ")
+                append("Là, tu t'éloignes de la théorie travaillée au niveau ${complexity.label}. ")
                 append("Le module attend : ")
-                append(theory.expectedMoveSummary(history))
+                append(theory.expectedMoveSummary(history, complexity))
                 append(". Essaie un autre coup sans perdre la position.")
             }
             explanationVisible = true
@@ -119,10 +127,16 @@ fun GambitTrainerScreen(
         selectedSquare = null
     }
 
-    LaunchedEffect(history) {
+    LaunchedEffect(complexity) {
+        if (history.isNotEmpty()) {
+            resetLine("Niveau ${complexity.label}. Nouvelle variante tirée au prochain départ.")
+        }
+    }
+
+    LaunchedEffect(history, complexity) {
         if (history.isNotEmpty() && history.size % 2 == 1) {
             delay(420)
-            val reply = theory.chooseReply(history)
+            val reply = theory.chooseReply(history, complexity)
             if (reply != null) {
                 board = board.applyMove(reply.move.uci)
                 history = history + reply.move.uci
@@ -151,6 +165,46 @@ fun GambitTrainerScreen(
 
         Spacer(Modifier.height(10.dp))
 
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
+                Text(
+                    text = "Variantes : ${complexity.label}",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = "${theory.availableLineCount(complexity)} lignes locales actives · ${complexity.description}",
+                    fontSize = 15.sp
+                )
+                Slider(
+                    value = complexitySlider,
+                    onValueChange = { complexitySlider = it },
+                    valueRange = 0f..2f,
+                    steps = 1,
+                    modifier = Modifier.semantics {
+                        contentDescription = "Complexité des variantes : ${complexity.label}"
+                    }
+                )
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    Text("Moyen", modifier = Modifier.weight(1f), fontSize = 14.sp)
+                    Text(
+                        "Avancé",
+                        modifier = Modifier.weight(1f),
+                        fontSize = 14.sp,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                    Text(
+                        "Complexe",
+                        modifier = Modifier.weight(1f),
+                        fontSize = 14.sp,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.End
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(10.dp))
+
         Text(
             text = "${(sessionScore * 100).roundToInt()} % théorie sur cette session",
             fontSize = 20.sp,
@@ -176,12 +230,12 @@ fun GambitTrainerScreen(
         Spacer(Modifier.height(10.dp))
 
         Text(
-            text = theory.branchLabel(history),
+            text = theory.branchLabel(history, complexity),
             fontSize = 17.sp,
             fontWeight = FontWeight.Medium
         )
         Text(
-            text = if (whiteToMove) "À toi (Blancs)" else "Les Noirs réfléchissent…",
+            text = if (whiteToMove) "À toi (Blancs)" else "Les Noirs choisissent une variante…",
             fontSize = 17.sp
         )
 
@@ -249,7 +303,7 @@ fun GambitTrainerScreen(
 
         Spacer(Modifier.height(12.dp))
         Text(
-            text = "V0.1 : les pondérations servent seulement à varier l'entraînement. Elles ne sont pas encore des fréquences Lichess/Chess.com.",
+            text = "V0.2 : le curseur élargit l'arbre local. Les pondérations servent encore à varier l'entraînement et ne sont pas présentées comme des fréquences réelles.",
             style = MaterialTheme.typography.bodySmall
         )
     }
