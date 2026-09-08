@@ -23,6 +23,7 @@ class AiProviderStore(context: Context) {
         AiProviderChoice("chatgpt", "ChatGPT", "https://chatgpt.com/"),
         AiProviderChoice("gemini", "Gemini", "https://gemini.google.com/"),
         AiProviderChoice("claude", "Claude", "https://claude.ai/"),
+        AiProviderChoice("copilot", "Copilot", "https://copilot.microsoft.com/"),
         AiProviderChoice("perplexity", "Perplexity", "https://www.perplexity.ai/")
     )
 
