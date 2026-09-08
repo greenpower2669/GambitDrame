@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -38,12 +37,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.platform.LocalContext
 import com.gambitdrame.app.data.ProgressStore
 import com.gambitdrame.app.domain.ChessBoard
 import com.gambitdrame.app.domain.QueenGambitTheory
@@ -120,8 +119,6 @@ fun GambitTrainerScreen(
         selectedSquare = null
     }
 
-    // The app plays Black automatically. Its branch is randomised using local
-    // training weights; live frequencies will replace/complement them later.
     LaunchedEffect(history) {
         if (history.isNotEmpty() && history.size % 2 == 1) {
             delay(420)
@@ -201,7 +198,6 @@ fun GambitTrainerScreen(
                         selectedSquare = square
                     }
                     selectedSquare != null && ChessBoard.isWhite(piece) -> {
-                        // Tapping another white piece simply changes selection.
                         selectedSquare = square
                     }
                     selectedSquare != null -> {
