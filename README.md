@@ -1,43 +1,67 @@
 # GambitDrame
 
-Prototype Android d'entraînement au **Gambit Dame**.
+Application Android d'entraînement au **Gambit Dame**, pensée pour apprendre les idées et les variantes plutôt que simplement jouer contre un moteur.
 
-## Objectif V0.1
+## État actuel — V0.2
 
-- jouer les Blancs sur un échiquier tactile ;
-- rester dans un petit arbre théorique local et auditable ;
-- faire répondre automatiquement les Noirs avec plusieurs branches ;
-- afficher un pourcentage de proximité avec la théorie ;
-- signaler immédiatement une sortie de ligne par un son discret ;
-- expliquer le coup en gros texte et le lire à voix haute via le TTS Android ;
-- conserver un premier historique local de réussite ;
-- produire automatiquement un APK de test avec GitHub Actions.
+- échiquier tactile, joueur côté Blancs ;
+- réponses noires automatiques et pondérées ;
+- curseur de complexité **Moyen / Avancé / Complexe** ;
+- l'arbre de variantes s'élargit avec la complexité choisie ;
+- pourcentage de proximité avec la théorie ;
+- signal sonore immédiat quand le coup sort de l'arbre travaillé ;
+- explications en gros texte et lecture vocale Android ;
+- historique local de réussite ;
+- bouton **Approfondir dans ChatGPT** sans clé API : l'application prépare et copie automatiquement le contexte de la position, puis ouvre ChatGPT ;
+- génération automatique d'un APK de test avec GitHub Actions.
 
-## Lignes actuellement incluses
+## Variantes locales actuellement incluses
 
-Le jeu de données V0.1 est volontairement petit :
+### Moyen
 
-- Gambit Dame refusé, ligne orthodoxe ;
-- Gambit Dame refusé, variante d'échange ;
+- Gambit Dame refusé — ligne orthodoxe ;
+- Gambit Dame refusé — variante d'échange ;
 - Gambit Dame accepté ;
-- Défense slave contre le Gambit Dame.
+- Défense slave.
 
-Les `trainingWeight` servent uniquement à varier les réponses pendant le prototype. Ils ne représentent **pas encore** les fréquences réelles de Lichess ou Chess.com.
+### Avancé
 
-## Architecture
+Le niveau Avancé ajoute notamment :
 
-Le moteur pédagogique (`domain`) est séparé de l'interface Compose (`ui`). Cette séparation permettra ensuite d'ajouter :
+- Semi-Slave / structure méran ;
+- Défense Tarrasch ;
+- Défense Chigorin.
 
-- une base théorique plus riche ;
-- des imports PGN ;
-- des statistiques externes mises en cache ;
-- des profils de niveau ;
-- un historique détaillé par branche et profondeur ;
-- une passerelle vers ChatGPT pour approfondir un coup ;
-- éventuellement Stockfish comme outil d'analyse complémentaire, sans remplacer la logique pédagogique.
+### Complexe
+
+Le niveau Complexe ajoute notamment :
+
+- contre-gambit Albin ;
+- Cambridge Springs ;
+- Ragozin.
+
+Les `trainingWeight` servent pour l'instant uniquement à varier les réponses des Noirs. Ils ne sont **pas présentés comme des fréquences réelles**. Une prochaine couche pourra les alimenter depuis plusieurs sources statistiques mises en cache.
+
+## Philosophie du moteur pédagogique
+
+Le but n'est pas de dire « cette position gagne à +0,7 » mais de répondre à une autre question : **est-ce que le joueur apprend réellement son ouverture et sait reconnaître les idées quand l'adversaire change de variante ?**
+
+Le moteur pédagogique (`domain`) est séparé de l'interface Compose (`ui`) afin de pouvoir ensuite ajouter sans réécrire l'application :
+
+- davantage de branches théoriques ;
+- imports PGN ;
+- plusieurs sources statistiques ;
+- suivi de progression par branche et profondeur ;
+- entraînement ciblé sur les points faibles ;
+- profils de joueurs publics ;
+- Stockfish comme outil d'analyse complémentaire, sans remplacer l'arbre pédagogique.
+
+## ChatGPT sans coût API obligatoire
+
+Le bouton ChatGPT ne consomme pas d'API OpenAI : il fabrique un contexte contenant le niveau, la branche, les coups joués, le dernier retour pédagogique et les coups théoriques disponibles. Ce texte est placé dans le presse-papiers puis ChatGPT est ouvert. L'utilisateur n'a plus qu'à coller le contexte pour continuer la discussion avec son compte habituel.
 
 ## APK
 
 Le workflow **Build Android APK** compile `app-debug.apk` et le publie comme artefact GitHub Actions.
 
-Branche de développement initiale : `dev/v0.1-prototype`.
+Branche de développement actuelle : `dev/v0.1-prototype`.
