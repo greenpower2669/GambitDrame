@@ -1,7 +1,13 @@
 package com.gambitdrame.app.ui
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
 import android.media.AudioManager
 import android.media.ToneGenerator
+import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -42,6 +48,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gambitdrame.app.data.ProgressStore
@@ -127,6 +134,44 @@ fun GambitTrainerScreen(
         selectedSquare = null
     }
 
+    fun openChatGptWithContext() {
+        val moves = if (history.isEmpty()) "Aucun coup encore joué" else history.joinToString(" ")
+        val branch = theory.branchLabel(history, complexity)
+        val expected = theory.expectedMoveSummary(history, complexity)
+        val prompt = buildString {
+            appendLine("Je m'entraîne au Gambit Dame dans l'application GambitDrame.")
+            appendLine("Niveau de variantes : ${complexity.label}.")
+            appendLine("Branche actuelle : $branch.")
+            appendLine("Coups joués en UCI : $moves.")
+            appendLine("Dernier retour pédagogique : $lastExplanation")
+            appendLine("Coups théoriques proposés ici : $expected")
+            appendLine()
+            append("Explique-moi simplement ce qui se joue dans cette position, pourquoi ces coups sont théoriques, les idées à retenir et les erreurs typiques à éviter. Adapte l'explication à un joueur amateur qui veut mémoriser les idées plutôt que réciter des coups.")
+        }
+
+        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        clipboard.setPrimaryClip(ClipData.newPlainText("GambitDrame · contexte ChatGPT", prompt))
+
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://chatgpt.com/")).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        runCatching { context.startActivity(intent) }
+            .onSuccess {
+                Toast.makeText(
+                    context,
+                    "Contexte copié : colle-le dans ChatGPT.",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+            .onFailure {
+                Toast.makeText(
+                    context,
+                    "Contexte copié. Ouvre ChatGPT puis colle-le.",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+    }
+
     LaunchedEffect(complexity) {
         if (history.isNotEmpty()) {
             resetLine("Niveau ${complexity.label}. Nouvelle variante tirée au prochain départ.")
@@ -191,13 +236,13 @@ fun GambitTrainerScreen(
                         "Avancé",
                         modifier = Modifier.weight(1f),
                         fontSize = 14.sp,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        textAlign = TextAlign.Center
                     )
                     Text(
                         "Complexe",
                         modifier = Modifier.weight(1f),
                         fontSize = 14.sp,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.End
+                        textAlign = TextAlign.End
                     )
                 }
             }
@@ -282,6 +327,14 @@ fun GambitTrainerScreen(
             ) {
                 Text("↻ Rejouer", fontSize = 17.sp)
             }
+        }
+
+        Spacer(Modifier.height(8.dp))
+        Button(
+            onClick = { openChatGptWithContext() },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("↗ Approfondir dans ChatGPT", fontSize = 17.sp)
         }
 
         if (explanationVisible) {
