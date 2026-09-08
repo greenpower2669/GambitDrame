@@ -26,12 +26,16 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -51,6 +55,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.gambitdrame.app.data.AiProviderStore
 import com.gambitdrame.app.data.ProgressStore
 import com.gambitdrame.app.domain.ChessBoard
 import com.gambitdrame.app.domain.QueenGambitTheory
@@ -65,6 +70,7 @@ fun GambitTrainerScreen(
     val context = LocalContext.current
     val theory = remember { QueenGambitTheory() }
     val progressStore = remember { ProgressStore(context.applicationContext) }
+    val aiProviderStore = remember { AiProviderStore(context.applicationContext) }
     val tone = remember { ToneGenerator(AudioManager.STREAM_MUSIC, 72) }
 
     DisposableEffect(Unit) {
@@ -83,6 +89,12 @@ fun GambitTrainerScreen(
         mutableStateOf("Commence par jouer d4. Les Noirs choisiront une réponse dans le niveau sélectionné.")
     }
     var explanationVisible by remember { mutableStateOf(false) }
+
+    var selectedAi by remember { mutableStateOf(aiProviderStore.selected) }
+    var showAiSettings by remember { mutableStateOf(false) }
+    var settingsChoiceId by remember { mutableStateOf(selectedAi.id) }
+    var customAiName by remember { mutableStateOf(if (selectedAi.custom) selectedAi.name else "Mon IA") }
+    var customAiUrl by remember { mutableStateOf(if (selectedAi.custom) selectedAi.url else "") }
 
     val complexity = when (complexitySlider.roundToInt().coerceIn(0, 2)) {
         0 -> TrainingComplexity.MEDIUM
@@ -134,7 +146,7 @@ fun GambitTrainerScreen(
         selectedSquare = null
     }
 
-    fun openChatGptWithContext() {
+    fun openSelectedAiWithContext() {
         val moves = if (history.isEmpty()) "Aucun coup encore joué" else history.joinToString(" ")
         val branch = theory.branchLabel(history, complexity)
         val expected = theory.expectedMoveSummary(history, complexity)
@@ -150,23 +162,25 @@ fun GambitTrainerScreen(
         }
 
         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        clipboard.setPrimaryClip(ClipData.newPlainText("GambitDrame · contexte ChatGPT", prompt))
+        clipboard.setPrimaryClip(
+            ClipData.newPlainText("GambitDrame · contexte ${selectedAi.name}", prompt)
+        )
 
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://chatgpt.com/")).apply {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(selectedAi.url)).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         runCatching { context.startActivity(intent) }
             .onSuccess {
                 Toast.makeText(
                     context,
-                    "Contexte copié : colle-le dans ChatGPT.",
+                    "Contexte copié. Dans ${selectedAi.name}, colle-le dans la zone de message.",
                     Toast.LENGTH_LONG
                 ).show()
             }
             .onFailure {
                 Toast.makeText(
                     context,
-                    "Contexte copié. Ouvre ChatGPT puis colle-le.",
+                    "Contexte copié. Impossible d'ouvrir ${selectedAi.name} automatiquement.",
                     Toast.LENGTH_LONG
                 ).show()
             }
@@ -198,15 +212,35 @@ fun GambitTrainerScreen(
             .padding(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            text = "GambitDrame",
-            fontSize = 30.sp,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            text = "Entraînement · Gambit Dame",
-            fontSize = 19.sp
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "GambitDrame",
+                    fontSize = 30.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Entraînement · Gambit Dame",
+                    fontSize = 19.sp
+                )
+            }
+            TextButton(
+                onClick = {
+                    settingsChoiceId = selectedAi.id
+                    customAiName = if (selectedAi.custom) selectedAi.name else "Mon IA"
+                    customAiUrl = if (selectedAi.custom) selectedAi.url else ""
+                    showAiSettings = true
+                },
+                modifier = Modifier.semantics {
+                    contentDescription = "Réglages de l'intelligence artificielle externe"
+                }
+            ) {
+                Text("⚙", fontSize = 28.sp)
+            }
+        }
 
         Spacer(Modifier.height(10.dp))
 
@@ -331,11 +365,16 @@ fun GambitTrainerScreen(
 
         Spacer(Modifier.height(8.dp))
         Button(
-            onClick = { openChatGptWithContext() },
+            onClick = { openSelectedAiWithContext() },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("↗ Approfondir dans ChatGPT", fontSize = 17.sp)
+            Text("↗ Approfondir avec ${selectedAi.name}", fontSize = 17.sp)
         }
+        Text(
+            text = "Le contexte est copié : la page externe peut s'ouvrir vide, il suffit de coller.",
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(top = 4.dp)
+        )
 
         if (explanationVisible) {
             Spacer(Modifier.height(8.dp))
@@ -358,6 +397,92 @@ fun GambitTrainerScreen(
         Text(
             text = "V0.2 : le curseur élargit l'arbre local. Les pondérations servent encore à varier l'entraînement et ne sont pas présentées comme des fréquences réelles.",
             style = MaterialTheme.typography.bodySmall
+        )
+    }
+
+    if (showAiSettings) {
+        AlertDialog(
+            onDismissRequest = { showAiSettings = false },
+            title = { Text("IA pour approfondir") },
+            text = {
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState())
+                ) {
+                    Text(
+                        "Choisis le service ouvert par le bouton d'approfondissement. Le contexte reste copié dans le presse-papiers."
+                    )
+                    Spacer(Modifier.height(8.dp))
+
+                    aiProviderStore.builtIns.forEach { provider ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { settingsChoiceId = provider.id }
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = settingsChoiceId == provider.id,
+                                onClick = { settingsChoiceId = provider.id }
+                            )
+                            Text(provider.name, fontSize = 17.sp)
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { settingsChoiceId = "custom" }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = settingsChoiceId == "custom",
+                            onClick = { settingsChoiceId = "custom" }
+                        )
+                        Text("Autre IA / personnalisée", fontSize = 17.sp)
+                    }
+
+                    if (settingsChoiceId == "custom") {
+                        OutlinedTextField(
+                            value = customAiName,
+                            onValueChange = { customAiName = it },
+                            label = { Text("Nom de mon IA") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = customAiUrl,
+                            onValueChange = { customAiUrl = it },
+                            label = { Text("Adresse web") },
+                            placeholder = { Text("exemple.com") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (settingsChoiceId == "custom") {
+                            aiProviderStore.selectCustom(customAiName, customAiUrl)
+                        } else {
+                            aiProviderStore.selectBuiltIn(settingsChoiceId)
+                        }
+                        selectedAi = aiProviderStore.selected
+                        showAiSettings = false
+                    }
+                ) {
+                    Text("Enregistrer")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAiSettings = false }) {
+                    Text("Annuler")
+                }
+            }
         )
     }
 }
