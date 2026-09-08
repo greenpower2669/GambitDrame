@@ -1,5 +1,35 @@
 package com.gambitdrame.app.domain
 
+enum class TrainingComplexity(
+    val level: Int,
+    val label: String,
+    val description: String
+) {
+    MEDIUM(
+        level = 1,
+        label = "Moyen",
+        description = "Les grandes réponses classiques du Gambit Dame."
+    ),
+    ADVANCED(
+        level = 2,
+        label = "Avancé",
+        description = "Ajoute davantage de bifurcations et de défenses positionnelles."
+    ),
+    COMPLEX(
+        level = 3,
+        label = "Complexe",
+        description = "Ajoute les réponses plus rares, tranchantes ou théoriques."
+    );
+
+    companion object {
+        fun fromSlider(value: Float): TrainingComplexity = when (value.toInt()) {
+            0 -> MEDIUM
+            1 -> ADVANCED
+            else -> COMPLEX
+        }
+    }
+}
+
 data class MoveLesson(
     val uci: String,
     val san: String,
@@ -9,6 +39,7 @@ data class MoveLesson(
 data class TrainingLine(
     val name: String,
     val trainingWeight: Int,
+    val minComplexity: TrainingComplexity = TrainingComplexity.MEDIUM,
     val moves: List<MoveLesson>
 )
 
@@ -35,7 +66,6 @@ data class ChessBoard(
         next[fromIndex] = null
         next[toIndex] = movingPiece
 
-        // Castling support is already here for future deeper lines.
         when (uci) {
             "e1g1" -> moveRook(next, "h1", "f1")
             "e1c1" -> moveRook(next, "a1", "d1")
