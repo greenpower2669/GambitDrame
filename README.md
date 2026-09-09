@@ -4,11 +4,11 @@ Entraînement aux ouvertures d'échecs centré sur les idées, les branches et l
 
 ## Intégration Lichess Opening Explorer
 
-La branche `feature/lichess-opening-explorer` ajoute une première couche d'enrichissement dynamique des positions à partir de l'Opening Explorer Lichess.
+La branche `feature/lichess-opening-explorer` ajoute une couche d'enrichissement dynamique des positions à partir de l'Opening Explorer Lichess.
 
 ### Principe
 
-GambitDrame garde sa pédagogie et ses branches écrites à la main. Lichess sert uniquement à enrichir chaque position avec :
+GambitDrame garde sa pédagogie et ses branches écrites à la main. Lichess sert à enrichir chaque position avec :
 
 - nombre de parties observées ;
 - fréquence de chaque continuation ;
@@ -17,16 +17,17 @@ GambitDrame garde sa pédagogie et ses branches écrites à la main. Lichess ser
 - parties récentes et parties de référence ;
 - nom ECO/ouverture renvoyé par Lichess.
 
-Les données Lichess ne remplacent pas les explications pédagogiques. Elles donnent du poids statistique aux variantes et permettent de faire apparaître progressivement de nouvelles branches.
+Les données Lichess ne remplacent jamais les explications pédagogiques. Elles donnent du poids statistique aux variantes et permettent de faire apparaître progressivement de nouvelles branches.
 
-### Exemple : Gambit Dame refusé, orthodoxe
+## Synchronisation complète d'un arbre d'étude
+
+Le point d'entrée principal est `syncStudyTree()`.
 
 ```js
 import {
-  fetchLichessPosition,
-  mergeLichessIntoBranch,
-  learningCandidates,
-} from './src/lichess-explorer.mjs';
+  LichessStudyClient,
+  syncStudyTree,
+} from './src/lichess-study-sync.mjs';
 
 const play = [
   'd2d4', 'd7d5',
@@ -37,41 +38,97 @@ const play = [
   'g1f3', 'b8d7',
 ];
 
-const snapshot = await fetchLichessPosition(play);
-const enrichedBranch = mergeLichessIntoBranch(currentBranch, snapshot);
-const proposedMoves = learningCandidates(enrichedBranch);
+const client = new LichessStudyClient();
+
+const tree = await syncStudyTree(play, {
+  level: 'advanced',
+  existingTree: previousTree,
+  client,
+});
 ```
 
-Le client appelle par défaut `/api/lichess-explorer`. Le proxy serveur ajoute l'authentification Lichess sans exposer le jeton au navigateur.
+Le résultat contient une table `positions` indexée par la suite UCI. Chaque position contient son snapshot Lichess, ses coups connus et la liste des coups réellement enseignés pour le niveau demandé.
 
-### Configuration serveur
+Cette représentation évite de reconstruire un énorme arbre imbriqué à chaque mise à jour : seules les positions visitées sont rafraîchies.
 
-Définir une variable d'environnement :
+## Niveaux d'apprentissage
+
+`src/learning-policy.mjs` fournit trois profils adaptatifs :
+
+- **Débutant** : très peu de continuations, uniquement les lignes fréquentes ;
+- **Intermédiaire** : plusieurs alternatives courantes ;
+- **Avancé** : branches fines jusqu'à environ 1 % de fréquence si le volume de parties est suffisant.
+
+Un coup écrit à la main avec une explication pédagogique est toujours conservé, même s'il est rare dans la base Lichess.
+
+Les profils peuvent être surchargés à l'appel de `syncStudyTree()` sans modifier la base pédagogique.
+
+## Règle de comptage importante
+
+Une réponse de l'Opening Explorer est déjà un agrégat complet de la position. Lors d'un nouveau rafraîchissement, GambitDrame **remplace le snapshot statistique précédent** au lieu d'additionner les valeurs.
+
+Exemple : 12 000 parties puis 12 100 parties donnent 12 100, et non 24 100.
+
+Les références de parties individuelles sont dédupliquées par `game.id`.
+
+## Cache et respect de Lichess
+
+`LichessStudyClient` :
+
+- met les positions en cache ;
+- fusionne les demandes simultanées vers la même position ;
+- sérialise tous les appels réseau pour n'avoir qu'une requête Lichess à la fois ;
+- déclenche une pause d'au moins une minute après une réponse HTTP `429` ;
+- permet de forcer un rafraîchissement avec `force: true`.
+
+L'arbre est également borné avec `maxDepth` et `maxPositions` pour empêcher un niveau Avancé de lancer accidentellement des milliers de requêtes.
+
+## Proxy serveur
+
+Le navigateur appelle par défaut :
+
+```text
+GET /api/lichess-explorer
+```
+
+Le proxy `server/lichess-explorer-proxy.mjs` ajoute l'authentification Lichess côté serveur.
+
+Définir :
 
 ```text
 LICHESS_TOKEN=...
 ```
 
-Puis brancher `server/lichess-explorer-proxy.mjs` sur la route HTTP `GET /api/lichess-explorer` de l'hébergement utilisé par l'application.
-
 Le jeton ne doit jamais être placé dans le JavaScript envoyé au navigateur.
 
-### Règle de comptage importante
+Les appels même origine sont autorisés sans CORS. Si l'interface et l'API sont sur deux domaines différents, définir explicitement :
 
-Une réponse de l'Opening Explorer est déjà un agrégat complet de la position. Lors d'un nouveau rafraîchissement, GambitDrame **remplace le snapshot statistique précédent** au lieu d'additionner les valeurs, sinon le compteur de parties serait doublé à chaque synchronisation.
+```text
+GAMBITDRAME_ALLOWED_ORIGIN=https://app.example
+```
 
-Les références de parties individuelles sont dédupliquées par `game.id`.
+Plusieurs origines peuvent être séparées par des virgules.
 
-### Niveaux proposés
+Le proxy limite aussi les paramètres transmis à Lichess, borne le nombre de coups/parties retournés et sérialise les appels en amont par instance serveur.
 
-La première version classe automatiquement les continuations Lichess :
+## Exemple position seule
 
-- `main` : fréquence >= 12 % et au moins 100 parties ;
-- `candidate` : fréquence >= 3 % et au moins 30 parties ;
-- `rare` : le reste.
+Pour enrichir une seule branche sans développer l'arbre :
 
-Ces seuils sont des valeurs de départ et peuvent être adaptés aux niveaux Débutant / Intermédiaire / Avancé.
+```js
+import {
+  fetchLichessPosition,
+  mergeLichessIntoBranch,
+} from './src/lichess-explorer.mjs';
 
-### Respect des limites API
+const snapshot = await fetchLichessPosition(play);
+const enrichedBranch = mergeLichessIntoBranch(currentBranch, snapshot);
+```
 
-Le proxy ne lance qu'une requête par appel. En cas de réponse HTTP `429`, GambitDrame doit respecter `Retry-After` et éviter les rafraîchissements simultanés. Un cache court côté serveur limite les appels inutiles.
+## Tests
+
+```bash
+npm test
+```
+
+GitHub Actions exécute automatiquement la suite Node sur les branches `feature/**` et les pull requests vers `main`.
