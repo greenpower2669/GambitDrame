@@ -10,37 +10,41 @@
       font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
       --bg:#0b0c10;--panel:#171920;--panel2:#20242d;--text:#f7f7f7;--muted:#b9c0cc;
       --accent:#ffd166;--accent2:#7dd3fc;--good:#86efac;--danger:#fda4af;--line:#3b4250;
+      --light:#e5d2b1;--dark:#7b5c45;--sel:#67e8f9;--last:#facc15;--hint:#86efac;
     }
     *{box-sizing:border-box}
     body{margin:0;background:radial-gradient(circle at 20% 0,#23202b 0,#0b0c10 42%);color:var(--text);font-size:19px;line-height:1.45}
-    main{max-width:900px;margin:0 auto;padding:18px 18px 40px}
-    h1{font-size:2rem;margin:.25rem 0 .25rem} h2{font-size:1.28rem;margin:0 0 10px} h3{margin:.2rem 0;font-size:1.05rem}
-    .subtitle{color:var(--muted);margin:0 0 16px}
+    main{max-width:900px;margin:0 auto;padding:18px 18px 42px}
+    h1{font-size:2rem;margin:.25rem 0 .25rem}h2{font-size:1.28rem;margin:0 0 10px}
+    .subtitle{color:var(--muted);margin:0 0 16px}.muted{color:var(--muted)}.tiny{font-size:.82rem}.big{font-size:1.14rem}
     .card{background:linear-gradient(180deg,var(--panel),#12141a);border:2px solid var(--line);border-radius:18px;padding:16px;margin:14px 0;box-shadow:0 10px 28px #0005}
-    .hero{border-color:#8b7b48;background:linear-gradient(145deg,#272114,#15171c)}
-    .good{border-color:#397651}.warn{border-color:#845463}.blue{border-color:#3b7190}
+    .hero{border-color:#8b7b48;background:linear-gradient(145deg,#272114,#15171c)}.good{border-color:#397651}.warn{border-color:#845463}.blue{border-color:#3b7190}
     .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.grow{flex:1 1 230px}.compact{flex:0 1 190px}
     label{display:block;font-weight:800;margin-top:10px;font-size:.93rem;color:#e8e8e8}
     input,select,button{font:inherit;min-height:52px;border-radius:12px;border:2px solid #596170;padding:10px 12px}
-    input,select{width:100%;background:#090b0f;color:#fff} button{background:#f5f5f5;color:#111;font-weight:900;cursor:pointer}
+    input,select{width:100%;background:#090b0f;color:#fff}button{background:#f5f5f5;color:#111;font-weight:900;cursor:pointer}
     button.secondary{background:#252a34;color:#fff}button.accent{background:var(--accent);border-color:#ffe8a3}button.ghost{background:transparent;color:#fff}button:disabled{opacity:.48}
     .seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}.seg button.active{background:var(--accent);color:#111;border-color:#ffe29a}
     .carousel{display:flex;gap:12px;overflow-x:auto;padding:3px 2px 10px;scroll-snap-type:x mandatory}.opening{min-width:245px;max-width:245px;scroll-snap-align:start;background:var(--panel2);border:2px solid #3f4755;border-radius:16px;padding:14px;text-align:left;color:#fff}.opening.active{border-color:var(--accent);box-shadow:0 0 0 2px #ffd16633}.opening .tag{font-size:.77rem;color:#111;background:#dce7f7;border-radius:999px;padding:3px 8px;display:inline-block;margin-bottom:8px}.opening .name{font-size:1.12rem;font-weight:900}.opening .idea{color:var(--muted);font-size:.89rem;margin-top:6px}
-    .mission{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center}.badge{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:#2b2f39;border:2px solid #5e687a;font-size:1.55rem}.missionTitle{font-size:1.22rem;font-weight:900}.muted{color:var(--muted)}.tiny{font-size:.82rem}.big{font-size:1.14rem}.move{font-size:1.55rem;font-weight:950;color:var(--accent)}.uci{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-word;font-size:.86rem}
-    .meter{height:12px;border-radius:999px;background:#0b0c10;overflow:hidden;border:1px solid #3f4653}.meter>span{height:100%;display:block;background:linear-gradient(90deg,var(--accent2),var(--good));width:0%;transition:width .3s ease}
+    .mission{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center}.badge{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:#2b2f39;border:2px solid #5e687a;font-size:1.55rem}.missionTitle{font-size:1.22rem;font-weight:900}
     .pillbox{display:flex;gap:7px;flex-wrap:wrap;margin:9px 0}.pill{border:1px solid #596170;border-radius:999px;padding:5px 9px;font-size:.8rem;color:#d8dde6;background:#11151b}
-    .status{margin-top:10px;font-weight:750}.moves{display:grid;gap:9px;margin-top:12px}.moveRow{border:1px solid #596170;border-radius:12px;padding:11px;background:#12151b}
-    details{margin-top:10px}summary{font-weight:900;cursor:pointer;padding:7px 0}
+    .meter{height:12px;border-radius:999px;background:#0b0c10;overflow:hidden;border:1px solid #3f4653}.meter>span{height:100%;display:block;background:linear-gradient(90deg,var(--accent2),var(--good));width:0%;transition:width .3s ease}
+    .move{font-size:1.42rem;font-weight:950;color:var(--accent)}.uci{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-word;font-size:.86rem}
+
+    .boardShell{max-width:640px;margin:12px auto 8px}.boardTop{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px}.turn{font-weight:900}.board{width:100%;aspect-ratio:1;display:grid;grid-template-columns:repeat(8,1fr);border:4px solid #07080a;border-radius:10px;overflow:hidden;box-shadow:0 12px 32px #0009;touch-action:manipulation;background:#111}
+    .square{position:relative;min-height:0!important;height:auto!important;border:0!important;border-radius:0!important;padding:0!important;margin:0!important;display:grid;place-items:center;font-family:"Noto Sans Symbols 2","Noto Sans Symbols","DejaVu Sans",serif;font-size:clamp(27px,9.6vw,58px);line-height:1;color:#111;box-shadow:none;overflow:hidden}
+    .square.light{background:var(--light)}.square.dark{background:var(--dark)}.square.selected{outline:5px solid var(--sel);outline-offset:-5px;z-index:2}.square.last::after{content:"";position:absolute;inset:7%;border:4px solid #facc15bb;border-radius:10px;pointer-events:none}.square.hint::before{content:"";position:absolute;width:23%;height:23%;border-radius:50%;background:#22c55eaa;pointer-events:none}.square .piece{position:relative;z-index:1;filter:drop-shadow(0 2px 1px #0006)}.square .coord{position:absolute;z-index:3;font-family:system-ui,sans-serif;font-size:10px;font-weight:900;line-height:1;color:#161616cc}.square .file{right:3px;bottom:3px}.square .rank{left:3px;top:3px}.boardHelp{text-align:center;margin:9px 0 0;color:var(--muted);font-size:.84rem}.boardStatus{margin:8px 0 0;text-align:center;font-weight:850;min-height:28px}
+
     .theoryBanner{display:none;margin-top:12px;padding:12px;border-radius:12px;border:2px dashed #9c6873;background:#29181d}.theoryBanner.show{display:block}
     .wheelWrap{display:none;text-align:center;padding-top:8px}.wheelWrap.show{display:block}.wheel{width:178px;height:178px;border-radius:50%;margin:10px auto;display:grid;place-items:center;border:8px solid #ececec;background:conic-gradient(#ffd166 0 25%,#7dd3fc 25% 50%,#86efac 50% 75%,#fda4af 75% 100%);color:#111;font-weight:950;text-shadow:0 1px #fff;box-shadow:0 8px 30px #0008;transition:transform 1.25s cubic-bezier(.2,.8,.2,1)}
-    .wheelResult{font-weight:950;font-size:1.16rem;min-height:34px}.footerNote{text-align:center;color:var(--muted);font-size:.8rem;margin-top:22px}
-    @media(max-width:560px){body{font-size:18px}.mission{grid-template-columns:1fr}.badge{width:50px;height:50px}.opening{min-width:225px}.row>*{flex-basis:100%}}
+    .wheelResult{font-weight:950;font-size:1.16rem;min-height:34px}.status{margin-top:10px;font-weight:750}.moves{display:grid;gap:9px;margin-top:12px}.moveRow{border:1px solid #596170;border-radius:12px;padding:11px;background:#12151b}details{margin-top:10px}summary{font-weight:900;cursor:pointer;padding:7px 0}.footerNote{text-align:center;color:var(--muted);font-size:.8rem;margin-top:22px}
+    @media(max-width:560px){body{font-size:18px}main{padding:12px 10px 34px}.card{padding:12px}.mission{grid-template-columns:1fr}.badge{width:50px;height:50px}.opening{min-width:225px}.row>*{flex-basis:100%}.square{font-size:clamp(25px,10.5vw,48px)}}
   </style>
 </head>
 <body>
 <main>
   <h1>♛ GambitDrame</h1>
-  <p class="subtitle">Apprendre une ouverture comme un trajet : théorie d’abord, décision ensuite.</p>
+  <p class="subtitle">Le plateau d’abord. La théorie devient un trajet que tu joues vraiment.</p>
 
   <section class="card hero">
     <div class="muted tiny">MODE DE JEU</div>
@@ -51,8 +55,29 @@
     <p id="roleHint" class="muted">Par défaut : tu prends l’initiative et tu joues le Gambit Dame.</p>
   </section>
 
+  <section class="card good" id="missionCard">
+    <div class="mission"><div class="badge" id="missionBadge">♛</div><div><div class="muted tiny">MISSION ACTIVE</div><div class="missionTitle" id="missionTitle">Gambit Dame</div><div id="missionIdea" class="muted"></div></div></div>
+    <div class="pillbox"><span class="pill" id="sidePill"></span><span class="pill" id="ecoPill"></span><span class="pill" id="progressPill"></span></div>
+
+    <div class="boardShell">
+      <div class="boardTop"><span id="turnLabel" class="turn">Aux Blancs</span><button id="flipBoard" class="secondary" style="min-height:42px;padding:6px 10px;width:auto">↕ Retourner</button></div>
+      <div id="board" class="board" role="grid" aria-label="Échiquier interactif"></div>
+      <div id="boardStatus" class="boardStatus" aria-live="polite">Touche une pièce puis sa case d’arrivée.</div>
+      <div class="boardHelp">Tu joues ton camp. GambitDrame joue automatiquement les réponses théoriques.</div>
+    </div>
+
+    <div class="meter" aria-label="Progression dans la théorie"><span id="progressBar"></span></div>
+    <p class="muted tiny" style="margin-bottom:4px">Prochain repère théorique</p>
+    <div class="move" id="nextMove">—</div>
+    <p id="coachText"></p>
+    <label for="uci">Ligne jouée (UCI)</label>
+    <input id="uci" autocomplete="off" spellcheck="false" readonly />
+    <div class="row" style="margin-top:10px"><button id="step" class="accent grow">💡 Jouer / montrer le prochain coup</button><button id="deviate" class="secondary grow">↗ Passer en jeu libre</button></div>
+    <div id="theoryBanner" class="theoryBanner" aria-live="polite"><strong>🚧 Hors théorie.</strong> Tu peux continuer à jouer librement, revenir au dernier embranchement connu ou lancer le tourniquet.</div>
+  </section>
+
   <section class="card">
-    <div class="row"><div class="grow"><h2>Choisis ton terrain</h2><div class="muted tiny">Glisse horizontalement. La première carte est le départ conseillé.</div></div><button id="surprise" class="secondary compact">🎲 Surprise</button></div>
+    <div class="row"><div class="grow"><h2>Choisis ton terrain</h2><div class="muted tiny">Glisse horizontalement. Gambit Dame reste le départ conseillé.</div></div><button id="surprise" class="secondary compact">🎲 Surprise</button></div>
     <div id="carousel" class="carousel" aria-label="Ouvertures"></div>
   </section>
 
@@ -66,22 +91,9 @@
     <div id="budget" class="pillbox"></div>
   </section>
 
-  <section class="card good" id="missionCard">
-    <div class="mission"><div class="badge" id="missionBadge">♟️</div><div><div class="muted tiny">MISSION ACTIVE</div><div class="missionTitle" id="missionTitle"></div><div id="missionIdea" class="muted"></div></div></div>
-    <div class="pillbox"><span class="pill" id="sidePill"></span><span class="pill" id="ecoPill"></span><span class="pill" id="progressPill"></span></div>
-    <div class="meter" aria-label="Progression dans la théorie"><span id="progressBar"></span></div>
-    <p class="muted tiny" style="margin-bottom:4px">Prochain repère théorique</p>
-    <div class="move" id="nextMove">—</div>
-    <p id="coachText"></p>
-    <label for="uci">Ligne jouée (UCI)</label>
-    <input id="uci" autocomplete="off" spellcheck="false" />
-    <div class="row" style="margin-top:10px"><button id="step" class="accent grow">▶ Jouer le prochain coup</button><button id="deviate" class="secondary grow">↗ Sortir de la théorie</button></div>
-    <div id="theoryBanner" class="theoryBanner" aria-live="polite"><strong>🚧 Hors théorie.</strong> Rien de grave : tu peux continuer la partie ou utiliser le tourniquet pour choisir comment travailler cette position.</div>
-  </section>
-
   <section class="card warn">
     <h2>🎡 Tourniquet hors théorie</h2>
-    <p class="muted">Quand la ligne connue s’arrête — ou quand tu dérailles volontairement — GambitDrame ne te bloque pas. Il transforme la sortie en exercice.</p>
+    <p class="muted">Au bout d’une ligne ou après une déviation, on transforme l’inconnu en exercice au lieu d’arrêter la partie.</p>
     <button id="wheelButton" class="secondary">Lancer le tourniquet</button>
     <div id="wheelWrap" class="wheelWrap">
       <div id="wheel" class="wheel">Gambit<br>Drame</div>
@@ -93,11 +105,11 @@
 
   <section class="card">
     <h2>Données externes</h2>
-    <p class="muted">Le mode local fonctionne tout de suite. Lichess sert seulement à enrichir les variantes avec les fréquences réelles.</p>
+    <p class="muted">Le plateau et la base locale fonctionnent sans connexion. Lichess ne sert qu’à enrichir les fréquences et variantes.</p>
     <button id="localRefresh" class="secondary">📚 Recharger la base locale</button>
     <details>
       <summary>Réglages avancés Lichess</summary>
-      <p class="muted tiny">Connexion OAuth prévue. En attendant, le proxy HTTPS reste compatible pour les tests sans mettre de token dans l’APK.</p>
+      <p class="muted tiny">Connexion OAuth prévue. Le proxy HTTPS reste compatible pour les essais.</p>
       <label for="backend">Backend HTTPS facultatif</label><input id="backend" inputmode="url" placeholder="https://ton-serveur.example" />
       <button id="sync">☁️ Enrichir avec Lichess</button>
       <div id="status" class="status" aria-live="polite">Base locale active.</div>
@@ -105,7 +117,7 @@
     </details>
   </section>
 
-  <div class="footerNote">GambitDrame · le but n’est pas de réciter des coups, mais de reconnaître les idées.</div>
+  <div class="footerNote">GambitDrame · reconnaître les idées, jouer les coups, puis survivre quand la théorie s’arrête.</div>
 </main>
 <script>
 (() => {
@@ -113,76 +125,204 @@
   const openings = [
     {id:'qg',name:'Gambit Dame',tag:'Conseillé',eco:'D30–D69',hero:'white',badge:'♛',idea:'Mettre d5 sous pression puis ouvrir le jeu quand tes pièces sont prêtes.',coach:'Tu ne cherches pas à gagner d5 tout de suite : tu augmentes la pression.',uci:'d2d4 d7d5 c2c4 e7e6 b1c3 g8f6 c1g5 f8e7 e2e3 e8g8 g1f3 b8d7 a1c1',san:['d4','d5','c4','e6','Cc3','Cf6','Fg5','Fe7','e3','O-O','Cf3','Cbd7','Tc1']},
     {id:'qga',name:'Gambit Dame accepté',tag:'Centre',eco:'D20–D29',hero:'white',badge:'♙',idea:'Récupérer c4 sans précipitation et obtenir un centre actif.',coach:'Le pion c4 n’est pas perdu : développe avant de le récupérer.',uci:'d2d4 d7d5 c2c4 d5c4 g1f3 g8f6 e2e3 e7e6 f1c4 c7c5 e1g1',san:['d4','d5','c4','dxc4','Cf3','Cf6','e3','e6','Fxc4','c5','O-O']},
-    {id:'slav',name:'Défense Slave',tag:'Solide',eco:'D10–D19',hero:'black',badge:'♜',idea:'Soutenir d5 avec c6 sans enfermer le fou c8 par e6 trop tôt.',coach:'La Slave protège le centre tout en gardant le fou c8 vivant.',uci:'d2d4 d7d5 c2c4 c7c6 g1f3 g8f6 b1c3 d5c4 a2a4 c8f5 e2e3 e7e6',san:['d4','d5','c4','c6','Cf3','Cf6','Cc3','dxc4','a4','Ff5','e3','e6']},
-    {id:'kg',name:'Gambit Roi',tag:'Tactique',eco:'C30–C39',hero:'white',badge:'♔',idea:'Sacrifier f4 pour accélérer le développement et attaquer le roi noir.',coach:'Ici, le temps compte souvent plus qu’un pion.',uci:'e2e4 e7e5 f2f4 e5f4 g1f3 g7g5 h2h4 g5g4 f3e5 g8f6',san:['e4','e5','f4','exf4','Cf3','g5','h4','g4','Ce5','Cf6']},
+    {id:'slav',name:'Défense Slave',tag:'Solide',eco:'D10–D19',hero:'black',badge:'♜',idea:'Soutenir d5 avec c6 sans enfermer le fou c8 trop tôt.',coach:'La Slave protège le centre tout en gardant le fou c8 vivant.',uci:'d2d4 d7d5 c2c4 c7c6 g1f3 g8f6 b1c3 d5c4 a2a4 c8f5 e2e3 e7e6',san:['d4','d5','c4','c6','Cf3','Cf6','Cc3','dxc4','a4','Ff5','e3','e6']},
+    {id:'kg',name:'Gambit Roi',tag:'Tactique',eco:'C30–C39',hero:'white',badge:'♔',idea:'Sacrifier f4 pour accélérer le développement et attaquer.',coach:'Ici, le temps compte souvent plus qu’un pion.',uci:'e2e4 e7e5 f2f4 e5f4 g1f3 g7g5 h2h4 g5g4 f3e5 g8f6',san:['e4','e5','f4','exf4','Cf3','g5','h4','g4','Ce5','Cf6']},
     {id:'italian',name:'Partie Italienne',tag:'Classique',eco:'C50–C59',hero:'white',badge:'♗',idea:'Développer vite, viser f7 et préparer d4.',coach:'Avant l’attaque, assure le développement et le centre.',uci:'e2e4 e7e5 g1f3 b8c6 f1c4 f8c5 c2c3 g8f6 d2d4 e5d4 c3d4',san:['e4','e5','Cf3','Cc6','Fc4','Fc5','c3','Cf6','d4','exd4','cxd4']},
-    {id:'sicilian',name:'Défense Sicilienne',tag:'Combat',eco:'B20–B99',hero:'black',badge:'♞',idea:'Répondre asymétriquement à e4 et jouer pour la contre-attaque.',coach:'Tu cèdes la symétrie pour gagner des chances actives.',uci:'e2e4 c7c5 g1f3 d7d6 d2d4 c5d4 f3d4 g8f6 b1c3 a7a6',san:['e4','c5','Cf3','d6','d4','cxd4','Cxd4','Cf6','Cc3','a6']},
-    {id:'caro',name:'Caro-Kann',tag:'Robuste',eco:'B10–B19',hero:'black',badge:'♟️',idea:'Contester e4 avec c6-d5 et obtenir une structure saine.',coach:'Solide ne veut pas dire passif : cherche la rupture d5 au bon moment.',uci:'e2e4 c7c6 d2d4 d7d5 b1c3 d5e4 c3e4 c8f5 e4g3 f5g6',san:['e4','c6','d4','d5','Cc3','dxe4','Cxe4','Ff5','Cg3','Fg6']},
-    {id:'london',name:'Système de Londres',tag:'Plan clair',eco:'D02',hero:'white',badge:'♝',idea:'Construire une structure familière puis choisir où créer la rupture.',coach:'Le système donne un cadre ; la position décide ensuite du plan.',uci:'d2d4 d7d5 g1f3 g8f6 c1f4 e7e6 e2e3 c7c5 c2c3 b8c6',san:['d4','d5','Cf3','Cf6','Ff4','e6','e3','c5','c3','Cc6']}
+    {id:'sicilian',name:'Défense Sicilienne',tag:'Combat',eco:'B20–B99',hero:'black',badge:'♞',idea:'Répondre asymétriquement à e4 et jouer pour la contre-attaque.',coach:'Tu contestes le centre sans le copier.',uci:'e2e4 c7c5 g1f3 d7d6 d2d4 c5d4 f3d4 g8f6 b1c3 a7a6',san:['e4','c5','Cf3','d6','d4','cxd4','Cxd4','Cf6','Cc3','a6']},
+    {id:'french',name:'Défense Française',tag:'Structure',eco:'C00–C19',hero:'black',badge:'♝',idea:'Construire e6–d5 puis attaquer la chaîne de pions blanche.',coach:'Accepte moins d’espace au début pour frapper le centre ensuite.',uci:'e2e4 e7e6 d2d4 d7d5 b1c3 g8f6 e4e5 f6d7 f2f4 c7c5',san:['e4','e6','d4','d5','Cc3','Cf6','e5','Cfd7','f4','c5']},
+    {id:'caro',name:'Caro-Kann',tag:'Robuste',eco:'B10–B19',hero:'black',badge:'♟',idea:'Contester e4 avec c6–d5 en gardant une structure saine.',coach:'Solide ne veut pas dire passif : prépare la libération du fou c8.',uci:'e2e4 c7c6 d2d4 d7d5 b1c3 d5e4 c3e4 c8f5 e4g3 f5g6',san:['e4','c6','d4','d5','Cc3','dxe4','Cxe4','Ff5','Cg3','Fg6']}
   ];
-  const state={opening:localStorage.getItem('gambitdrame.opening')||'qg',role:localStorage.getItem('gambitdrame.role')||'play',off:false,lastTheory:''};
-  const level=$('level'),population=$('population'),depth=$('depth'),uci=$('uci'),backend=$('backend'),status=$('status'),movesBox=$('moves');
-  level.value=localStorage.getItem('gambitdrame.level')||'advanced'; population.value=localStorage.getItem('gambitdrame.population')||'mine'; depth.value=localStorage.getItem('gambitdrame.depth')||'8'; backend.value=localStorage.getItem('gambitdrame.backend')||'';
 
-  const profile=()=>({beginner:{max:2,min:.12,label:'2 variantes max'},intermediate:{max:4,min:.05,label:'4 variantes max'},advanced:{max:8,min:.01,label:'8 variantes max'}}[level.value]);
-  const ratingFilter=()=>({mine:[1400,1600,1800],strong:[2000,2200,2500],all:[1000,1200,1400,1600,1800,2000,2200,2500]}[population.value]);
-  const current=()=>openings.find(o=>o.id===state.opening)||openings[0];
-  const tokens=()=>uci.value.trim().split(/[\s,]+/).filter(Boolean);
-  const theory=()=>current().uci.split(' ');
-  const opposite=c=>c==='white'?'black':'white';
-  const userColor=()=>state.role==='play'?current().hero:opposite(current().hero);
-  const colorLabel=c=>c==='white'?'Blancs':'Noirs';
-  const escapeHtml=v=>String(v||'').replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+  const glyph={wK:'♔',wQ:'♕',wR:'♖',wB:'♗',wN:'♘',wP:'♙',bK:'♚',bQ:'♛',bR:'♜',bB:'♝',bN:'♞',bP:'♟'};
+  const pieceName={K:'roi',Q:'dame',R:'tour',B:'fou',N:'cavalier',P:'pion'};
+  const files=['a','b','c','d','e','f','g','h'];
 
-  function renderOpenings(){
-    $('carousel').innerHTML='';
-    openings.forEach(o=>{const b=document.createElement('button');b.className='opening'+(o.id===state.opening?' active':'');b.innerHTML=`<span class="tag">${escapeHtml(o.tag)}</span><div class="name">${o.badge} ${escapeHtml(o.name)}</div><div class="idea">${escapeHtml(o.idea)}</div>`;b.onclick=()=>{state.opening=o.id;state.off=false;localStorage.setItem('gambitdrame.opening',o.id);uci.value='';renderAll();b.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});};$('carousel').appendChild(b);});
+  let current=0;
+  let role=localStorage.getItem('gd.role')||'play';
+  let level=localStorage.getItem('gd.level')||'advanced';
+  let population=localStorage.getItem('gd.population')||'mine';
+  let depth=localStorage.getItem('gd.depth')||'8';
+  let played=[];
+  let checkpoint=[];
+  let outTheory=false;
+  let selected=null;
+  let manualFlip=false;
+  let wheelTurns=0;
+  let autoTimer=null;
+
+  const line=()=>openings[current].uci.split(/\s+/).filter(Boolean);
+  const sanLine=()=>openings[current].san;
+  const sideToMove=()=>played.length%2===0?'white':'black';
+  const opposite=s=>s==='white'?'black':'white';
+  const userSide=()=>{
+    const hero=openings[current].hero;
+    return role==='play'?hero:opposite(hero);
+  };
+  const orientation=()=>manualFlip?opposite(userSide()):userSide();
+
+  function initialBoard(){
+    const b={};
+    const back=['R','N','B','Q','K','B','N','R'];
+    files.forEach((f,i)=>{b[f+'1']='w'+back[i];b[f+'2']='wP';b[f+'7']='bP';b[f+'8']='b'+back[i];});
+    return b;
   }
+  function fileIndex(s){return files.indexOf(s[0]);}
+  function rank(s){return Number(s[1]);}
+  function square(file,rank){return files[file]+rank;}
+  function colorOf(piece){return piece&&piece[0]==='w'?'white':piece?'black':null;}
+  function pathClear(board,from,to){
+    const fx=fileIndex(from),fy=rank(from),tx=fileIndex(to),ty=rank(to);const dx=Math.sign(tx-fx),dy=Math.sign(ty-fy);let x=fx+dx,y=fy+dy;
+    while(x!==tx||y!==ty){if(board[square(x,y)])return false;x+=dx;y+=dy;}return true;
+  }
+  function isPseudoLegal(board,from,to){
+    const p=board[from];if(!p||from===to)return false;const target=board[to];if(target&&colorOf(target)===colorOf(p))return false;
+    const fx=fileIndex(from),fy=rank(from),tx=fileIndex(to),ty=rank(to),dx=tx-fx,dy=ty-fy;const type=p[1],white=p[0]==='w';
+    if(type==='P'){
+      const d=white?1:-1,start=white?2:7;
+      if(dx===0&&dy===d&&!target)return true;
+      if(dx===0&&dy===2*d&&fy===start&&!target&&!board[square(fx,fy+d)])return true;
+      if(Math.abs(dx)===1&&dy===d&&target&&colorOf(target)!==colorOf(p))return true;
+      return false;
+    }
+    if(type==='N')return (Math.abs(dx)===1&&Math.abs(dy)===2)||(Math.abs(dx)===2&&Math.abs(dy)===1);
+    if(type==='B')return Math.abs(dx)===Math.abs(dy)&&pathClear(board,from,to);
+    if(type==='R')return (dx===0||dy===0)&&pathClear(board,from,to);
+    if(type==='Q')return (dx===0||dy===0||Math.abs(dx)===Math.abs(dy))&&pathClear(board,from,to);
+    if(type==='K'){
+      if(Math.max(Math.abs(dx),Math.abs(dy))===1)return true;
+      if(from==='e1'&&(to==='g1'||to==='c1'))return true;
+      if(from==='e8'&&(to==='g8'||to==='c8'))return true;
+    }
+    return false;
+  }
+  function applyUci(board,move){
+    const from=move.slice(0,2),to=move.slice(2,4),promo=move[4];const p=board[from];if(!p)return board;
+    delete board[from];board[to]=promo?(p[0]+promo.toUpperCase()):p;
+    if(p[1]==='K'){
+      if(from==='e1'&&to==='g1'){board.f1=board.h1;delete board.h1;}if(from==='e1'&&to==='c1'){board.d1=board.a1;delete board.a1;}
+      if(from==='e8'&&to==='g8'){board.f8=board.h8;delete board.h8;}if(from==='e8'&&to==='c8'){board.d8=board.a8;delete board.a8;}
+    }
+    return board;
+  }
+  function boardAtMoves(moves=played){const b=initialBoard();moves.forEach(m=>applyUci(b,m));return b;}
+
+  function renderCarousel(){
+    const c=$('carousel');c.innerHTML='';
+    openings.forEach((o,i)=>{const b=document.createElement('button');b.className='opening'+(i===current?' active':'');b.innerHTML=`<span class="tag">${o.tag}</span><div class="name">${o.badge} ${o.name}</div><div class="idea">${o.idea}</div>`;b.addEventListener('click',()=>chooseOpening(i));c.appendChild(b);});
+  }
+  function chooseOpening(i){current=i;played=[];checkpoint=[];outTheory=false;selected=null;manualFlip=false;clearTimeout(autoTimer);renderAll();maybeAutoOpponent();}
+
+  function renderBoard(){
+    const boardEl=$('board'),b=boardAtMoves(),orient=orientation();boardEl.innerHTML='';
+    const rankOrder=orient==='white'?[8,7,6,5,4,3,2,1]:[1,2,3,4,5,6,7,8];
+    const fileOrder=orient==='white'?files:[...files].reverse();
+    const last=played.length?played[played.length-1]:'';const next=!outTheory?line()[played.length]||'':'';
+    rankOrder.forEach((r,ri)=>fileOrder.forEach((f,fi)=>{
+      const sq=f+r,p=b[sq];const btn=document.createElement('button');
+      const light=(files.indexOf(f)+r)%2===1;
+      btn.className='square '+(light?'light':'dark');
+      if(selected===sq)btn.classList.add('selected');
+      if(last&&(last.slice(0,2)===sq||last.slice(2,4)===sq))btn.classList.add('last');
+      if(selected&&next&&next.slice(0,2)===selected&&next.slice(2,4)===sq)btn.classList.add('hint');
+      btn.dataset.square=sq;btn.setAttribute('role','gridcell');
+      const desc=p?`${pieceName[p[1]]} ${p[0]==='w'?'blanc':'noir'}`:'case vide';btn.setAttribute('aria-label',`${sq}, ${desc}`);
+      if(p){const span=document.createElement('span');span.className='piece';span.textContent=glyph[p];btn.appendChild(span);}
+      if(ri===7){const lab=document.createElement('span');lab.className='coord file';lab.textContent=f;btn.appendChild(lab);}if(fi===0){const lab=document.createElement('span');lab.className='coord rank';lab.textContent=r;btn.appendChild(lab);}
+      btn.addEventListener('click',()=>onSquare(sq));boardEl.appendChild(btn);
+    }));
+    $('turnLabel').textContent=sideToMove()==='white'?'Aux Blancs':'Aux Noirs';
+  }
+
+  function onSquare(sq){
+    if(!outTheory&&sideToMove()!==userSide()){$('boardStatus').textContent='GambitDrame joue la réponse théorique…';maybeAutoOpponent();return;}
+    const b=boardAtMoves(),p=b[sq];
+    if(!selected){
+      if(!p){$('boardStatus').textContent='Choisis d’abord une pièce.';return;}
+      if(colorOf(p)!==sideToMove()){$('boardStatus').textContent=`C’est aux ${sideToMove()==='white'?'Blancs':'Noirs'} de jouer.`;return;}
+      selected=sq;$('boardStatus').textContent=`${sq} sélectionnée. Choisis la case d’arrivée.`;renderBoard();return;
+    }
+    if(selected===sq){selected=null;$('boardStatus').textContent='Sélection annulée.';renderBoard();return;}
+    if(p&&colorOf(p)===sideToMove()){selected=sq;$('boardStatus').textContent=`${sq} sélectionnée.`;renderBoard();return;}
+    let move=selected+sq;const source=b[selected];if(source&&source[1]==='P'&&(rank(sq)===1||rank(sq)===8))move+='q';
+    if(!isPseudoLegal(b,selected,sq)){$('boardStatus').textContent='Ce déplacement ne semble pas légal pour cette pièce.';selected=null;renderBoard();return;}
+    selected=null;commitMove(move,false);
+  }
+
+  function commitMove(move,auto){
+    const expected=line()[played.length];
+    if(!outTheory&&expected!==move){checkpoint=[...played];outTheory=true;$('boardStatus').textContent='Déviation détectée : tu passes en jeu libre.';}
+    else if(!outTheory){checkpoint=[...played,move];$('boardStatus').textContent=auto?'Réponse théorique jouée.':'Bien vu : coup théorique.';}
+    played.push(move);renderAll();
+    if(!outTheory&&played.length>=line().length){$('boardStatus').textContent='Fin de la ligne connue : à toi de continuer ou de lancer le tourniquet.';$('theoryBanner').classList.add('show');}
+    else maybeAutoOpponent();
+  }
+
+  function maybeAutoOpponent(){
+    clearTimeout(autoTimer);
+    if(outTheory||played.length>=line().length||sideToMove()===userSide())return;
+    autoTimer=setTimeout(()=>{const m=line()[played.length];if(m&&!outTheory&&sideToMove()!==userSide())commitMove(m,true);},550);
+  }
+
+  function renderMission(){
+    const o=openings[current],n=line().length,idx=played.length,pct=Math.min(100,Math.round(idx/n*100));
+    $('missionBadge').textContent=o.badge;$('missionTitle').textContent=(role==='play'?'Jouer ':'Jouer contre ')+o.name;$('missionIdea').textContent=o.idea;
+    $('ecoPill').textContent=o.eco;$('sidePill').textContent=`Ton camp : ${userSide()==='white'?'Blancs':'Noirs'}`;$('progressPill').textContent=`${Math.min(idx,n)} / ${n} demi-coups`;$('progressBar').style.width=pct+'%';
+    const next=line()[idx],san=sanLine()[idx]||next;
+    if(outTheory)$('nextMove').textContent='Jeu libre';
+    else if(next)$('nextMove').textContent=`${sideToMove()===userSide()?'À toi':'GambitDrame'} : ${san} · ${next}`;
+    else $('nextMove').textContent='Ligne théorique terminée';
+    $('coachText').textContent=outTheory?'Observe la position : développement, sécurité du roi, centre et cases faibles deviennent tes repères.':o.coach;
+    $('uci').value=played.join(' ');$('theoryBanner').classList.toggle('show',outTheory||idx>=n);
+  }
+
   function renderRole(){
-    $('rolePlay').classList.toggle('active',state.role==='play');$('roleAgainst').classList.toggle('active',state.role==='against');$('rolePlay').classList.toggle('secondary',state.role!=='play');$('roleAgainst').classList.toggle('secondary',state.role!=='against');
-    const o=current();$('roleHint').textContent=state.role==='play'?`Tu joues ${colorLabel(o.hero).toLowerCase()} et tu imposes le plan ${o.name}.`:`Tu prends ${colorLabel(opposite(o.hero)).toLowerCase()} et tu apprends à neutraliser ${o.name}.`;
+    $('rolePlay').classList.toggle('active',role==='play');$('roleAgainst').classList.toggle('active',role==='against');$('rolePlay').classList.toggle('secondary',role!=='play');$('roleAgainst').classList.toggle('secondary',role!=='against');
+    $('roleHint').textContent=role==='play'?'Tu prends le camp naturel de l’ouverture sélectionnée.':'Tu apprends à répondre au camp qui lance cette ouverture.';
   }
-  function renderBudget(){const p=profile();$('budget').innerHTML=`<span class="pill">${p.label}</span><span class="pill">seuil ${(p.min*100).toFixed(0)} %</span><span class="pill">${depth.value} demi-coups</span><span class="pill">${population.options[population.selectedIndex].text}</span>`;}
-  function analyse(){
-    const o=current(),t=theory(),played=tokens();let prefix=true,matched=0;for(let i=0;i<played.length;i++){if(played[i]!==t[i]){prefix=false;break;}matched++;}
-    if(prefix) state.lastTheory=played.join(' ');
-    const finished=prefix&&played.length>=t.length;state.off=state.off||!prefix||finished;
-    const pct=Math.min(100,Math.round((Math.min(matched,t.length)/t.length)*100));
-    $('progressBar').style.width=pct+'%';$('progressPill').textContent=`Théorie ${pct} %`;
-    $('missionTitle').textContent=(state.role==='play'?'Jouer ':'Jouer contre ')+o.name;$('missionIdea').textContent=o.idea;$('missionBadge').textContent=o.badge;$('ecoPill').textContent=o.eco;$('sidePill').textContent=`Tu as les ${colorLabel(userColor()).toLowerCase()}`;$('coachText').textContent=o.coach;
-    if(!prefix){$('nextMove').textContent='Position inconnue — à toi de décider';}
-    else if(finished){$('nextMove').textContent='Fin de la ligne locale';}
-    else {const i=played.length;$('nextMove').textContent=`${o.san[i]||t[i]} · ${t[i]}`;}
-    $('theoryBanner').classList.toggle('show',state.off);
-    $('wheelWrap').classList.toggle('show',state.off||$('wheelWrap').classList.contains('show'));
-    $('step').disabled=!prefix||finished;
+  function renderBudget(){
+    const profiles={beginner:{max:2,min:'10 %'},intermediate:{max:4,min:'4 %'},advanced:{max:8,min:'1 %'}};const p=profiles[level];
+    const pop={mine:'joueurs proches de ton niveau',strong:'2200–2500+',all:'tous niveaux'}[population];$('budget').innerHTML=`<span class="pill">≈ ${p.max} branches / position</span><span class="pill">seuil ${p.min}</span><span class="pill">${pop}</span><span class="pill">profondeur ${depth}</span>`;
   }
-  function renderAll(){renderOpenings();renderRole();renderBudget();analyse();}
-  function persist(){localStorage.setItem('gambitdrame.level',level.value);localStorage.setItem('gambitdrame.population',population.value);localStorage.setItem('gambitdrame.depth',depth.value);renderBudget();}
+  function renderAll(){renderRole();renderCarousel();renderMission();renderBudget();renderBoard();}
 
-  $('rolePlay').onclick=()=>{state.role='play';localStorage.setItem('gambitdrame.role','play');renderRole();analyse();};
-  $('roleAgainst').onclick=()=>{state.role='against';localStorage.setItem('gambitdrame.role','against');renderRole();analyse();};
-  $('surprise').onclick=()=>{const choices=openings.filter(o=>o.id!==state.opening);state.opening=choices[Math.floor(Math.random()*choices.length)].id;state.off=false;uci.value='';localStorage.setItem('gambitdrame.opening',state.opening);renderAll();};
-  [level,population,depth].forEach(el=>el.onchange=persist);
-  uci.oninput=()=>{state.off=false;analyse();};
-  $('step').onclick=()=>{const t=theory(),p=tokens();if(p.length<t.length){p.push(t[p.length]);uci.value=p.join(' ');state.off=false;analyse();}};
-  $('deviate').onclick=()=>{state.lastTheory=tokens().join(' ');state.off=true;$('theoryBanner').classList.add('show');$('wheelWrap').classList.add('show');$('wheelWrap').scrollIntoView({behavior:'smooth',block:'center'});};
-  $('backTheory').onclick=()=>{uci.value=state.lastTheory||'';state.off=false;$('wheelResult').textContent='';$('wheelAdvice').textContent='';analyse();$('missionCard').scrollIntoView({behavior:'smooth',block:'start'});};
-  $('wheelButton').onclick=()=>{state.off=true;$('wheelWrap').classList.add('show');spinWheel();};
-  const wheelChoices=[
-    ['Continue librement','Joue 4 demi-coups sans aide, puis reviens comparer ton plan à la théorie.'],
-    ['Retour d’un coup','Reviens à la dernière position connue et cherche une autre continuation.'],
-    ['Variante surprise','Change d’ouverture avec le bouton Surprise et retrouve le même type d’idée ailleurs.'],
-    ['Défi anti-théorie','Reste hors théorie : formule ton plan en une phrase avant de continuer.']
+  $('rolePlay').addEventListener('click',()=>{role='play';localStorage.setItem('gd.role',role);played=[];checkpoint=[];outTheory=false;manualFlip=false;renderAll();maybeAutoOpponent();});
+  $('roleAgainst').addEventListener('click',()=>{role='against';localStorage.setItem('gd.role',role);played=[];checkpoint=[];outTheory=false;manualFlip=false;renderAll();maybeAutoOpponent();});
+  $('flipBoard').addEventListener('click',()=>{manualFlip=!manualFlip;renderBoard();});
+  $('surprise').addEventListener('click',()=>{let i=current;while(i===current)i=Math.floor(Math.random()*openings.length);chooseOpening(i);document.getElementById('missionCard').scrollIntoView({behavior:'smooth',block:'start'});});
+  $('level').value=level;$('population').value=population;$('depth').value=depth;
+  $('level').addEventListener('change',e=>{level=e.target.value;localStorage.setItem('gd.level',level);renderBudget();});
+  $('population').addEventListener('change',e=>{population=e.target.value;localStorage.setItem('gd.population',population);renderBudget();});
+  $('depth').addEventListener('change',e=>{depth=e.target.value;localStorage.setItem('gd.depth',depth);renderBudget();});
+
+  $('step').addEventListener('click',()=>{
+    if(outTheory){$('boardStatus').textContent='Tu es en jeu libre. Reviens à la théorie ou joue sur le plateau.';return;}
+    const m=line()[played.length];if(!m){$('boardStatus').textContent='La ligne locale est terminée. Tourniquet !';return;}commitMove(m,sideToMove()!==userSide());
+  });
+  $('deviate').addEventListener('click',()=>{if(!outTheory){checkpoint=[...played];outTheory=true;$('boardStatus').textContent='Jeu libre activé : la théorie ne te bloque plus.';renderAll();}});
+  $('backTheory').addEventListener('click',()=>{played=[...checkpoint];outTheory=false;selected=null;$('boardStatus').textContent='Retour au dernier embranchement théorique.';renderAll();maybeAutoOpponent();});
+
+  const wheelOptions=[
+    ['Continuer librement','Joue encore 4 demi-coups sans aide. Cherche surtout centre, développement et sécurité du roi.'],
+    ['Revenir d’un coup','Reviens au dernier repère et choisis une autre continuation théorique.'],
+    ['Changer de variante','Garde la même ouverture mais repars sur une autre branche quand Lichess sera connecté.'],
+    ['Défi de plan','Ne cherche pas le “meilleur coup”. Formule d’abord ton plan en une phrase, puis joue.']
   ];
-  let turns=0;function spinWheel(){const pick=Math.floor(Math.random()*wheelChoices.length);turns+=5+pick/4;$('wheel').style.transform=`rotate(${turns*360}deg)`;$('wheelResult').textContent='…';$('wheelAdvice').textContent='';setTimeout(()=>{$('wheelResult').textContent=wheelChoices[pick][0];$('wheelAdvice').textContent=wheelChoices[pick][1];},1200);}
-  $('localRefresh').onclick=()=>{state.off=false;uci.value='';status.textContent='Base locale rechargée. Choisis une ouverture et joue.';renderAll();};
-  backend.onchange=()=>localStorage.setItem('gambitdrame.backend',backend.value.trim());
+  $('wheelButton').addEventListener('click',()=>{
+    $('wheelWrap').classList.add('show');const pick=Math.floor(Math.random()*wheelOptions.length);wheelTurns+=4+pick;const angle=wheelTurns*360+pick*90+45;$('wheel').style.transform=`rotate(${angle}deg)`;$('wheelResult').textContent='…';$('wheelAdvice').textContent='';setTimeout(()=>{$('wheelResult').textContent=wheelOptions[pick][0];$('wheelAdvice').textContent=wheelOptions[pick][1];},1300);
+  });
 
-  function renderMoves(data){const total=Number(data.white||0)+Number(data.draws||0)+Number(data.black||0),p=profile();const rows=(data.moves||[]).map(m=>({...m,games:Number(m.white||0)+Number(m.draws||0)+Number(m.black||0)})).map(m=>({...m,freq:total?m.games/total:0})).filter(m=>m.freq>=p.min).slice(0,p.max);movesBox.innerHTML='';if(!rows.length){movesBox.textContent='Aucune variante trouvée avec ces filtres.';return;}rows.forEach(m=>{const div=document.createElement('div');div.className='moveRow';div.innerHTML=`<strong>${escapeHtml(m.san||m.uci)}</strong> · ${escapeHtml(m.uci||'')}<br><span class="muted">${m.games.toLocaleString('fr-FR')} parties · ${(m.freq*100).toFixed(1).replace('.',',')} %</span>`;movesBox.appendChild(div);});}
-  $('sync').onclick=async()=>{const base=backend.value.trim().replace(/\/$/,'');if(!base){status.textContent='Pas de backend configuré : aucun blocage, la base locale reste active.';return;}localStorage.setItem('gambitdrame.backend',base);const play=tokens().join(',')||theory().slice(0,Number(depth.value)).join(',');const ratings=ratingFilter().join(',');const url=`${base}/api/lichess-explorer?variant=standard&speeds=blitz,rapid,classical&ratings=${ratings}&moves=${profile().max}&topGames=2&recentGames=2&play=${encodeURIComponent(play)}`;$('sync').disabled=true;status.textContent='Enrichissement Lichess…';movesBox.innerHTML='';try{const r=await fetch(url,{headers:{Accept:'application/json'}});if(!r.ok)throw new Error(`HTTP ${r.status}`);const data=await r.json();renderMoves(data);const total=Number(data.white||0)+Number(data.draws||0)+Number(data.black||0);status.textContent=`${total.toLocaleString('fr-FR')} parties analysées avec tes filtres.`;}catch(e){status.textContent=`Lichess indisponible (${e.message}). Le mode local continue normalement.`;}finally{$('sync').disabled=false;}};
+  $('localRefresh').addEventListener('click',()=>{played=[];checkpoint=[];outTheory=false;selected=null;$('status').textContent='Base locale rechargée.';renderAll();maybeAutoOpponent();});
 
-  renderAll();
+  const backend=$('backend'),status=$('status'),movesBox=$('moves'),sync=$('sync');backend.value=localStorage.getItem('gambitdrame.backend')||'';
+  function ratings(){if(population==='strong')return'2200,2500';if(population==='all')return'0,1000,1200,1400,1600,1800,2000,2200,2500';return level==='beginner'?'1200,1400,1600':level==='intermediate'?'1600,1800,2000':'2000,2200,2500';}
+  function profile(){return{beginner:{max:2,min:.10},intermediate:{max:4,min:.04},advanced:{max:8,min:.01}}[level];}
+  sync.addEventListener('click',async()=>{
+    const base=backend.value.trim().replace(/\/$/,'');if(!base){status.textContent='Pas de backend : aucun problème, le mode local reste jouable.';return;}localStorage.setItem('gambitdrame.backend',base);
+    const play=played.join(',');const url=`${base}/api/lichess-explorer?variant=standard&speeds=blitz,rapid,classical&ratings=${ratings()}&moves=12&topGames=4&recentGames=4&play=${encodeURIComponent(play)}`;sync.disabled=true;status.textContent='Synchronisation Lichess…';movesBox.innerHTML='';
+    try{const r=await fetch(url,{headers:{Accept:'application/json'}});if(!r.ok)throw new Error(`HTTP ${r.status}`);const data=await r.json();const total=Number(data.white||0)+Number(data.draws||0)+Number(data.black||0);const p=profile();const rows=(data.moves||[]).map(m=>({...m,games:Number(m.white||0)+Number(m.draws||0)+Number(m.black||0)})).map(m=>({...m,freq:total?m.games/total:0})).filter(m=>m.freq>=p.min).slice(0,p.max);rows.forEach(m=>{const d=document.createElement('div');d.className='moveRow';d.textContent=`${m.san||m.uci} · ${m.games.toLocaleString('fr-FR')} parties · ${(m.freq*100).toFixed(1).replace('.',',')} %`;movesBox.appendChild(d);});status.textContent=`Synchronisé : ${total.toLocaleString('fr-FR')} parties dans cette position.`;}catch(e){status.textContent=`Connexion impossible : ${e.message}. Le mode local continue de fonctionner.`;}finally{sync.disabled=false;}
+  });
+
+  renderAll();maybeAutoOpponent();
 })();
 </script>
 </body>
