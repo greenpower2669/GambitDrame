@@ -3,8 +3,11 @@ package fr.gambitdrame.app;
 import android.app.Activity;
 import android.os.Build;
 import android.os.Bundle;
+import android.speech.tts.TextToSpeech;
+import android.view.HapticFeedbackConstants;
 import android.view.View;
 import android.view.WindowInsets;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
@@ -13,12 +16,25 @@ import android.webkit.WebViewClient;
 
 import androidx.webkit.WebViewAssetLoader;
 
+import java.util.Locale;
+
 public class MainActivity extends Activity {
     private WebView webView;
+    private TextToSpeech tts;
+    private boolean ttsReady = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        tts = new TextToSpeech(this, status -> {
+            if (status == TextToSpeech.SUCCESS) {
+                int result = tts.setLanguage(Locale.FRANCE);
+                tts.setSpeechRate(0.95f);
+                ttsReady = result != TextToSpeech.LANG_MISSING_DATA
+                        && result != TextToSpeech.LANG_NOT_SUPPORTED;
+            }
+        });
 
         final WebViewAssetLoader assetLoader = new WebViewAssetLoader.Builder()
                 .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
@@ -31,6 +47,8 @@ public class MainActivity extends Activity {
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(false);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+
+        webView.addJavascriptInterface(new NativeBridge(), "GambitNative");
 
         webView.setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {
             @Override
@@ -53,26 +71,34 @@ public class MainActivity extends Activity {
             }
 
             @Override
-            public void onPageFinished(WebView view, String url) {
-                super.onPageFinished(view, url);
-                String js = "(function(){"
-                        + "if(document.getElementById('android-board-fix'))return;"
-                        + "var s=document.createElement('style');"
-                        + "s.id='android-board-fix';"
-                        + "s.textContent='"
-                        + ".board{grid-template-columns:repeat(8,minmax(0,1fr))!important;grid-template-rows:repeat(8,minmax(0,1fr))!important;aspect-ratio:1/1!important;}"
-                        + ".square{width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;align-self:stretch!important;justify-self:stretch!important;}"
-                        + "main{padding-bottom:72px!important;}"
-                        + "';"
-                        + "document.head.appendChild(s);"
-                        + "})();";
-                view.evaluateJavascript(js, null);
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                String host = request.getUrl().getHost();
+                return host == null || !"appassets.androidplatform.net".equals(host);
             }
         });
 
         setContentView(webView);
         webView.loadUrl("https://appassets.androidplatform.net/assets/index.html");
         webView.requestApplyInsets();
+    }
+
+    private class NativeBridge {
+        @JavascriptInterface
+        public void speak(String text) {
+            if (!ttsReady || text == null || text.trim().isEmpty()) return;
+            runOnUiThread(() -> tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "gambitdrame"));
+        }
+
+        @JavascriptInterface
+        public void haptic(String kind) {
+            runOnUiThread(() -> {
+                if (webView == null) return;
+                int feedback = "wrong".equals(kind)
+                        ? HapticFeedbackConstants.LONG_PRESS
+                        : HapticFeedbackConstants.KEYBOARD_TAP;
+                webView.performHapticFeedback(feedback);
+            });
+        }
     }
 
     @Override
@@ -86,7 +112,13 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        if (tts != null) {
+            tts.stop();
+            tts.shutdown();
+            tts = null;
+        }
         if (webView != null) {
+            webView.removeJavascriptInterface("GambitNative");
             webView.destroy();
             webView = null;
         }
