@@ -78,7 +78,7 @@ public class MainActivity extends Activity {
         });
 
         setContentView(webView);
-        webView.loadUrl("https://appassets.androidplatform.net/assets/index.html");
+        webView.loadUrl("https://appassets.androidplatform.net/assets/index-v05.html");
         webView.requestApplyInsets();
     }
 
