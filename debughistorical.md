@@ -35,3 +35,8 @@
 - `Glicko.scala` sur la branche master de lichess-org/lila : plancher fixé à 400 (contrairement aux anciens témoignages évoquant 600) ; plafond 4000 ; écart-type `standardRankableDeviation=75`.
 - L'existence d'au moins 1000 parties/cadence pour une cohorte de comptes actifs à 400–500 reste **non vérifiée**. Ce n'est pas une preuve que la cohorte existe/est absente.
 - https://github.com/lichess-org/lila/blob/master/modules/rating/src/main/Glicko.scala
+
+## 19/10/2026 — Cinquième CI réussie (confirmé)
+- Après nettoyage mémoires/workflow, run 5 : https://github.com/greenpower2669/GambitDrame/actions/runs/39175802031 — `success`.
+- APK directe sur https://github.com/greenpower2669/GambitDrame/releases/tag/gd-test-5, `GambitDrame-v0.2.1-debug.apk` 24 791 octets, SHA256 `dff95559977bf63bd1166d78b19322e27177fe54e342df4ffcac0d46a7db8ee7`.
+- Ce build ne prouve toujours pas l'installation/lancement physique sur Samsung ; aucune demande de fusion main.

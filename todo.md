@@ -8,7 +8,7 @@
 - [x] Bot de démonstration aléatoire avec coups légaux, explicitement non calibré et distingué des profils humains réels.
 - [x] Icône cavalier vectorielle + marges système Android 16.
 - [x] 18 assertions Java dont perft(2)=400 et perft(3)=8902.
-- [x] CI run 4 `success`, `BUILD SUCCESSFUL`, APK directe v0.2.1 sur https://github.com/greenpower2669/GambitDrame/releases/tag/gd-test-4 ; SHA256 dans debughistorical.
+- [x] CI run 4 `success`, `BUILD SUCCESSFUL`, APK directe v0.2.1 sur https://github.com/greenpower2669/GambitDrame/releases/tag/gd-test-5 ; SHA256 dans debughistorical.
 - [x] Cohérence du registre et des quatre mémoires mise à jour dans le même cycle de commits.
 - [ ] Test d'installation/lancement sur Samsung SM-A576B Android 16 : dépend du test réel de Fab (non revendiqué).
 
