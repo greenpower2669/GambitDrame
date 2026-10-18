@@ -27,6 +27,16 @@ Créer un entraîneur d'échecs crédible : pas de sacrifices gratuits provoqué
 - Prévoir provenance, Elo, nombre d'occurrences, respect des conditions de l'API et cache local pour hors-ligne.
 - Évaluer les profils humains par tests aveugles, erreurs en centipions, blunders, sacrifices, diversité, crédibilité, consommation.
 
+## Cohorte humaine et prévention de la « sagesse des foules »
+- Sélectionner des joueurs actifs, avec au moins 1 000 parties classées (seuil configurable), classement non provisoire et suffisamment stable sur une période récente ; contrôler la cadence, les variations de classement et l'inactivité.
+- Pour chaque joueur retenu, prendre jusqu'à ses 100 dernières parties pertinentes, en conservant son classement au moment de chaque partie si disponible ; éviter de considérer l'Elo actuel comme celui de toutes ses anciennes parties.
+- Échantillonner plusieurs joueurs d'une tranche de classement autour du niveau cible, sans surpondérer ceux qui jouent le plus ; tenir compte de la couleur, de la cadence, de l'ouverture et de la phase de jeu.
+- Ne PAS choisir le coup majoritaire, le meilleur coup selon Stockfish ou la moyenne des coups : ces agrégations peuvent augmenter la force et supprimer des erreurs humaines.
+- Tirer au hasard dans la distribution des coups observés pour une position donnée ; envisager un tirage hiérarchique (joueur puis coup) pour préserver des styles individuels et des cohérences de partie.
+- Problème de couverture : 100 parties par joueur ne garantissent pas que la position courante soit observée ; prévoir une politique de généralisation ou de repli, validée expérimentalement.
+- Contrôler le niveau effectif par matchs contre des adversaires de référence et intervalles de confiance, plutôt que supposer qu'une cohorte de 1 200 produit exactement 1 200 Elo.
+- Stockfish reste une jauge et un analyseur indépendant : MultiPV et analyse de variations/reprise de coups pour expliquer pourquoi l'évaluation change ; pas le moteur principal de choix des coups humains.
+
 ## Navigation
 - Gambit de dame existant déplacé dans « Entraînement > Ouvertures > Gambit de dame » ; architecture extensible.
 - Modes : jouer, analyser, laboratoire comparatif ; réglages MultiPV, force, temps, profil.
