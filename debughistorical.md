@@ -24,3 +24,9 @@
 - GitHub Release : https://github.com/greenpower2669/GambitDrame/releases/tag/gd-test-3 ; `GambitDrame-v0.2.0-debug.apk` 22 193 octets, SHA256 `cdec6b6362f1ab2a1354ad3b43e812c1a564830d625ee53c007b4e8e622f6686`.
 - Installation et gameplay sur Samsung SM-A576B : non testés.
 - Nouvelle étape : v0.2.1 ajoute import FEN, iconographie et tests perft ; nouveau build attendu.
+
+## 19/10/2026 — Quatrième CI réussie, livraison 0.2.1 (confirmé)
+- Workflow : https://github.com/greenpower2669/GambitDrame/actions/runs/39175569139, commit `2abc639322106ea9ceac7adc185c42e47545576a`.
+- Logs : `CHESS_TESTS_OK 18`, `BUILD SUCCESSFUL in 25s`, APK présente et GitHub Release upload réussie.
+- Asset vérifié par métadonnées GitHub : https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-4/GambitDrame-v0.2.1-debug.apk ; taille 24 791 octets ; SHA256 `e83a3f364118d2129d7ff0488bbeeb5ba14429059fe261c630850fe3ecad6474`.
+- Périmètre non éprouvé : lancement/installation/ergonomie sur Samsung, plusieurs parties complètes, profils humains Lichess, analyse Stockfish.

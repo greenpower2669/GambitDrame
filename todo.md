@@ -1,26 +1,33 @@
-# GambitDrame — suivi technique, 19/10/2026
+# GambitDrame — tâches ouvertes, 19/10/2026
 
-## Produits dans la proposition de code de cette intervention (à valider par CI)
-- [x] Audit des cinq mémoires, du code initial, du workflow et du premier échec SDK (run 39173917141).
-- [x] Nouveau moteur Java de règles complètes de base ; interfaces tactiles, clavier, sauvegarde, reprise, annulation.
-- [x] Tests reproductibles Java inclus dans CI.
-- [x] Correction candidate du workflow `sdkmanager tools` absent ; direct APK dans pré-release sur branche.
-- [x] Gambit de dame : position d'ouverture chargeable.
-- [ ] Contrôler troisième CI après correctif du chemin SDK (run 2 : échec `sdkmanager: command not found`) ; vérifier tests `javac` puis APK Release. Aucune APK pour l'instant.
+## Réalisé et vérifié sur branche `proposal/stockfish-multipv-human-training-v1`
+- [x] Lecture FabCopilot + cinq mémoires + deux spécifications, audit Java/Gradle/workflow, identification des deux échecs initiaux.
+- [x] Correction SDK : binaire sdkmanager par chemin absolu, suppression de la dépendance obsolète `android-actions/setup-android`.
+- [x] `ChessGame.java` moteur Java sans Android pour coups légaux, règles spéciales, mat/pat, nulles simplifiées.
+- [x] `MainActivity.java` plateau tactile, entrée UCI, annuler, historique, persistence locale, import et export FEN, lancement Gambit de dame.
+- [x] Bot de démonstration aléatoire avec coups légaux, explicitement non calibré et distingué des profils humains réels.
+- [x] Icône cavalier vectorielle + marges système Android 16.
+- [x] 18 assertions Java dont perft(2)=400 et perft(3)=8902.
+- [x] CI run 4 `success`, `BUILD SUCCESSFUL`, APK directe v0.2.1 sur https://github.com/greenpower2669/GambitDrame/releases/tag/gd-test-4 ; SHA256 dans debughistorical.
+- [x] Cohérence du registre et des quatre mémoires mise à jour dans le même cycle de commits.
+- [ ] Test d'installation/lancement sur Samsung SM-A576B Android 16 : dépend du test réel de Fab (non revendiqué).
 
-## À développer, distinct des ordres Fab GD-001 à GD-005
-- [ ] Tests avancés de légalité : perft (profondeurs 1–4), nulles FIDE, historique/PGN, import/export FEN ; tests Android instrumentation et TalkBack.
-- [ ] Séparer ViewModel et écran, registres d'ouvertures, variantes, leçons/erreurs.
-- [ ] Pipeline Lichess respectant activité, non-provisoire, 1000 parties/cadence, 100 dernières parties, classement historique ; vérifier volume 400 et 500 (aucun profil réel créé).
-- [ ] Modèle humain empirique, échantillonnage hiérarchique, repli calibré, mesures parties complètes et incertitude.
-- [ ] Stockfish UCI pour analyse uniquement (GPLv3, distribution des sources), jauge, WDL, MultiPV, paramètres de reproduction et bench CPU.
-- [ ] Vérifier accessibilité et confort sur Samsung SM-A576B Android 16, icône dédiée, nom de version, APK testé.
-- [ ] Ne pas merger main ni présenter profils Elo ou Stockfish comme implémentés.
+## Missions utilisateur encore ouvertes — ne pas effacer GD-001 à GD-005
+- [ ] GD-001 : audit approfondi des règles FIDE (répétitions, compte 75 coups, bugs positions spécifiques), perft Kiwipete, annulation et sauvegarde sur appareil, PGN et navigation dans l'historique, accessibilité virtuelle TalkBack de chaque case.
+- [ ] GD-002 : Stockfish UCI à part de l'adversaire, jauge CP, WDL distinctes, MultiPV, analyse des coups et reproductibilité CPU/mémoire/température, licences GPL de distribution.
+- [ ] GD-003 : obtenir et filtrer cohortes Lichess par cadence, classement non provisoire stable, >=1000 parties/joueur, jusqu'à 100 dernières parties, validation cotes historiques, couverture des niveaux 400/500.
+- [ ] GD-003 : implémenter distributions de coups humains (tirage hiérarchique joueur/coup), continuité de style, politique de repli non-Stockfish et tests de parties complètes avec incertitude.
+- [ ] GD-004 : menus d'ouvertures extensibles, variantes, répétitions espacées, exercices, explication d'erreurs.
+- [ ] GD-005 : retours d'essai physique, build AAB seulement si publication Play demandée, contrôles accessibilité et confidentialité.
 
-## Prochaine vérification
-Consulter le workflow déclenché par ce commit. S'il échoue, inspecter logs par étape et corriger l'anomalie observée selon FAB-DEBUG-001. S'il réussit, vérifier GitHub Release + asset `.apk` direct avant transmission.
+## Décisions et limites de la recherche
+- Archives officielles Lichess standard (CC0) : lot de septembre 2026 ~29,2 Go compressés, volume inadapté à une ingestion aveugle dans l'APK ou par GitHub Actions. Préférer corpus prétraité hors ligne, cohorte limitée et cache local. Source : https://database.lichess.org/
+- Export utilisateur API possible en principe, avec filtres cadence et nombre maximal de parties ; les 400/500 à 1000 parties classées n'ont PAS été quantifiés. Docs et retours : https://lichess.org/api#operation/apiGamesUser
+- Stockfish en GPLv3 : licence et code source correspondant obligatoires en cas de distribution du binaire. Ne pas embarquer sans vérifier le modèle de liaison/déploiement. Source : https://github.com/official-stockfish/Stockfish
+- Aucun profil Lichess, aucun Stockfish et aucun classement 400–900 opérationnels aujourd'hui.
 
-## Extension v0.2.1 (19/10/2026)
-- [x] Ajout de l'import FEN (base locale persistante), des marges système Android 16 et d'une icône vectorielle.
-- [x] Décompte de positions perft initial profondeur 2 et 3 ajouté aux tests Java.
-- [ ] Vérifier le build 0.2.1, la pré-release et l'APK direct ; installation, navigation et rendu des glyphes sur le Samsung restent à valider.
+## Suite de travail
+Tester la v0.2.1 sur Samsung, puis construire le corpus humain mesuré et le moteur d'échantillonnage ; le champ « niveaux » reste désactivé tant que leur force n'est pas prouvée. Ne pas merger `main`.
+
+## CI
+Les commits purement Markdown n'ont pas besoin de recompiler Android ; workflow désormais configuré pour ignorer les changements `*.md` seuls.

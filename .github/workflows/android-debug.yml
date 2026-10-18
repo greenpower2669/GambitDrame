@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - proposal/stockfish-multipv-human-training-v1
+    paths-ignore:
+      - '**/*.md'
 permissions:
   contents: write
 jobs:

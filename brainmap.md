@@ -4,7 +4,7 @@
 - `settings.gradle`, `build.gradle`, `app/build.gradle` : Android Java AGP 8.7.3, compile SDK 35, applicationId fr.gambitdrame, version 0.2.1.
 - `app/src/main/AndroidManifest.xml` : activité exportée, thème natif, aucune permission réseau.
 
-## Fonctionnement actuel du prototype proposé
+## Fonctionnement actuel du prototype compilé par CI
 1. `app/src/main/java/fr/gambitdrame/ChessGame.java`
    - `Position` : plateau de 64 chars, trait, droits de roque, en passant, compteurs ; parser/formatter FEN et clef répétition.
    - `pseudo` : génération géométrique, conditions spéciales roque/pion/promotion.
