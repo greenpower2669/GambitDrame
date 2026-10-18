@@ -11,3 +11,9 @@
 - Compilation Java/Android réelle ; installation Samsung Android 16 ; moteur de règles sur positions adversariales/perft ; boucle bot ; accessibilité lecteur d'écran.
 - Lichess : cote stable et 1000 parties/cadence à vérifier ; cohorts 400 et 500 inconnues. Aucun téléchargement réalisé.
 - Stockfish : code/licence GPLv3, absence d'exécutable distribué dans ce prototype.
+
+## 19/10/2026 — Deuxième CI échouée (confirmé)
+- Run : https://github.com/greenpower2669/GambitDrame/actions/runs/39175175362
+- Après retrait de setup-android@v3, le runner possède bien `ANDROID_HOME=/usr/local/lib/android/sdk` mais la commande `sdkmanager` n'est pas dans le PATH du shell.
+- Message exact : `line 2: sdkmanager: command not found`, code 127.
+- Correction candidate : localiser explicitement le binaire sous `$ANDROID_HOME/cmdline-tools` avec `find`, exécuter ce chemin ; déplacer les tests Java en amont pour distinguer l'état du moteur de l'installation SDK. Confirmation par CI attendue.

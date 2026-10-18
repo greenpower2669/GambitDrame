@@ -6,7 +6,7 @@
 - [x] Tests reproductibles Java inclus dans CI.
 - [x] Correction candidate du workflow `sdkmanager tools` absent ; direct APK dans pré-release sur branche.
 - [x] Gambit de dame : position d'ouverture chargeable.
-- [ ] Contrôler résultat CI du nouveau commit, exécuter corrections si échec, vérifier asset APK réellement téléchargeable.
+- [ ] Contrôler troisième CI après correctif du chemin SDK (run 2 : échec `sdkmanager: command not found`) ; vérifier tests `javac` puis APK Release. Aucune APK pour l'instant.
 
 ## À développer, distinct des ordres Fab GD-001 à GD-005
 - [ ] Tests avancés de légalité : perft (profondeurs 1–4), nulles FIDE, historique/PGN, import/export FEN ; tests Android instrumentation et TalkBack.

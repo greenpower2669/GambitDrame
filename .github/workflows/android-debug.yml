@@ -16,18 +16,20 @@ jobs:
           distribution: temurin
           java-version: '17'
       # No android-actions/setup-android@v3: it invokes removed SDK package "tools".
-      - name: Prepare SDK packages
-        run: |
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          sdkmanager "platforms;android-35" "build-tools;35.0.0"
-      - uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.9'
       - name: Verify pure Java chess rules
         run: |
           mkdir -p build/chess-test-classes
           javac -d build/chess-test-classes app/src/main/java/fr/gambitdrame/ChessGame.java app/src/test/java/fr/gambitdrame/ChessGameTest.java
           java -cp build/chess-test-classes fr.gambitdrame.ChessGameTest
+      - name: Prepare SDK packages
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -n 1)"
+          test -n "$SDKMANAGER"
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
       - name: Assemble Android debug APK
         run: gradle :app:assembleDebug --no-daemon --stacktrace
       - name: Verify APK exists

@@ -19,7 +19,7 @@
    - Bouton Gambit de dame : charge 1.d4 d5 2.c4, mode entraînement extensible à construire.
    - Spinner 400–900 désactivé ; texte Stockfish absent = état véridique.
 3. `app/src/test/java/fr/gambitdrame/ChessGameTest.java` : tests Java autonomes : jeu initial, mat, pat, roque, en passant, promotions, pièce clouée, FEN.
-4. `.github/workflows/android-debug.yml` : checkout → Java 17 → SDK courant `sdkmanager` → Gradle 8.9 → tests `javac` → assembleDebug → vérification taille APK → GitHub Release préliminaire direct .apk, sans main.
+4. `.github/workflows/android-debug.yml` : checkout → Java 17 → localisation du `sdkmanager` dans ANDROID_HOME → Gradle 8.9 → tests `javac` → assembleDebug → vérification taille APK → GitHub Release préliminaire direct .apk, sans main.
 
 ## Extension planifiée, NON implémentée
 - `human/` : pipelines de collecte Lichess, provenance, filtres actifs/stables, légalité, distributions probabilistes et politiques repli.
