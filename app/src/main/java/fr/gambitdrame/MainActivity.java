@@ -13,6 +13,7 @@ import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Build;
 import android.os.Looper;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -49,6 +50,13 @@ public final class MainActivity extends Activity {
         root.setBackgroundColor(0xfff7f7ef);
         root.setPadding(12,10,12,22);
         scroller.addView(root);
+        scroller.setOnApplyWindowInsetsListener((v,insets)->{
+            if(Build.VERSION.SDK_INT>=30){
+                android.graphics.Insets bars=insets.getInsets(android.view.WindowInsets.Type.systemBars());
+                root.setPadding(12,Math.max(10,bars.top),12,Math.max(22,bars.bottom));
+            }
+            return insets;
+        });
         heading(root,"♟ GambitDrame",25);
         label(root,"Version 0.2 — échecs jouables hors ligne",16);
         label(root,"Le bot est un adversaire de démonstration NON calibré sur Lichess.",14);
@@ -88,6 +96,7 @@ public final class MainActivity extends Activity {
             tryMove(uci);
         });
         history=label(root,"",15);
+        button(root,"Importer FEN",this::importFen);
         button(root,"Copier FEN",()->{
             ClipboardManager cm=(ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE);
             cm.setPrimaryClip(ClipData.newPlainText("FEN",current().fen()));
@@ -117,6 +126,11 @@ public final class MainActivity extends Activity {
         positions.add(ChessGame.fromFen(ChessGame.START));
         String raw=prefs.getString("history","");
         try{
+            String initial=prefs.getString("baseFen",ChessGame.START);
+            if(!ChessGame.START.equals(initial)){
+                positions.clear();
+                positions.add(ChessGame.fromFen(initial));
+            }
             if(!raw.isEmpty())for(String u:raw.split(" ")){
                 ChessGame.Position next=ChessGame.play(current(),u);
                 positions.add(next);moves.add(u);
@@ -124,7 +138,7 @@ public final class MainActivity extends Activity {
         }catch(RuntimeException ex){
             positions.clear();moves.clear();
             positions.add(ChessGame.fromFen(ChessGame.START));
-            prefs.edit().remove("history").apply();
+            prefs.edit().remove("history").remove("baseFen").apply();
         }
     }
     private void persist(){prefs.edit().putString("history",android.text.TextUtils.join(" ",moves)).apply();}
@@ -212,6 +226,7 @@ public final class MainActivity extends Activity {
     }
     private void reset(){
         handler.removeCallbacks(botRunnable);
+        prefs.edit().remove("baseFen").apply();
         moves.clear();positions.clear();positions.add(ChessGame.fromFen(ChessGame.START));
         selected=-1;persist();refresh();scheduleBot();
     }
@@ -222,6 +237,26 @@ public final class MainActivity extends Activity {
             moves.remove(moves.size()-1);positions.remove(positions.size()-1);
         }
         selected=-1;persist();refresh();scheduleBot();
+    }
+    private void importFen(){
+        final EditText input=new EditText(this);
+        input.setSingleLine(false);
+        input.setMinLines(3);
+        input.setTextSize(16);
+        input.setHint("FEN : pièces trait roques en-passant compteurs");
+        new AlertDialog.Builder(this).setTitle("Importer une position FEN")
+            .setView(input).setPositiveButton("Charger",(d,w)->{
+                try{
+                    ChessGame.Position p=ChessGame.fromFen(input.getText().toString().trim());
+                    handler.removeCallbacks(botRunnable);
+                    positions.clear();positions.add(p);moves.clear();selected=-1;
+                    prefs.edit().putString("baseFen",p.fen()).remove("history").apply();
+                    refresh();scheduleBot();
+                }catch(RuntimeException ex){
+                    new AlertDialog.Builder(this).setTitle("FEN invalide")
+                        .setMessage(ex.getMessage()).setPositiveButton("OK",null).show();
+                }
+            }).setNegativeButton("Annuler",null).show();
     }
     private void loadOpening(){
         reset();

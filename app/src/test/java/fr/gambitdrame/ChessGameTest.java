@@ -12,10 +12,19 @@ public final class ChessGameTest {
         for(String m:moves)p=ChessGame.play(p,m);
         return p;
     }
+    private static long perft(ChessGame.Position p,int depth){
+        if(depth==0)return 1L;
+        long total=0;
+        for(ChessGame.Move m:ChessGame.legal(p))
+            total+=perft(ChessGame.apply(p,m),depth-1);
+        return total;
+    }
     public static void main(String[]args){
         ChessGame.Position start=ChessGame.fromFen(ChessGame.START);
         yes(start.fen().equals(ChessGame.START),"FEN initial");
         yes(ChessGame.legal(start).size()==20,"20 coups initiaux");
+        yes(perft(start,2)==400L,"perft départ profondeur 2");
+        yes(perft(start,3)==8902L,"perft départ profondeur 3");
         yes(!has(start,"e2e5"),"saut de pion illégal");
         yes(ChessGame.legal(sequence("e2e4","e7e5")).size()==29,"coups après e4 e5");
         ChessGame.Position mat=sequence("f2f3","e7e5","g2g4","d8h4");

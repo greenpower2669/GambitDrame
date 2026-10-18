@@ -19,3 +19,8 @@
 
 ## Prochaine vérification
 Consulter le workflow déclenché par ce commit. S'il échoue, inspecter logs par étape et corriger l'anomalie observée selon FAB-DEBUG-001. S'il réussit, vérifier GitHub Release + asset `.apk` direct avant transmission.
+
+## Extension v0.2.1 (19/10/2026)
+- [x] Ajout de l'import FEN (base locale persistante), des marges système Android 16 et d'une icône vectorielle.
+- [x] Décompte de positions perft initial profondeur 2 et 3 ajouté aux tests Java.
+- [ ] Vérifier le build 0.2.1, la pré-release et l'APK direct ; installation, navigation et rendu des glyphes sur le Samsung restent à valider.
