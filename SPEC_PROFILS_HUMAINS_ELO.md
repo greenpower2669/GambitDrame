@@ -19,3 +19,8 @@ Stockfish affiche à gauche jauge blanc/noir, centipions et WDL séparés, varia
 
 ## Validation
 Mesurer sur parties complètes le classement effectif, distribution des pertes en centipions, taux de gaffes, diversité, cohérence, performance et écart à la population Lichess cible ; évaluer séparément chaque niveau, avec incertitudes. Ne pas confondre qualité de l'estimation statistique et force d'un vote majoritaire.
+
+## Mise au point sourcée — 19 octobre 2026
+- Lichess fixe actuellement un plancher de classement à **400** (`Glicko.minRating = IntRating(400)`). Le palier 500 est donc techniquement représentable et le palier 400 correspond à une valeur tronquée au plancher ; un joueur effectivement plus faible peut aussi apparaître à 400. Source officielle : https://github.com/lichess-org/lila/blob/master/modules/rating/src/main/Glicko.scala
+- **Non établi** : nombre de comptes distincts actifs, non provisoires, possédant 1000 parties classées dans chaque cadence et situés de manière stable à 400 ou 500. Aucun échantillon probant téléchargé à ce stade.
+- Les archives Lichess standard sont disponibles en CC0 et très volumineuses (~29,2 Go compressés pour septembre 2026). Éviter leur téléchargement total dans CI ou téléphone ; construire un pipeline hors ligne filtré, avec cache et contrôle d'échantillonnage. https://database.lichess.org/

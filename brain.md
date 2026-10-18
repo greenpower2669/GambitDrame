@@ -13,3 +13,8 @@ L'adversaire humain doit échantillonner des coups humains réels, avec continui
 - Hors ligne par défaut ; pas d'INTERNET dans le manifeste.
 - Licence MIT du code original ; ne pas embarquer Stockfish avant clarification licence/source de distribution.
 - Mémoires du projet à conserver distinctes des mémoires Djipie et FabCopilot.
+
+## Source Lichess vérifiée (19/10/2026)
+- Source officielle `lichess-org/lila/modules/rating/src/main/Glicko.scala` sur master : `minRating = IntRating(400)`, `maxRating = IntRating(4000)`, `standardRankableDeviation = 75`. La notation 400 est donc atteignable comme plancher logiciel, mais un joueur au plancher peut être encore moins fort, ce qui biaise une calibration empirique si ignoré.
+- La présence de cohortes **actives, non provisoires, avec ≥ 1000 parties/cadence** pour 400 et 500 n'est toujours pas quantifiée. Ne pas confondre plage admise par le moteur de classement et disponibilité de données.
+- Source : https://github.com/lichess-org/lila/blob/master/modules/rating/src/main/Glicko.scala
