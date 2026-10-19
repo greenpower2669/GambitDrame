@@ -38,8 +38,13 @@ Les commits purement Markdown n'ont pas besoin de recompiler Android ; workflow 
 - [x] Ajouter pont Stockfish 18 UCI MultiPV3, WDL et centipions + source GPL3 et compilation NDK ARM64 (non vérifié jusqu'au CI).
 - [x] Interface : sélecteurs réellement activés, analyse adaptée à l'orientation, logs de provenance humain, Internet optionnel.
 - [x] Tests JVM de la politique et de la légalité intégrés au workflow.
-- [ ] **URGENT** Lire le résultat réel CI pour 0.3.0, corriger tout échec et vérifier binaire Stockfish dans APK, Release .apk directe.
+- [x] CI #6 réussie : 18 tests de règles + 130 tirages de politique humains (e4=61 d4=39), Stockfish 18 ARM64 avec GPLv3 présent dans APK, Release directe `gd-test-6`, SHA256 consigné dans debughistorical.
 - [ ] Installer sur SM-A576B Android 16 et confirmer qu'un vrai processus UCI Stockfish répond `uciok`, `readyok` et `info ... multipv ... wdl` ; vérifier chauffe et consommation.
 - [ ] Cohortes Lichess vérifiées >= 1000 parties/joueur, niveaux 400 et 500, statistiques par cadence et cotes historiques ; niveaux cibles actuels NON calibrés.
 - [ ] WDL sous forme de jauge graphique, vraie navigation MultiPV et analyse des coups précédents ; ce lot donne uniquement un panneau texte et 3 variantes.
 - [ ] Vérification juridique de l'assemblage MIT+GPL/obligation de fournir sources et notes app.
+
+## Statut réel du transfert 0.3.0
+- CI et .apk **produites et vérifiées** par GitHub, sans ZIP pour Fab.
+- À valider sur Samsung : ouverture de l'APK 79,8 Mo, première analyse Stockfish multiPV/WDL, téléchargement Lichess (si connecté), coups du bot et reprise.
+- Les préréglages 400–900 demeurent expérimentaux, non étalonnés. Pas de fusion `main`.

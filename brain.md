@@ -25,3 +25,9 @@ L'adversaire humain doit échantillonner des coups humains réels, avec continui
 - Analyse Stockfish 18 : processus UCI binaire natif ARM64 Android NDK r27c, 1 thread, 32 Mo Hash, MultiPV 3, profondeur 11, centipions côté Blancs et WDL côté Blancs. Ne sélectionne jamais les coups de HumanPolicy.
 - Application hybride : Internet facultatif uniquement pour statistiques publiques, repli hors ligne ; build inclus binaire Stockfish et licence GPLv3/source exacte.
 - Matrice distribution : téléphone Android 16 ARM64 ; aucun matériel installé par CI, aucun test WDL réel jusqu'au lancement.
+
+## Vérifications CI v0.3.0 réussies
+- Runner GitHub du 19/10/2026 : `CHESS_TESTS_OK 18`; `HUMAN_POLICY_TESTS_OK 130 choices e4=61 d4=39` prouve l'échantillonnage non majoritaire dans ce scénario.
+- Stockfish 18 officiel `sf_18` commit cb3d4ee9... compilé avec NDK r27c, binaire ARM64 de 113 750 704 octets inclus dans l'APK avec GPLv3 et notice source ; Gradle `BUILD SUCCESSFUL`.
+- APK directe 0.3.0 de 79 814 857 octets vérifiée par métadonnées GitHub Release gd-test-6. SHA256 82103cdb09eb578ac6c7644270e9bbd55a1ac809e5437da8fd6e6da87d9af39b.
+- **Limite** : ni uciok/readyok, ni panneau affiché, ni coups réels Lichess sous Android, ni parties complètes ne sont confirmés par CI ; appareil Samsung requis.

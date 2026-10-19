@@ -45,3 +45,11 @@
 - Fab confirme que 0.2.1 est perçue comme "vide" : absence du vrai joueur humain et de Stockfish. Ce n'est pas une régression : les deux fonctions étaient explicitement non produites dans la version précédente, mais le résultat ne répond pas encore à la mission principale.
 - Intervention v0.3.0 : modules HumanPolicy / LichessOpeningExplorer / StockfishBridge, composant UI et workflow de fabrication du moteur Stockfish 18 pour ARM64.
 - Aucun build de v0.3.0, APK ou lancement moteur n'est confirmé lors de la rédaction de cette entrée. Résultat du CI à examiner avant livraison. Risque de confusion entre coup humain non calibré et vraie cohortes 400–900 : l'UI doit rester explicite.
+
+## 19/10/2026 — CI + APK 0.3.0 réussies (preuve)
+- Workflow : https://github.com/greenpower2669/GambitDrame/actions/runs/39218250281, commit `6f2839f147f0a90d2f9c00919bf7b44adcfbacbe`, status `success`.
+- Logs : `CHESS_TESTS_OK 18`, `HUMAN_POLICY_TESTS_OK 130 choices e4=61 d4=39`, `BUILD SUCCESSFUL in 39s`.
+- Intégration Stockfish : source officielle sf_18 commit cb3d4ee9..., compilation NDK réussie ; 113 750 704 octets dans `lib/arm64-v8a/libstockfish.so`; licence GPLv3 35 149 octets et notice source dans assets.
+- `Unable to strip ... libstockfish.so` affiché en avertissement (binaire déjà strip par workflow), n'a pas empêché build, inclusion et publication ; non démontré comme bug.
+- Release https://github.com/greenpower2669/GambitDrame/releases/tag/gd-test-6 ; asset `GambitDrame-v0.3.0-debug-arm64.apk`, taille 79 814 857 octets, SHA256 `82103cdb09eb578ac6c7644270e9bbd55a1ac809e5437da8fd6e6da87d9af39b`.
+- **Non vérifiés** : Android 16 ProcessBuilder binaire, handshake UCI, rendu WDL, récupération API Lichess, comportements lors de l'extinction de l'écran, véritables Elo 400–900. Ne pas annoncer comme validés.

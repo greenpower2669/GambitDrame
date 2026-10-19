@@ -35,3 +35,8 @@
 - CI `.github/workflows/android-debug.yml` : compilation tests JVM et human, NDK r27c, clone source officiel `sf_18` commit figé, `make net`/`make build ARCH=armv8 COMP=ndk`, inclusion comme lib exécutable native ARM64 + GPL/source sous assets, vérification zip APK puis Release directe.
 - `app/build.gradle` 0.3.0, minSdk 29 (SDK natif Stockfish cible API 29), abiFilters arm64-v8a, useLegacyPackaging pour extraction native.
 - Risques en cours : ProcessBuilder sur libstockfish.so sur Samsung 16, taille APK, exactitude orientation WDL par blanc et rétroaction UI, disponibilité réelle de l'API, licences.
+
+## CI 0.3.0 — état vérifié
+- Exécution #6 a passé : tests JVM, téléchargement NDK, compilateur C++ Stockfish, Gradle Android, `unzip -l` de l'APK, livraison GitHub Release. Source binaire compilé de 113,75 Mo et APK comprimée de 79,8 Mo.
+- Message Gradle `Unable to strip ... libstockfish.so` : avertissement non bloquant ; moteur natif déjà passé par llvm-strip avant Gradle, packagé tel quel. L'exécution via ProcessBuilder dans nativeLibraryDir demeure à valider sur Android 16.
+- GitHub Release de test `gd-test-6`, pas main. Voir debughistorical.md pour preuve et SHA256.

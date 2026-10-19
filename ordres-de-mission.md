@@ -24,3 +24,9 @@
 - Fab a constaté : « Il est vide pas de joueur humain ni stockfish ^^ ... push ça ». Mission : intégrer les deux éléments et une APK directe.
 - Intervention v0.3.0 sur la branche autorisée : modèle de coups probabilistes Lichess (<1000 non filtré) + politique heuristique locale ; Stockfish 18 ARM64 pour analyse UCI seulement (panneau évaluations/WDL/MultiPV).
 - **Livraison provisoire non validée** tant que compilation/résultat réel du workflow et installation Samsung ne sont pas confirmés. Le calibrage strict 400–900 et les critères >=1000 parties/joueur restent ouverts (GD-003). Pas de merge main.
+
+## GD-006 — livraison intermédiaire vérifiée (19/10/2026)
+- Workflow #6 : https://github.com/greenpower2669/GambitDrame/actions/runs/39218250281 — succès sur commit `6f2839f147f0a90d2f9c00919bf7b44adcfbacbe`.
+- Stockfish 18 compilé ARM64, moteur `lib/arm64-v8a/libstockfish.so` et licence GPLv3 vérifiés dans l'APK ; application Android compilée.
+- APK directe publiée : https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-6/GambitDrame-v0.3.0-debug-arm64.apk (79 814 857 octets, SHA256 `82103cdb09eb578ac6c7644270e9bbd55a1ac809e5437da8fd6e6da87d9af39b`).
+- **Livré à valider sur Samsung** : présence binaire prouvée, lancement effectif et qualité des coups encore non testés physiquement. Cohortes 400–900 et engagements de performance non validés.
