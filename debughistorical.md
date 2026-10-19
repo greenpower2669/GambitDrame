@@ -59,3 +59,10 @@
 - Risque historique corrigé par conception : passage en relecture ne réécrit pas `positions`/`moves` ; `ReviewCursor` pure Java + tests. Après annuler/nouvelle partie/import FEN, sortir de relecture, recalcul Stockfish.
 - Stockfish peut publier des résultats obsolètes si navigation rapide. Pont remplacé : tags FEN, barrière `stop`/`isready`, seule principale MultiPV 1 modifie la jauge.
 - À confirmer : compilation JVM/Gradle, log de tests, APK directe, largeur barre 44dp et précision des zones tactiles sur Samsung, autoplay et historique.
+
+## 19/10/2026 — CI v0.3.1 réussie
+- GitHub Actions #7 : https://github.com/greenpower2669/GambitDrame/actions/runs/39297601721 (success, commit 47aaf2d...).
+- Preuves logs : `CHESS_TESTS_OK 18`, `HUMAN_POLICY_TESTS_OK 130 choices e4=61 d4=39`, `REVIEW_AND_GAUGE_TESTS_OK 21`, `BUILD SUCCESSFUL in 46s`.
+- Stockfish officiel ARM64 présent : `lib/arm64-v8a/libstockfish.so` 113 750 704 octets ; licence GPL 35 149 octets et notice source vérifiées.
+- GitHub Release `gd-test-7` : https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-7/GambitDrame-v0.3.1-debug-arm64.apk; 79 825 609 octets ; sha256 `d5b1062633a218914088fa1d5db70d03a74d7697ba300f755265675c32c5c8f7`. Publication `state=uploaded` vérifiée.
+- Pas encore d'essai physique sur SM-A576B Android 16 : jauge noire/blanche à gauche, toucher des cases, contrôle cinq boutons/lecture, reprise au direct, UCI après navigation, accessibilité visuelle doivent être confirmés.

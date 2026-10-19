@@ -48,3 +48,8 @@
 - `MainActivity.ChessView` : jauge fait partie du canvas à gauche de l'échiquier, donc même hauteur et interaction de toucher décalée pour garder les coordonnées de cases précises. `displayed()` retourne la position consultée, `current()` reste la partie réelle.
 - `StockfishBridge.Listener` : `onAnalysis(fen,text,cpWhite,mateWhite)`; UCI séquentiel stop-isready-go ; n'écrit pas de score dans la politique humaine.
 - APK CI version 0.3.1 (code 5) attendue via prérelease nouvelle, build workflow inchangé pour moteur officiel Stockfish 18 et GPL.
+
+## Validation chaîne d'intégration v0.3.1
+- Tests Java : 18 légalité, 130 échantillonnages humains, 21 calculs/propriétés de curseur de relecture, tous réussis par workflow #7.
+- Build Android passe, Stockfish 18 ARM64/notice GPL vérifiés dans le zip de l'APK, prérelease gd-test-7 directe publiée; détails de SHA256 et lien dans brain.md.
+- Conserver la distinction : vérification CI = réussite du packaging ; validation Samsung/TalkBack/animation/jauge en situation = à faire.

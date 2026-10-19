@@ -54,5 +54,5 @@ Les commits purement Markdown n'ont pas besoin de recompiler Android ; workflow 
 - [x] Coder boutons début/précédent/play-pause/suivant/fin, lecture auto ~900ms par coup, sortie relecture explicite, sans modifier l'historique sauvegardé.
 - [x] Sécuriser bot contre navigation, intégrer affichage FEN historique et synchronisation d'analyse UCI avec tag FEN + barrière isready.
 - [x] Ajouter tests JVM `ReviewTest` (curseur, évaluation) et vérifications dans le workflow.
-- [ ] Vérifier build 0.3.1 et réussite du workflow, source Stockfish ARM64 et licence, publier .apk directe, enregistrer SHA256 et lien.
+- [x] Build 0.3.1 / workflow #7 réussi, 18+130+21 tests, Stockfish ARM64+GPL vérifiés dans l'APK et .apk directe `gd-test-7` publiée; lien et SHA256 dans debughistorical.
 - [ ] Vérifier sur Samsung SM-A576B : jauge noire/blanche visible à gauche même en portrait, largeur, tactile case a..h, navigation, autoplay, reprise, et scores qui ne se mélangent pas en recul/avance rapides.

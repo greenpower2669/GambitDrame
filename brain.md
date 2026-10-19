@@ -38,3 +38,9 @@ L'adversaire humain doit échantillonner des coups humains réels, avec continui
 - 900ms par demi-coup en lecture automatique, interruption par pause/navigation/Android onPause. Lorsqu'une relecture est active, aucun coup humain ni bot n'est appliqué ; tâches bot et réseau obsolètes ignorées par révision.
 - `StockfishBridge` étiquette ses évaluations par FEN, associe score CP/mat blanc à MultiPV 1, et utilise `stop`+`isready` comme barrière pour limiter l'affichage de lignes périmées lors d'une navigation rapide. Les positions passées restent analysables.
 - Les fonctions sont définies dans le code; certification de compilation/test matériel et lien d'APK attendus avant validation.
+
+## État réellement confirmé v0.3.1
+- GitHub Actions #7 : succès, compilation Gradle `BUILD SUCCESSFUL in 46s`. `CHESS_TESTS_OK 18`, `HUMAN_POLICY_TESTS_OK 130`, `REVIEW_AND_GAUGE_TESTS_OK 21`.
+- APK prérelease `gd-test-7` publiée : `https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-7/GambitDrame-v0.3.1-debug-arm64.apk`, taille 79 825 609 octets, SHA256 `d5b1062633a218914088fa1d5db70d03a74d7697ba300f755265675c32c5c8f7`. Pas de zip.
+- Contrôle zip CI : fichier binaire `lib/arm64-v8a/libstockfish.so` de 113 750 704 octets et `assets/licenses/STOCKFISH-GPLv3.txt` de 35 149 octets.
+- Réserve : le rendu graphique de l'échiquier et la réactivité tactile ne sont pas testés sur téléphone par les tests JVM/Gradle.

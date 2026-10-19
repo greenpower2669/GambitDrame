@@ -36,3 +36,9 @@
 - Navigation de partie : 5 boutons visibles **début / précédent / lecture automatique-pause / suivant / fin**, plus « Reprendre la partie » pour revenir au jeu. Les positions parcourues **ne mutent pas** la partie sauvegardée.
 - Chaque position affichée déclenche une nouvelle recherche Stockfish ; le moteur humain reste indépendant de Stockfish et ne joue pas pendant une relecture. Contrôles TalkBack en français.
 - Version 0.3.1, travail sur branche `proposal/stockfish-multipv-human-training-v1`. APK directe GitHub. Pas de merge main. Vérifier CI et matériel avant d'annoncer les fonctions comme éprouvées.
+
+## GD-007 — Livraison vérifiée, CI GitHub #7
+- Build Android 0.3.1 : succès `https://github.com/greenpower2669/GambitDrame/actions/runs/39297601721`, code source commit `47aaf2d35968ce2299de7e52c8c223ed6621459b`.
+- APK directe (sans zip) publiée : https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-7/GambitDrame-v0.3.1-debug-arm64.apk; taille 79 825 609 octets ; SHA256 `d5b1062633a218914088fa1d5db70d03a74d7697ba300f755265675c32c5c8f7`.
+- Tests : règles 18 ; choix d'adversaire probabiliste 130 ; navigation/jauge 21. Stockfish natif ARM64 et GPLv3 vérifiés à l'intérieur de l'APK.
+- Validation matérielle Android 16/visibilité de la jauge/exécution UCI reste à effectuer sur le Samsung ; ne pas confondre build réussi et essai matériel.
