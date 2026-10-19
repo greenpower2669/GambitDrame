@@ -129,7 +129,6 @@ class PiperSpeechEngine(
             .setBufferSizeInBytes(bufferBytes)
             .setTransferMode(AudioTrack.MODE_STREAM)
             .build()
-        )
         track = player
         try {
             if (muted) player.setVolume(0f) else player.setVolume(1f)
