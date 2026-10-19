@@ -26,3 +26,12 @@
 - `analysis/` : interface moteur UCI Stockfish séparé, 1 processus, WDL et centipions non confondus, MultiPV, cache, contraintes mémoire/CPU/licence.
 - `training/` : registre d'ouvertures, exercices, variantes et scores.
 - UI accessible TalkBack case par case, configuration avancée des profils, affichage gauche/tablette ou repli sous plateau en portrait.
+
+## Extension architecture v0.3.0
+- `HumanPolicy.java` : échantillonnage de coups légal via occurrences issues des parties réelles de la catégorie Lichess <1000 ; sinon distribution softmax de critères échiquéens, cible et style, graine locale. Pas de Stockfish.
+- `LichessOpeningExplorer.java` : accès HTTPS optionnel explorer.lichess.ovh, ratings=0, cadences blitz/rapid, timeout 1800 ms, cache SharedPreferences, seulement les 24 premiers demi-coups ; n'affirme pas cohorte 1000 parties.
+- `StockfishBridge.java` : ProcessBuilder sur `applicationInfo.nativeLibraryDir/libstockfish.so` ; protocole UCI, UCI_ShowWDL, MultiPV 3, parsing info score cp/mate/wdl et lignes principales, stop sur pause, shutdown. Analyse indépendante.
+- `MainActivity.java` : choix niveau 400–900, style, switch Internet, exécuteur mono-thread pour appels Lichess, annulation robuste par révision, panneau Stockfish avant échiquier en portrait et à gauche en paysage large.
+- CI `.github/workflows/android-debug.yml` : compilation tests JVM et human, NDK r27c, clone source officiel `sf_18` commit figé, `make net`/`make build ARCH=armv8 COMP=ndk`, inclusion comme lib exécutable native ARM64 + GPL/source sous assets, vérification zip APK puis Release directe.
+- `app/build.gradle` 0.3.0, minSdk 29 (SDK natif Stockfish cible API 29), abiFilters arm64-v8a, useLegacyPackaging pour extraction native.
+- Risques en cours : ProcessBuilder sur libstockfish.so sur Samsung 16, taille APK, exactitude orientation WDL par blanc et rétroaction UI, disponibilité réelle de l'API, licences.

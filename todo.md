@@ -32,3 +32,14 @@ Tester la v0.2.1 sur Samsung, puis construire le corpus humain mesuré et le mot
 
 ## CI
 Les commits purement Markdown n'ont pas besoin de recompiler Android ; workflow désormais configuré pour ignorer les changements `*.md` seuls.
+
+## Intervention v0.3.0 — corrections demandées par Fab
+- [x] Ajouter algorithme de coups humains probabiliste distinct de Stockfish + Lichess ouverture (<1000 sans garantie de cohorte) + repli local + cible 400–900/style.
+- [x] Ajouter pont Stockfish 18 UCI MultiPV3, WDL et centipions + source GPL3 et compilation NDK ARM64 (non vérifié jusqu'au CI).
+- [x] Interface : sélecteurs réellement activés, analyse adaptée à l'orientation, logs de provenance humain, Internet optionnel.
+- [x] Tests JVM de la politique et de la légalité intégrés au workflow.
+- [ ] **URGENT** Lire le résultat réel CI pour 0.3.0, corriger tout échec et vérifier binaire Stockfish dans APK, Release .apk directe.
+- [ ] Installer sur SM-A576B Android 16 et confirmer qu'un vrai processus UCI Stockfish répond `uciok`, `readyok` et `info ... multipv ... wdl` ; vérifier chauffe et consommation.
+- [ ] Cohortes Lichess vérifiées >= 1000 parties/joueur, niveaux 400 et 500, statistiques par cadence et cotes historiques ; niveaux cibles actuels NON calibrés.
+- [ ] WDL sous forme de jauge graphique, vraie navigation MultiPV et analyse des coups précédents ; ce lot donne uniquement un panneau texte et 3 variantes.
+- [ ] Vérification juridique de l'assemblage MIT+GPL/obligation de fournir sources et notes app.

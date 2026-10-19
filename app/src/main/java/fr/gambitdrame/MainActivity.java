@@ -22,12 +22,25 @@ import android.widget.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
 
-/** Accessible local chess prototype. No Stockfish/Lichess data is bundled. */
+/** Chess trainer: experimental human policy + independent local Stockfish analysis. */
 public final class MainActivity extends Activity {
     private final List<ChessGame.Position> positions=new ArrayList<>();
     private final List<String> moves=new ArrayList<>();
-    private final Random random=new Random();
+    private final ExecutorService botWorker=Executors.newSingleThreadExecutor();
+    private HumanPolicy humanPolicy;
+    private LichessOpeningExplorer explorer;
+    private StockfishBridge stockfishBridge;
+    private TextView analysisPanel, botInfo;
+    private Spinner levels;
+    private Switch onlineSwitch;
+    private boolean botRunning=false;
+    private long revision=0;
+    private int targetRating=700;
+    private double aggression=0.4;
     private final Handler handler=new Handler(Looper.getMainLooper());
     private final Runnable botRunnable=this::botMove;
     private ChessView chessView;
@@ -42,6 +55,12 @@ public final class MainActivity extends Activity {
         super.onCreate(state);
         prefs=getSharedPreferences("gambitdrame-v1",MODE_PRIVATE);
         botEnabled=prefs.getBoolean("bot",true);
+        targetRating=prefs.getInt("targetRating",700);
+        aggression=prefs.getFloat("aggression",0.4f);
+        long seed=prefs.getLong("humanSeed",0L);
+        if(seed==0L){seed=new Random().nextLong();prefs.edit().putLong("humanSeed",seed).apply();}
+        humanPolicy=new HumanPolicy(targetRating,seed,aggression);
+        explorer=new LichessOpeningExplorer(this);
         restore();
         ScrollView scroller=new ScrollView(this);
         scroller.setFillViewport(true);
@@ -58,24 +77,83 @@ public final class MainActivity extends Activity {
             return insets;
         });
         heading(root,"♟ GambitDrame",25);
-        label(root,"Version 0.2 — échecs jouables hors ligne",16);
-        label(root,"Le bot est un adversaire de démonstration NON calibré sur Lichess.",14);
+        label(root,"Version 0.3.0 — profil humain expérimental + Stockfish 18",16);
+        label(root,"Niveaux 400–900 EXPÉRIMENTAUX, pas encore calibrés par parties complètes.",14);
         chessView=new ChessView();
-        root.addView(chessView,new LinearLayout.LayoutParams(-1,-2));
+        analysisPanel=new TextView(this);
+        analysisPanel.setText("Stockfish 18 : lancement de l'analyse…");
+        analysisPanel.setTextColor(Color.BLACK);
+        analysisPanel.setTextSize(15);
+        analysisPanel.setPadding(8,10,8,10);
+        analysisPanel.setBackgroundColor(0xffe5edeb);
+        analysisPanel.setTextIsSelectable(true);
+        boolean wide=getResources().getConfiguration().screenWidthDp>=650;
+        if(wide){
+            LinearLayout row=new LinearLayout(this);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            root.addView(row);
+            LinearLayout side=new LinearLayout(this);
+            side.setOrientation(LinearLayout.VERTICAL);
+            side.addView(analysisPanel);
+            row.addView(side,new LinearLayout.LayoutParams(0,-2,1));
+            row.addView(chessView,new LinearLayout.LayoutParams(0,-2,2));
+        }else{
+            root.addView(analysisPanel,new LinearLayout.LayoutParams(-1,-2));
+            root.addView(chessView,new LinearLayout.LayoutParams(-1,-2));
+        }
         status=label(root,"",18);
         status.setTypeface(null,Typeface.BOLD);
         botSwitch=new Switch(this);
-        botSwitch.setText("Jouer contre le bot de démonstration");
+        botSwitch.setText("Jouer contre le profil humain expérimental");
         botSwitch.setTextColor(Color.BLACK);
         botSwitch.setTextSize(16);
         botSwitch.setChecked(botEnabled);
         botSwitch.setOnCheckedChangeListener((button,checked)->{
             handler.removeCallbacks(botRunnable);
+            revision++;
             botEnabled=checked;
             prefs.edit().putBoolean("bot",checked).apply();
             selected=-1;refresh();scheduleBot();
         });
         root.addView(botSwitch);
+        botInfo=label(root,"Profil en préparation",14);
+        heading(root,"Niveau cible (EXPÉRIMENTAL, pas Elo vérifié)",17);
+        levels=new Spinner(this);
+        levels.setAdapter(new ArrayAdapter<String>(this,android.R.layout.simple_spinner_dropdown_item,
+            new String[]{"400","500","600","700","800","900"}));
+        levels.setSelection(Math.max(0,Math.min(5,(targetRating-400)/100)));
+        levels.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener(){
+            @Override public void onItemSelected(android.widget.AdapterView<?> parent,View view,int index,long id){
+                targetRating=400+index*100;
+                prefs.edit().putInt("targetRating",targetRating).apply();
+                reconfigurePolicy();
+            }
+            @Override public void onNothingSelected(android.widget.AdapterView<?> parent){}
+        });
+        root.addView(levels);
+        onlineSwitch=new Switch(this);
+        onlineSwitch.setText("Coups humains réels Lichess quand Internet est disponible");
+        onlineSwitch.setTextSize(14);
+        onlineSwitch.setTextColor(Color.BLACK);
+        onlineSwitch.setChecked(prefs.getBoolean("lichessOnline",true));
+        onlineSwitch.setOnCheckedChangeListener((b,on)->prefs.edit().putBoolean("lichessOnline",on).apply());
+        root.addView(onlineSwitch);
+        label(root,"Lichess : tranche publique inférieure à 1000, blitz/rapid ; joueurs et stabilités non filtrés. Hors ligne : politique locale heuristique.",13);
+        TextView risk=label(root,"Style : positionnel ↔ agressif",15);
+        SeekBar styleSlider=new SeekBar(this);
+        styleSlider.setMax(100);
+        styleSlider.setProgress((int)(aggression*100));
+        styleSlider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
+            public void onProgressChanged(SeekBar sb,int n,boolean fromUser){
+                if(!fromUser)return;
+                aggression=n/100.0;
+                prefs.edit().putFloat("aggression",(float)aggression).apply();
+                reconfigurePolicy();
+            }
+            public void onStartTrackingTouch(SeekBar sb){}
+            public void onStopTrackingTouch(SeekBar sb){}
+        });
+        root.addView(styleSlider);
         LinearLayout commands=new LinearLayout(this);
         root.addView(commands);
         button(commands,"Nouvelle partie",()->new AlertDialog.Builder(this)
@@ -108,16 +186,20 @@ public final class MainActivity extends Activity {
             .setMessage("Position d'entraînement : 1.d4 d5 2.c4. Charger la position comme une nouvelle partie ?")
             .setPositiveButton("Charger",(d,w)->loadOpening())
             .setNegativeButton("Annuler",null).show());
-        heading(root,"Profils humains Lichess — pas encore disponibles",17);
-        Spinner levels=new Spinner(this);
-        levels.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,
-            new String[]{"400 Lichess","500 Lichess","600 Lichess","700 Lichess","800 Lichess","900 Lichess"}));
-        levels.setEnabled(false);
-        levels.setContentDescription("Niveaux Lichess non disponibles : collecte et calibration non réalisées");
-        root.addView(levels);
-        label(root,"Stockfish : analyse, jauge, WDL et MultiPV non intégrés. Aucun classement simulé.",14);
+        button(root,"À propos de Stockfish GPLv3",()->new AlertDialog.Builder(this)
+            .setTitle("Stockfish 18 — analyse seulement")
+            .setMessage("Moteur libre GPLv3. Source exacte : github.com/official-stockfish/Stockfish/tree/sf_18. Le binaire est compilé sans modification depuis ce tag par GitHub Actions. Licence incluse dans les ressources APK. L'adversaire humain n'utilise jamais ce moteur pour choisir ses coups.")
+            .setPositiveButton("Code source",(d,w)->{
+                android.content.Intent intent=new android.content.Intent(
+                    android.content.Intent.ACTION_VIEW,
+                    android.net.Uri.parse("https://github.com/official-stockfish/Stockfish/tree/sf_18"));
+                startActivity(intent);
+            }).setNegativeButton("Fermer",null).show());
         setContentView(scroller);
+        stockfishBridge=new StockfishBridge(this,value->analysisPanel.setText(value));
+        stockfishBridge.start();
         refresh();
+        stockfishBridge.analyze(current().fen());
         scheduleBot();
     }
     private ChessGame.Position current(){return positions.get(positions.size()-1);}
@@ -178,9 +260,16 @@ public final class MainActivity extends Activity {
         history.setText(sb.toString());
         chessView.invalidate();
     }
+    private void reconfigurePolicy(){
+        // Keep the random seed stable throughout one game unless Fab explicitly restarts.
+        humanPolicy=new HumanPolicy(targetRating,prefs.getLong("humanSeed",42L),aggression);
+        if(botInfo!=null)botInfo.setText("Profil visé "+targetRating+" (non calibré) · style "+(int)(aggression*100)+"% agressif");
+    }
     private void playMove(ChessGame.Move m){
         positions.add(ChessGame.apply(current(),m));moves.add(m.uci());
-        selected=-1;persist();refresh();scheduleBot();
+        selected=-1;revision++;persist();refresh();
+        if(stockfishBridge!=null)stockfishBridge.analyze(current().fen());
+        scheduleBot();
     }
     private void tryMove(String uci){
         if(finished()){Toast.makeText(this,"Partie terminée",Toast.LENGTH_SHORT).show();return;}
@@ -217,20 +306,41 @@ public final class MainActivity extends Activity {
         if(botEnabled&&!current().white&&!finished())handler.postDelayed(botRunnable,300);
     }
     private void botMove(){
-        if(!botEnabled||current().white||finished())return;
-        List<ChessGame.Move> legal=ChessGame.legal(current());
-        if(legal.isEmpty())return;
-        // Deliberately labelled as uncalibrated, not a reconstructed human Elo profile.
-        ChessGame.Move chosen=legal.get(random.nextInt(legal.size()));
-        playMove(chosen);
+        if(botRunning||!botEnabled||current().white||finished())return;
+        final ChessGame.Position initial=current();
+        final long expectedRevision=revision;
+        final int ply=moves.size();
+        final boolean online=onlineSwitch!=null&&onlineSwitch.isChecked();
+        final HumanPolicy policy=humanPolicy;
+        botRunning=true;
+        botInfo.setText("Profil "+targetRating+" : recherche d'un coup humain…");
+        botWorker.execute(()->{
+            HumanPolicy.Choice candidate=null;
+            try{
+                Map<String,Integer> sampled=explorer.moves(initial,ply,online);
+                candidate=policy.choose(initial,sampled,ply);
+            }catch(RuntimeException ex){
+                android.util.Log.w("GambitHuman","Échec du choix, code="+ex.getClass().getSimpleName());
+            }
+            final HumanPolicy.Choice choice=candidate;
+            handler.post(()->{
+                botRunning=false;
+                if(choice==null||revision!=expectedRevision||!botEnabled||
+                   current().white||!current().fen().equals(initial.fen()))return;
+                botInfo.setText("Coup "+choice.move.uci()+" · "+choice.source);
+                playMove(choice.move);
+            });
+        });
     }
     private void reset(){
+        revision++;
         handler.removeCallbacks(botRunnable);
         prefs.edit().remove("baseFen").apply();
         moves.clear();positions.clear();positions.add(ChessGame.fromFen(ChessGame.START));
         selected=-1;persist();refresh();scheduleBot();
     }
     private void undo(){
+        revision++;
         handler.removeCallbacks(botRunnable);
         int count=botEnabled&&current().white?2:1;
         while(count-->0&&!moves.isEmpty()){
@@ -248,6 +358,7 @@ public final class MainActivity extends Activity {
             .setView(input).setPositiveButton("Charger",(d,w)->{
                 try{
                     ChessGame.Position p=ChessGame.fromFen(input.getText().toString().trim());
+                    revision++;
                     handler.removeCallbacks(botRunnable);
                     positions.clear();positions.add(p);moves.clear();selected=-1;
                     prefs.edit().putString("baseFen",p.fen()).remove("history").apply();
@@ -266,7 +377,21 @@ public final class MainActivity extends Activity {
         }
         persist();refresh();scheduleBot();
     }
-    @Override protected void onDestroy(){handler.removeCallbacks(botRunnable);super.onDestroy();}
+    @Override protected void onPause(){
+        if(stockfishBridge!=null)stockfishBridge.stop();
+        super.onPause();
+    }
+    @Override protected void onResume(){
+        super.onResume();
+        if(stockfishBridge!=null)stockfishBridge.analyze(current().fen());
+    }
+    @Override protected void onDestroy(){
+        handler.removeCallbacks(botRunnable);
+        revision++;
+        botWorker.shutdownNow();
+        if(stockfishBridge!=null)stockfishBridge.close();
+        super.onDestroy();
+    }
     private final class ChessView extends View {
         private final Paint paint=new Paint(3);
         private final String symbols="♔♕♖♗♘♙♚♛♜♝♞♟";

@@ -19,3 +19,8 @@
 - Run 4 : https://github.com/greenpower2669/GambitDrame/actions/runs/39175569139 ; 18 contrôles Java, build et publication réussis. APK `GambitDrame-v0.2.1-debug.apk` dans `gd-test-4`, SHA256 `e83a3f364118d2129d7ff0488bbeeb5ba14429059fe261c630850fe3ecad6474`.
 
 - Dernière livraison test vérifiée : CI run 5 réussie (commit `fd44e601`), pré-release `gd-test-5`, APK directe v0.2.1, SHA256 `dff95559977bf63bd1166d78b19322e27177fe54e342df4ffcac0d46a7db8ee7`. Statut **Livré, à valider sur Android 16** ; GD-002 et GD-003 non livrées.
+
+## GD-006 — Ordre supplémentaire de Fab (19 octobre 2026)
+- Fab a constaté : « Il est vide pas de joueur humain ni stockfish ^^ ... push ça ». Mission : intégrer les deux éléments et une APK directe.
+- Intervention v0.3.0 sur la branche autorisée : modèle de coups probabilistes Lichess (<1000 non filtré) + politique heuristique locale ; Stockfish 18 ARM64 pour analyse UCI seulement (panneau évaluations/WDL/MultiPV).
+- **Livraison provisoire non validée** tant que compilation/résultat réel du workflow et installation Samsung ne sont pas confirmés. Le calibrage strict 400–900 et les critères >=1000 parties/joueur restent ouverts (GD-003). Pas de merge main.

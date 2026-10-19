@@ -1,4 +1,4 @@
-name: Android APK
+name: GambitDrame Android + Stockfish 18 ARM64
 on:
   workflow_dispatch:
   push:
@@ -11,39 +11,71 @@ permissions:
 jobs:
   apk:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-      # No android-actions/setup-android@v3: it invokes removed SDK package "tools".
-      - name: Verify pure Java chess rules
+      - name: Verify local Java rules and human probabilistic policy
         run: |
+          set -euo pipefail
           mkdir -p build/chess-test-classes
-          javac -d build/chess-test-classes app/src/main/java/fr/gambitdrame/ChessGame.java app/src/test/java/fr/gambitdrame/ChessGameTest.java
+          javac -d build/chess-test-classes             app/src/main/java/fr/gambitdrame/ChessGame.java             app/src/main/java/fr/gambitdrame/HumanPolicy.java             app/src/test/java/fr/gambitdrame/ChessGameTest.java             app/src/test/java/fr/gambitdrame/HumanPolicyTest.java
           java -cp build/chess-test-classes fr.gambitdrame.ChessGameTest
-      - name: Prepare SDK packages
+          java -cp build/chess-test-classes fr.gambitdrame.HumanPolicyTest
+      - name: Install Android SDK and NDK r27c
         run: |
-          echo "ANDROID_HOME=$ANDROID_HOME"
+          set -euo pipefail
           SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -n 1)"
           test -n "$SDKMANAGER"
-          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0" "ndk;27.2.12479018"
+      - name: Compile official GPLv3 Stockfish 18 for arm64-v8a
+        run: |
+          set -euo pipefail
+          git clone --depth 1 --branch sf_18 https://github.com/official-stockfish/Stockfish.git upstream-stockfish
+          test "$(git -C upstream-stockfish rev-parse HEAD)" = "cb3d4ee9b47d0c5aae855b12379378ea1439675c"
+          NDKBIN="$ANDROID_HOME/ndk/27.2.12479018/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          test -x "$NDKBIN/aarch64-linux-android29-clang++"
+          export PATH="$NDKBIN:$PATH"
+          make -C upstream-stockfish/src net
+          make -C upstream-stockfish/src -j2 build ARCH=armv8 COMP=ndk
+          test -s upstream-stockfish/src/stockfish
+          file upstream-stockfish/src/stockfish
+          "$NDKBIN/llvm-strip" upstream-stockfish/src/stockfish
+          mkdir -p app/src/main/jniLibs/arm64-v8a app/src/main/assets/licenses
+          cp upstream-stockfish/src/stockfish app/src/main/jniLibs/arm64-v8a/libstockfish.so
+          cp upstream-stockfish/Copying.txt app/src/main/assets/licenses/STOCKFISH-GPLv3.txt
+          cat > app/src/main/assets/licenses/STOCKFISH-SOURCE.txt <<'NOTICE'
+          Stockfish 18 — GPL version 3
+          Source code matching this unmodified engine binary:
+          https://github.com/official-stockfish/Stockfish/tree/cb3d4ee9b47d0c5aae855b12379378ea1439675c
+          Source archive:
+          https://github.com/official-stockfish/Stockfish/archive/cb3d4ee9b47d0c5aae855b12379378ea1439675c.tar.gz
+          Build: make -C src net; make -C src -j2 build ARCH=armv8 COMP=ndk
+          Toolchain: Android NDK r27c (27.2.12479018), aarch64 API 29.
+          Stockfish is independent and receives UCI commands over a process pipe.
+          The engine is exclusively used to display analyses; not to select moves for the opponent.
+          NOTICE
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Assemble Android debug APK
+      - name: Assemble APK containing real Stockfish binary
         run: gradle :app:assembleDebug --no-daemon --stacktrace
-      - name: Verify APK exists
-        run: test -s app/build/outputs/apk/debug/app-debug.apk
-      - name: Publish direct APK (pre-release on work branch)
+      - name: Verify packaged ARM64 native engine and licence
+        run: |
+          set -euo pipefail
+          apk=app/build/outputs/apk/debug/app-debug.apk
+          test -s "$apk"
+          unzip -l "$apk" | grep -F 'lib/arm64-v8a/libstockfish.so'
+          unzip -l "$apk" | grep -F 'assets/licenses/STOCKFISH-GPLv3.txt'
+          unzip -l "$apk" | grep -F 'assets/licenses/STOCKFISH-SOURCE.txt'
+      - name: Publish direct test APK in GitHub pre-release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk GambitDrame-v0.2.1-debug.apk
+          set -euo pipefail
+          cp app/build/outputs/apk/debug/app-debug.apk GambitDrame-v0.3.0-debug-arm64.apk
           tag="gd-test-${{ github.run_number }}"
-          if gh release view "$tag" >/dev/null 2>&1; then
-            gh release upload "$tag" GambitDrame-v0.2.1-debug.apk --clobber
-          else
-            gh release create "$tag" GambitDrame-v0.2.1-debug.apk --target "${{ github.sha }}" --prerelease --title "GambitDrame 0.2.1 test ${{ github.run_number }}" --notes "Prototype hors ligne : règles légales, bot de démonstration NON calibré. Stockfish/Lichess non intégrés. Pas de fusion main."
-          fi
+          gh release create "$tag" GambitDrame-v0.3.0-debug-arm64.apk             --target "${{ github.sha }}" --prerelease             --title "GambitDrame 0.3.0 experimental test ${{ github.run_number }}"             --notes "ARM64 Stockfish 18 UCI GPLv3 analysis + Lichess opening-explorer sampled moves below 1000 + non-calibrated local fallback. Early prototype; hardware launch and human Elo calibration NOT proven. No main merge."

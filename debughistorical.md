@@ -40,3 +40,8 @@
 - Après nettoyage mémoires/workflow, run 5 : https://github.com/greenpower2669/GambitDrame/actions/runs/39175802031 — `success`.
 - APK directe sur https://github.com/greenpower2669/GambitDrame/releases/tag/gd-test-5, `GambitDrame-v0.2.1-debug.apk` 24 791 octets, SHA256 `dff95559977bf63bd1166d78b19322e27177fe54e342df4ffcac0d46a7db8ee7`.
 - Ce build ne prouve toujours pas l'installation/lancement physique sur Samsung ; aucune demande de fusion main.
+
+## 19/10/2026 — Retour utilisateur et mission de correction
+- Fab confirme que 0.2.1 est perçue comme "vide" : absence du vrai joueur humain et de Stockfish. Ce n'est pas une régression : les deux fonctions étaient explicitement non produites dans la version précédente, mais le résultat ne répond pas encore à la mission principale.
+- Intervention v0.3.0 : modules HumanPolicy / LichessOpeningExplorer / StockfishBridge, composant UI et workflow de fabrication du moteur Stockfish 18 pour ARM64.
+- Aucun build de v0.3.0, APK ou lancement moteur n'est confirmé lors de la rédaction de cette entrée. Résultat du CI à examiner avant livraison. Risque de confusion entre coup humain non calibré et vraie cohortes 400–900 : l'UI doit rester explicite.

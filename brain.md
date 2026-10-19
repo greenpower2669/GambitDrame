@@ -18,3 +18,10 @@ L'adversaire humain doit échantillonner des coups humains réels, avec continui
 - Source officielle `lichess-org/lila/modules/rating/src/main/Glicko.scala` sur master : `minRating = IntRating(400)`, `maxRating = IntRating(4000)`, `standardRankableDeviation = 75`. La notation 400 est donc atteignable comme plancher logiciel, mais un joueur au plancher peut être encore moins fort, ce qui biaise une calibration empirique si ignoré.
 - La présence de cohortes **actives, non provisoires, avec ≥ 1000 parties/cadence** pour 400 et 500 n'est toujours pas quantifiée. Ne pas confondre plage admise par le moteur de classement et disponibilité de données.
 - Source : https://github.com/lichess-org/lila/blob/master/modules/rating/src/main/Glicko.scala
+
+## Lot v0.3.0 — implémentation à valider par CI et test matériel
+- Profil de coups "humain" : tirage stochastique sans vote majoritaire parmi les coups observés par l'explorateur Lichess <1000 en blitz/rapid quand Internet répond ; sinon politique heuristique locale avec bruit, capture/développement/risque, six cibles 400–900 exploratoires et style agressif paramétrable.
+- Limites STRICTES : les statistiques de l'explorateur ne vérifient pas individuellement les comptes actifs à 1000 parties, la stabilité de rating, ni une calibration séparée 400–900. Les six étiquettes sont **cibles expérimentales, PAS des scores Elo prouvés**.
+- Analyse Stockfish 18 : processus UCI binaire natif ARM64 Android NDK r27c, 1 thread, 32 Mo Hash, MultiPV 3, profondeur 11, centipions côté Blancs et WDL côté Blancs. Ne sélectionne jamais les coups de HumanPolicy.
+- Application hybride : Internet facultatif uniquement pour statistiques publiques, repli hors ligne ; build inclus binaire Stockfish et licence GPLv3/source exacte.
+- Matrice distribution : téléphone Android 16 ARM64 ; aucun matériel installé par CI, aucun test WDL réel jusqu'au lancement.
