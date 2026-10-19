@@ -22,9 +22,10 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p build/chess-test-classes
-          javac -d build/chess-test-classes             app/src/main/java/fr/gambitdrame/ChessGame.java             app/src/main/java/fr/gambitdrame/HumanPolicy.java             app/src/test/java/fr/gambitdrame/ChessGameTest.java             app/src/test/java/fr/gambitdrame/HumanPolicyTest.java
+          javac -d build/chess-test-classes             app/src/main/java/fr/gambitdrame/ChessGame.java             app/src/main/java/fr/gambitdrame/HumanPolicy.java             app/src/test/java/fr/gambitdrame/ChessGameTest.java             app/src/test/java/fr/gambitdrame/HumanPolicyTest.java app/src/main/java/fr/gambitdrame/ReviewCursor.java app/src/main/java/fr/gambitdrame/EvaluationScale.java app/src/test/java/fr/gambitdrame/ReviewTest.java
           java -cp build/chess-test-classes fr.gambitdrame.ChessGameTest
           java -cp build/chess-test-classes fr.gambitdrame.HumanPolicyTest
+          java -cp build/chess-test-classes fr.gambitdrame.ReviewTest
       - name: Install Android SDK and NDK r27c
         run: |
           set -euo pipefail
@@ -76,6 +77,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          cp app/build/outputs/apk/debug/app-debug.apk GambitDrame-v0.3.0-debug-arm64.apk
+          cp app/build/outputs/apk/debug/app-debug.apk GambitDrame-v0.3.1-debug-arm64.apk
           tag="gd-test-${{ github.run_number }}"
-          gh release create "$tag" GambitDrame-v0.3.0-debug-arm64.apk             --target "${{ github.sha }}" --prerelease             --title "GambitDrame 0.3.0 experimental test ${{ github.run_number }}"             --notes "ARM64 Stockfish 18 UCI GPLv3 analysis + Lichess opening-explorer sampled moves below 1000 + non-calibrated local fallback. Early prototype; hardware launch and human Elo calibration NOT proven. No main merge."
+          gh release create "$tag" GambitDrame-v0.3.1-debug-arm64.apk             --target "${{ github.sha }}" --prerelease             --title "GambitDrame 0.3.1 experimental test ${{ github.run_number }}"             --notes "ARM64 Stockfish 18 UCI GPLv3 analysis + Lichess opening-explorer sampled moves below 1000 + non-calibrated local fallback. Early prototype; hardware launch and human Elo calibration NOT proven. No main merge."

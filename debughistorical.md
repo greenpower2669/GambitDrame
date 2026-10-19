@@ -53,3 +53,9 @@
 - `Unable to strip ... libstockfish.so` affiché en avertissement (binaire déjà strip par workflow), n'a pas empêché build, inclusion et publication ; non démontré comme bug.
 - Release https://github.com/greenpower2669/GambitDrame/releases/tag/gd-test-6 ; asset `GambitDrame-v0.3.0-debug-arm64.apk`, taille 79 814 857 octets, SHA256 `82103cdb09eb578ac6c7644270e9bbd55a1ac809e5437da8fd6e6da87d9af39b`.
 - **Non vérifiés** : Android 16 ProcessBuilder binaire, handshake UCI, rendu WDL, récupération API Lichess, comportements lors de l'extinction de l'écran, véritables Elo 400–900. Ne pas annoncer comme validés.
+
+## 19/10/2026 — Relecture et jauge latérale (0.3.1), avant build
+- Demande Fab : barre de force noir/blanc collée à gauche façon Lichess, bouton play/précédent/suivant/début/fin. Cinq boutons plus sortie explicite relecture et annonces d'accessibilité.
+- Risque historique corrigé par conception : passage en relecture ne réécrit pas `positions`/`moves` ; `ReviewCursor` pure Java + tests. Après annuler/nouvelle partie/import FEN, sortir de relecture, recalcul Stockfish.
+- Stockfish peut publier des résultats obsolètes si navigation rapide. Pont remplacé : tags FEN, barrière `stop`/`isready`, seule principale MultiPV 1 modifie la jauge.
+- À confirmer : compilation JVM/Gradle, log de tests, APK directe, largeur barre 44dp et précision des zones tactiles sur Samsung, autoplay et historique.

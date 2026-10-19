@@ -40,3 +40,11 @@
 - Exécution #6 a passé : tests JVM, téléchargement NDK, compilateur C++ Stockfish, Gradle Android, `unzip -l` de l'APK, livraison GitHub Release. Source binaire compilé de 113,75 Mo et APK comprimée de 79,8 Mo.
 - Message Gradle `Unable to strip ... libstockfish.so` : avertissement non bloquant ; moteur natif déjà passé par llvm-strip avant Gradle, packagé tel quel. L'exécution via ProcessBuilder dans nativeLibraryDir demeure à valider sur Android 16.
 - GitHub Release de test `gd-test-6`, pas main. Voir debughistorical.md pour preuve et SHA256.
+
+## Code ajouté au lot 0.3.1
+- `EvaluationScale.java` (sans Android) : score centipions/mat du point de vue Blancs → fraction [0.02,0.98] et libellé localisé français ; 0cp=0.5.
+- `ReviewCursor.java` (sans Android) : sélection 0..N, index=-1 pour direct, bornes de navigation, adaptation à une histoire tronquée sans modifier l'historique.
+- `ReviewTest.java` vérifie bornes de relecture, retour live, scores positifs/négatifs/mats, formatage FR ; ajouté à CI `javac` et `java` après HumanPolicyTest.
+- `MainActivity.ChessView` : jauge fait partie du canvas à gauche de l'échiquier, donc même hauteur et interaction de toucher décalée pour garder les coordonnées de cases précises. `displayed()` retourne la position consultée, `current()` reste la partie réelle.
+- `StockfishBridge.Listener` : `onAnalysis(fen,text,cpWhite,mateWhite)`; UCI séquentiel stop-isready-go ; n'écrit pas de score dans la politique humaine.
+- APK CI version 0.3.1 (code 5) attendue via prérelease nouvelle, build workflow inchangé pour moteur officiel Stockfish 18 et GPL.

@@ -48,3 +48,11 @@ Les commits purement Markdown n'ont pas besoin de recompiler Android ; workflow 
 - CI et .apk **produites et vérifiées** par GitHub, sans ZIP pour Fab.
 - À valider sur Samsung : ouverture de l'APK 79,8 Mo, première analyse Stockfish multiPV/WDL, téléchargement Lichess (si connecté), coups du bot et reprise.
 - Les préréglages 400–900 demeurent expérimentaux, non étalonnés. Pas de fusion `main`.
+
+## Mission GD-007 — jauge et télécommande de relecture
+- [x] Coder colonne verticale noir haut/blanc bas de 44dp à gauche intégrée au canvas du plateau ; interpolation centipions/mat, indicateur accessible.
+- [x] Coder boutons début/précédent/play-pause/suivant/fin, lecture auto ~900ms par coup, sortie relecture explicite, sans modifier l'historique sauvegardé.
+- [x] Sécuriser bot contre navigation, intégrer affichage FEN historique et synchronisation d'analyse UCI avec tag FEN + barrière isready.
+- [x] Ajouter tests JVM `ReviewTest` (curseur, évaluation) et vérifications dans le workflow.
+- [ ] Vérifier build 0.3.1 et réussite du workflow, source Stockfish ARM64 et licence, publier .apk directe, enregistrer SHA256 et lien.
+- [ ] Vérifier sur Samsung SM-A576B : jauge noire/blanche visible à gauche même en portrait, largeur, tactile case a..h, navigation, autoplay, reprise, et scores qui ne se mélangent pas en recul/avance rapides.

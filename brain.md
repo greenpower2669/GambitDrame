@@ -31,3 +31,10 @@ L'adversaire humain doit échantillonner des coups humains réels, avec continui
 - Stockfish 18 officiel `sf_18` commit cb3d4ee9... compilé avec NDK r27c, binaire ARM64 de 113 750 704 octets inclus dans l'APK avec GPLv3 et notice source ; Gradle `BUILD SUCCESSFUL`.
 - APK directe 0.3.0 de 79 814 857 octets vérifiée par métadonnées GitHub Release gd-test-6. SHA256 82103cdb09eb578ac6c7644270e9bbd55a1ac809e5437da8fd6e6da87d9af39b.
 - **Limite** : ni uciok/readyok, ni panneau affiché, ni coups réels Lichess sous Android, ni parties complètes ne sont confirmés par CI ; appareil Samsung requis.
+
+## Lot v0.3.1 — jauge Stockfish et relecture
+- L'échiquier dessine dans sa propre surface une colonne gauche de 44dp alignée à sa hauteur : noir en haut, blanc en bas, séparateur doré ; case 0cp → moitié, transition logistique symétrique centipions, presque pleine pour un mat. Accessible via description « Évaluation Stockfish côté blancs ».
+- `ReviewCursor` sépare position courante affichée et dernière position de la partie en cours : changement de position sans muter `positions`, `moves`, FEN de départ ni sauvegarde. Cinq boutons début/avant/play-pause/après/fin, plus reprise explicite.
+- 900ms par demi-coup en lecture automatique, interruption par pause/navigation/Android onPause. Lorsqu'une relecture est active, aucun coup humain ni bot n'est appliqué ; tâches bot et réseau obsolètes ignorées par révision.
+- `StockfishBridge` étiquette ses évaluations par FEN, associe score CP/mat blanc à MultiPV 1, et utilise `stop`+`isready` comme barrière pour limiter l'affichage de lignes périmées lors d'une navigation rapide. Les positions passées restent analysables.
+- Les fonctions sont définies dans le code; certification de compilation/test matériel et lien d'APK attendus avant validation.

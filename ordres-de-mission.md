@@ -30,3 +30,9 @@
 - Stockfish 18 compilé ARM64, moteur `lib/arm64-v8a/libstockfish.so` et licence GPLv3 vérifiés dans l'APK ; application Android compilée.
 - APK directe publiée : https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-6/GambitDrame-v0.3.0-debug-arm64.apk (79 814 857 octets, SHA256 `82103cdb09eb578ac6c7644270e9bbd55a1ac809e5437da8fd6e6da87d9af39b`).
 - **Livré à valider sur Samsung** : présence binaire prouvée, lancement effectif et qualité des coups encore non testés physiquement. Cohortes 400–900 et engagements de performance non validés.
+
+## GD-007 — Ordre explicite de Fab : jauge et télécommande de relecture (19/10/2026)
+- Jauge Stockfish façon Lichess **collée verticalement à gauche du plateau même en mode portrait**, noirs en haut, blancs en bas, rapport 50/50 à zéro, progression contraste élevé selon score centipions ou mat, lue vocalement par libellé d'accessibilité.
+- Navigation de partie : 5 boutons visibles **début / précédent / lecture automatique-pause / suivant / fin**, plus « Reprendre la partie » pour revenir au jeu. Les positions parcourues **ne mutent pas** la partie sauvegardée.
+- Chaque position affichée déclenche une nouvelle recherche Stockfish ; le moteur humain reste indépendant de Stockfish et ne joue pas pendant une relecture. Contrôles TalkBack en français.
+- Version 0.3.1, travail sur branche `proposal/stockfish-multipv-human-training-v1`. APK directe GitHub. Pas de merge main. Vérifier CI et matériel avant d'annoncer les fonctions comme éprouvées.

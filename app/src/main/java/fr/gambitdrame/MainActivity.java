@@ -30,6 +30,12 @@ import java.util.concurrent.ExecutorService;
 public final class MainActivity extends Activity {
     private final List<ChessGame.Position> positions=new ArrayList<>();
     private final List<String> moves=new ArrayList<>();
+    // Review the already recorded moves without rewinding or corrupting the live game.
+    private final ReviewCursor review=new ReviewCursor(0);
+    private final Runnable replayTick=this::advanceReplay;
+    private boolean replayPlaying=false;
+    private Button playbackButton;
+    private TextView replayPosition;
     private final ExecutorService botWorker=Executors.newSingleThreadExecutor();
     private HumanPolicy humanPolicy;
     private LichessOpeningExplorer explorer;
@@ -62,6 +68,7 @@ public final class MainActivity extends Activity {
         humanPolicy=new HumanPolicy(targetRating,seed,aggression);
         explorer=new LichessOpeningExplorer(this);
         restore();
+        review.setHistorySize(moves.size());
         ScrollView scroller=new ScrollView(this);
         scroller.setFillViewport(true);
         LinearLayout root=new LinearLayout(this);
@@ -77,7 +84,7 @@ public final class MainActivity extends Activity {
             return insets;
         });
         heading(root,"♟ GambitDrame",25);
-        label(root,"Version 0.3.0 — profil humain expérimental + Stockfish 18",16);
+        label(root,"Version 0.3.1 — jauge Stockfish et navigation de partie",16);
         label(root,"Niveaux 400–900 EXPÉRIMENTAUX, pas encore calibrés par parties complètes.",14);
         chessView=new ChessView();
         analysisPanel=new TextView(this);
@@ -98,9 +105,24 @@ public final class MainActivity extends Activity {
             row.addView(side,new LinearLayout.LayoutParams(0,-2,1));
             row.addView(chessView,new LinearLayout.LayoutParams(0,-2,2));
         }else{
-            root.addView(analysisPanel,new LinearLayout.LayoutParams(-1,-2));
             root.addView(chessView,new LinearLayout.LayoutParams(-1,-2));
         }
+        // All five replay controls sit next to the board, including TalkBack labels.
+        LinearLayout playbackControls=new LinearLayout(this);
+        playbackControls.setOrientation(LinearLayout.HORIZONTAL);
+        root.addView(playbackControls,new LinearLayout.LayoutParams(-1,-2));
+        replayButton(playbackControls,"⏮\nDébut","Revoir le début de la partie",()->manualSeek(0));
+        replayButton(playbackControls,"◀\nAvant","Voir le coup précédent",
+            ()->manualSeek(review.ply()-1));
+        playbackButton=replayButton(playbackControls,"▶\nLecture","Lecture automatique de la partie",
+            this::toggleReplay);
+        replayButton(playbackControls,"Après\n▶","Voir le coup suivant",
+            ()->manualSeek(review.ply()+1));
+        replayButton(playbackControls,"Fin\n⏭","Voir le dernier coup",
+            ()->manualSeek(moves.size()));
+        replayPosition=label(root,"Partie en direct",15);
+        button(root,"Reprendre la partie (sortir de la relecture)",this::resumeGame);
+        if(!wide)root.addView(analysisPanel,new LinearLayout.LayoutParams(-1,-2));
         status=label(root,"",18);
         status.setTypeface(null,Typeface.BOLD);
         botSwitch=new Switch(this);
@@ -177,7 +199,7 @@ public final class MainActivity extends Activity {
         button(root,"Importer FEN",this::importFen);
         button(root,"Copier FEN",()->{
             ClipboardManager cm=(ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE);
-            cm.setPrimaryClip(ClipData.newPlainText("FEN",current().fen()));
+            cm.setPrimaryClip(ClipData.newPlainText("FEN",displayed().fen()));
             Toast.makeText(this,"Position FEN copiée",Toast.LENGTH_SHORT).show();
         });
         heading(root,"Entraînement → Ouvertures",18);
@@ -196,13 +218,95 @@ public final class MainActivity extends Activity {
                 startActivity(intent);
             }).setNegativeButton("Fermer",null).show());
         setContentView(scroller);
-        stockfishBridge=new StockfishBridge(this,value->analysisPanel.setText(value));
+        stockfishBridge=new StockfishBridge(this,(fen,message,whiteCp,whiteMate)->{
+            if(fen!=null&&!fen.equals(displayed().fen()))return;
+            analysisPanel.setText(message);
+            if(whiteCp!=null||whiteMate!=null)
+                chessView.setEvaluation(whiteCp,whiteMate);
+        });
         stockfishBridge.start();
         refresh();
-        stockfishBridge.analyze(current().fen());
+        analyzeDisplayed();
         scheduleBot();
     }
     private ChessGame.Position current(){return positions.get(positions.size()-1);}
+    private ChessGame.Position displayed(){
+        return positions.get(review.ply());
+    }
+    private void analyzeDisplayed(){
+        if(chessView!=null)chessView.setEvaluation(null,null);
+        if(stockfishBridge!=null)stockfishBridge.analyze(displayed().fen());
+    }
+    private int dp(float n){return Math.round(getResources().getDisplayMetrics().density*n);}
+    private Button replayButton(LinearLayout container,String title,String speech,Runnable callback){
+        Button button=new Button(this);
+        button.setText(title);button.setTextSize(12);
+        button.setAllCaps(false);button.setMinHeight(dp(52));
+        button.setContentDescription(speech);
+        button.setPadding(0,dp(4),0,dp(4));
+        container.addView(button,new LinearLayout.LayoutParams(0,dp(66),1));
+        button.setOnClickListener(v->callback.run());
+        return button;
+    }
+    private void updatePlaybackUi(){
+        if(playbackButton!=null){
+            playbackButton.setText(replayPlaying?"⏸\nPause":"▶\nLecture");
+            playbackButton.setContentDescription(replayPlaying?
+                "Mettre la lecture en pause":"Démarrer la lecture automatique");
+        }
+        if(replayPosition!=null){
+            replayPosition.setText(review.reviewing()?
+                "Relecture : "+review.ply()+" / "+moves.size()+" demi-coups":
+                "Partie en direct : "+moves.size()+" demi-coups");
+        }
+    }
+    private void stopReplay(){
+        handler.removeCallbacks(replayTick);
+        replayPlaying=false;
+        updatePlaybackUi();
+    }
+    private void manualSeek(int ply){
+        stopReplay();
+        seekReview(ply);
+    }
+    private void seekReview(int ply){
+        handler.removeCallbacks(botRunnable);
+        revision++; // Drop pending network/bot replies; do not alter recorded moves.
+        review.setHistorySize(moves.size());
+        review.seek(ply);
+        selected=-1;
+        refresh();
+        analyzeDisplayed();
+    }
+    private void toggleReplay(){
+        if(replayPlaying){stopReplay();return;}
+        if(moves.isEmpty()){
+            Toast.makeText(this,"Aucun coup à rejouer",Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if(!review.reviewing()||review.ply()>=moves.size())seekReview(0);
+        replayPlaying=true;
+        updatePlaybackUi();
+        handler.postDelayed(replayTick,900);
+    }
+    private void advanceReplay(){
+        if(!replayPlaying)return;
+        if(review.ply()<moves.size())seekReview(review.ply()+1);
+        if(review.ply()<moves.size())handler.postDelayed(replayTick,900);
+        else stopReplay();
+    }
+    private void leaveReview(){
+        stopReplay();
+        review.live();
+    }
+    private void resumeGame(){
+        leaveReview();
+        revision++;
+        selected=-1;
+        refresh();
+        analyzeDisplayed();
+        scheduleBot();
+    }
     private void restore(){
         positions.clear();moves.clear();
         positions.add(ChessGame.fromFen(ChessGame.START));
@@ -248,16 +352,19 @@ public final class MainActivity extends Activity {
           ||ChessGame.insufficient(current()));}
     private void refresh(){
         if(chessView==null)return;
-        ChessGame.Position p=current();
-        String outcome=ChessGame.outcome(p,repetitionCount());
+        ChessGame.Position p=displayed();
+        String outcome=review.reviewing()?"":ChessGame.outcome(p,repetitionCount());
         String turn=p.white?"Blancs":"Noirs";
-        status.setText(!outcome.isEmpty()?outcome:"Au trait : "+turn+(botEnabled&&!p.white?" (bot)":""));
+        status.setText(review.reviewing()?
+            "Relecture en pause · trait : "+turn:
+            (!outcome.isEmpty()?outcome:"Au trait : "+turn+(botEnabled&&!p.white?" (profil humain)":"")));
         StringBuilder sb=new StringBuilder("Historique (coordonnées) : ");
         for(int i=0;i<moves.size();i++){
             if(i%2==0)sb.append("  ").append(i/2+1).append(". ");
             sb.append(moves.get(i)).append(" ");
         }
         history.setText(sb.toString());
+        updatePlaybackUi();
         chessView.invalidate();
     }
     private void reconfigurePolicy(){
@@ -266,18 +373,29 @@ public final class MainActivity extends Activity {
         if(botInfo!=null)botInfo.setText("Profil visé "+targetRating+" (non calibré) · style "+(int)(aggression*100)+"% agressif");
     }
     private void playMove(ChessGame.Move m){
-        positions.add(ChessGame.apply(current(),m));moves.add(m.uci());
+        if(review.reviewing())return;
+        positions.add(ChessGame.apply(current(),m));
+        moves.add(m.uci());
+        review.setHistorySize(moves.size());
         selected=-1;revision++;persist();refresh();
-        if(stockfishBridge!=null)stockfishBridge.analyze(current().fen());
+        analyzeDisplayed();
         scheduleBot();
     }
     private void tryMove(String uci){
+        if(review.reviewing()){
+            Toast.makeText(this,"Quitter la relecture pour jouer",Toast.LENGTH_SHORT).show();
+            return;
+        }
         if(finished()){Toast.makeText(this,"Partie terminée",Toast.LENGTH_SHORT).show();return;}
         if(botEnabled&&!current().white){Toast.makeText(this,"Tour du bot",Toast.LENGTH_SHORT).show();return;}
         for(ChessGame.Move m:ChessGame.legal(current()))if(m.uci().equals(uci)){playMove(m);return;}
         Toast.makeText(this,"Coup illégal : "+uci,Toast.LENGTH_SHORT).show();
     }
     private void choose(int sq){
+        if(review.reviewing()){
+            Toast.makeText(this,"Appuyer sur Reprendre la partie pour jouer",Toast.LENGTH_SHORT).show();
+            return;
+        }
         if(finished()||(botEnabled&&!current().white))return;
         ChessGame.Position p=current();
         char c=p.board[sq];
@@ -303,10 +421,11 @@ public final class MainActivity extends Activity {
     }
     private void scheduleBot(){
         handler.removeCallbacks(botRunnable);
-        if(botEnabled&&!current().white&&!finished())handler.postDelayed(botRunnable,300);
+        if(!review.reviewing()&&botEnabled&&!current().white&&!finished())
+            handler.postDelayed(botRunnable,300);
     }
     private void botMove(){
-        if(botRunning||!botEnabled||current().white||finished())return;
+        if(botRunning||review.reviewing()||!botEnabled||current().white||finished())return;
         final ChessGame.Position initial=current();
         final long expectedRevision=revision;
         final int ply=moves.size();
@@ -325,28 +444,35 @@ public final class MainActivity extends Activity {
             final HumanPolicy.Choice choice=candidate;
             handler.post(()->{
                 botRunning=false;
-                if(choice==null||revision!=expectedRevision||!botEnabled||
-                   current().white||!current().fen().equals(initial.fen()))return;
+                if(choice==null||review.reviewing()||revision!=expectedRevision||!botEnabled||
+                   current().white||!current().fen().equals(initial.fen())){
+                    scheduleBot();
+                    return;
+                }
                 botInfo.setText("Coup "+choice.move.uci()+" · "+choice.source);
                 playMove(choice.move);
             });
         });
     }
     private void reset(){
+        leaveReview();
         revision++;
         handler.removeCallbacks(botRunnable);
         prefs.edit().remove("baseFen").apply();
         moves.clear();positions.clear();positions.add(ChessGame.fromFen(ChessGame.START));
-        selected=-1;persist();refresh();scheduleBot();
+        review.setHistorySize(moves.size());
+        selected=-1;persist();refresh();analyzeDisplayed();scheduleBot();
     }
     private void undo(){
+        leaveReview();
         revision++;
         handler.removeCallbacks(botRunnable);
         int count=botEnabled&&current().white?2:1;
         while(count-->0&&!moves.isEmpty()){
             moves.remove(moves.size()-1);positions.remove(positions.size()-1);
         }
-        selected=-1;persist();refresh();scheduleBot();
+        review.setHistorySize(moves.size());
+        selected=-1;persist();refresh();analyzeDisplayed();scheduleBot();
     }
     private void importFen(){
         final EditText input=new EditText(this);
@@ -358,11 +484,13 @@ public final class MainActivity extends Activity {
             .setView(input).setPositiveButton("Charger",(d,w)->{
                 try{
                     ChessGame.Position p=ChessGame.fromFen(input.getText().toString().trim());
+                    leaveReview();
                     revision++;
                     handler.removeCallbacks(botRunnable);
                     positions.clear();positions.add(p);moves.clear();selected=-1;
+                    review.setHistorySize(0);
                     prefs.edit().putString("baseFen",p.fen()).remove("history").apply();
-                    refresh();scheduleBot();
+                    refresh();analyzeDisplayed();scheduleBot();
                 }catch(RuntimeException ex){
                     new AlertDialog.Builder(this).setTitle("FEN invalide")
                         .setMessage(ex.getMessage()).setPositiveButton("OK",null).show();
@@ -375,18 +503,22 @@ public final class MainActivity extends Activity {
             ChessGame.Position p=ChessGame.play(current(),m);
             moves.add(m);positions.add(p);
         }
-        persist();refresh();scheduleBot();
+        revision++;
+        review.setHistorySize(moves.size());
+        persist();refresh();analyzeDisplayed();scheduleBot();
     }
     @Override protected void onPause(){
+        stopReplay();
         if(stockfishBridge!=null)stockfishBridge.stop();
         super.onPause();
     }
     @Override protected void onResume(){
         super.onResume();
-        if(stockfishBridge!=null)stockfishBridge.analyze(current().fen());
+        if(stockfishBridge!=null)analyzeDisplayed();
     }
     @Override protected void onDestroy(){
         handler.removeCallbacks(botRunnable);
+        stopReplay();
         revision++;
         botWorker.shutdownNow();
         if(stockfishBridge!=null)stockfishBridge.close();
@@ -395,10 +527,56 @@ public final class MainActivity extends Activity {
     private final class ChessView extends View {
         private final Paint paint=new Paint(3);
         private final String symbols="♔♕♖♗♘♙♚♛♜♝♞♟";
-        ChessView(){super(MainActivity.this);setContentDescription("Échiquier tactile. Alternative accessible : saisir e2e4 dans le champ Coup.");}
-        @Override protected void onMeasure(int w,int h){int size=MeasureSpec.getSize(w);setMeasuredDimension(size,size);}
+        private Integer whiteCp=null,whiteMate=null;
+        private double whiteFraction=0.5;
+        private final int gaugeWidth=dp(44);
+        ChessView(){
+            super(MainActivity.this);
+            setContentDescription("Échiquier tactile avec jauge Stockfish. Alternative accessible : saisir e2e4.");
+        }
+        void setEvaluation(Integer cp,Integer mate){
+            whiteCp=cp;whiteMate=mate;
+            whiteFraction=EvaluationScale.whiteFraction(cp,mate);
+            setContentDescription("Échiquier. Évaluation Stockfish côté blancs "+
+                EvaluationScale.label(cp,mate)+". Entrer un coup par coordonnées si besoin.");
+            invalidate();
+        }
+        @Override protected void onMeasure(int w,int h){
+            int width=MeasureSpec.getSize(w);
+            setMeasuredDimension(width,Math.max(1,width-gaugeWidth));
+        }
+        private void drawGauge(Canvas canvas,int boardSide){
+            float h=boardSide,bar=gaugeWidth-3f;
+            paint.setStyle(Paint.Style.FILL);
+            // Black on top and white on bottom regardless of who has the move.
+            paint.setColor(Color.BLACK);
+            canvas.drawRect(1,0,bar,h,paint);
+            paint.setColor(Color.WHITE);
+            canvas.drawRect(1,(float)(h*(1.0-whiteFraction)),bar,h,paint);
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(dp(2));
+            paint.setColor(0xff4b514f);
+            canvas.drawRect(1,1,bar,h-1,paint);
+            paint.setStyle(Paint.Style.FILL);
+            paint.setTextSize(dp(14));
+            paint.setTextAlign(Paint.Align.CENTER);
+            paint.setTypeface(Typeface.create("sans-serif",Typeface.BOLD));
+            paint.setColor(Color.WHITE);
+            canvas.drawText("N",bar/2,dp(17),paint);
+            paint.setColor(Color.BLACK);
+            canvas.drawText("B",bar/2,h-dp(7),paint);
+            // Clear split marker makes small shifts perceptible.
+            float cut=(float)(h*(1.0-whiteFraction));
+            paint.setColor(0xffd0a332);
+            canvas.drawRect(1,Math.max(0,cut-dp(1)),bar,Math.min(h,cut+dp(1)),paint);
+        }
         @Override protected void onDraw(Canvas canvas){
-            int side=getWidth();float cell=side/8f;char[] b=current().board;
+            int side=getWidth()-gaugeWidth;
+            if(side<=0)return;
+            drawGauge(canvas,side);
+            canvas.save();
+            canvas.translate(gaugeWidth,0);
+            float cell=side/8f;char[] b=displayed().board;
             for(int i=0;i<64;i++){
                 int x=i%8,y=i/8;float left=x*cell,top=y*cell;
                 boolean light=(x+y)%2==0;
@@ -430,6 +608,7 @@ public final class MainActivity extends Activity {
                     canvas.drawCircle((x+.5f)*cell,(y+.5f)*cell,cell*.13f,paint);
                 }
             }
+            canvas.restore();
         }
         private String glyph(char p){
             String all="KQRBNPkqrbnp";
@@ -438,7 +617,13 @@ public final class MainActivity extends Activity {
         }
         @Override public boolean onTouchEvent(MotionEvent e){
             if(e.getAction()!=MotionEvent.ACTION_UP)return true;
-            int x=(int)(e.getX()*8/getWidth()),y=(int)(e.getY()*8/getHeight());
+            int side=getWidth()-gaugeWidth;
+            if(side<=0||e.getX()<gaugeWidth){
+                performClick();
+                return true;
+            }
+            int x=(int)((e.getX()-gaugeWidth)*8/side);
+            int y=(int)(e.getY()*8/side);
             if(x>=0&&x<8&&y>=0&&y<8)choose(y*8+x);
             performClick();return true;
         }
