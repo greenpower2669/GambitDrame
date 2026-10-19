@@ -22,10 +22,11 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p build/chess-test-classes
-          javac -d build/chess-test-classes             app/src/main/java/fr/gambitdrame/ChessGame.java             app/src/main/java/fr/gambitdrame/HumanPolicy.java             app/src/test/java/fr/gambitdrame/ChessGameTest.java             app/src/test/java/fr/gambitdrame/HumanPolicyTest.java app/src/main/java/fr/gambitdrame/ReviewCursor.java app/src/main/java/fr/gambitdrame/EvaluationScale.java app/src/test/java/fr/gambitdrame/ReviewTest.java
+          javac -d build/chess-test-classes             app/src/main/java/fr/gambitdrame/ChessGame.java             app/src/main/java/fr/gambitdrame/HumanPolicy.java             app/src/test/java/fr/gambitdrame/ChessGameTest.java             app/src/test/java/fr/gambitdrame/HumanPolicyTest.java app/src/main/java/fr/gambitdrame/ReviewCursor.java app/src/main/java/fr/gambitdrame/EvaluationScale.java app/src/test/java/fr/gambitdrame/ReviewTest.java app/src/main/java/fr/gambitdrame/ChessNarration.java app/src/test/java/fr/gambitdrame/ChessNarrationTest.java
           java -cp build/chess-test-classes fr.gambitdrame.ChessGameTest
           java -cp build/chess-test-classes fr.gambitdrame.HumanPolicyTest
           java -cp build/chess-test-classes fr.gambitdrame.ReviewTest
+          java -cp build/chess-test-classes fr.gambitdrame.ChessNarrationTest
       - name: Install Android SDK and NDK r27c
         run: |
           set -euo pipefail
@@ -59,6 +60,45 @@ jobs:
           Stockfish is independent and receives UCI commands over a process pipe.
           The engine is exclusively used to display analyses; not to select moves for the opponent.
           NOTICE
+      - name: Download and verify Sherpa-ONNX Android neural TTS
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p app/libs
+          curl --fail --location --retry 3 \
+            -o app/libs/sherpa-onnx-1.13.8.aar \
+            "https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.13.8/sherpa-onnx-1.13.8.aar"
+          echo "633c24321e06b1fe79feafa03ea16cbc0f8a286641e2da3559bac91bdb13bd96  app/libs/sherpa-onnx-1.13.8.aar" | sha256sum -c -
+          test -s app/libs/sherpa-onnx-1.13.8.aar
+      - name: Download and verify French Piper UPMC neural model
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"
+          curl --fail --location --retry 3 \
+            -o "$tmp/upmc-medium.tar.bz2" \
+            "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-fr_FR-upmc-medium.tar.bz2"
+          echo "e9830a331a16f6cc5ef3116a287065e015d3495c3f56b974889a266da7f89a7f  $tmp/upmc-medium.tar.bz2" | sha256sum -c -
+          tar -xjf "$tmp/upmc-medium.tar.bz2" -C "$tmp"
+          mkdir -p app/src/main/assets/tts/piper
+          mv "$tmp/vits-piper-fr_FR-upmc-medium" app/src/main/assets/tts/piper/pierre
+          test -s app/src/main/assets/tts/piper/pierre/fr_FR-upmc-medium.onnx
+          test -s app/src/main/assets/tts/piper/pierre/tokens.txt
+          test -d app/src/main/assets/tts/piper/pierre/espeak-ng-data
+          mkdir -p app/src/main/assets/licenses
+          curl --fail --location --retry 3 \
+            -o app/src/main/assets/licenses/SHERPA-ONNX-LICENSE.txt \
+            "https://raw.githubusercontent.com/k2-fsa/sherpa-onnx/v1.13.8/LICENSE"
+          cat > app/src/main/assets/licenses/PIPER-VOICE-SOURCE.txt <<'NOTICE'
+          Neural voice: sherpa-onnx v1.13.8, Piper VITS fr_FR-upmc-medium.
+          Multi-speaker source archive:
+          https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-fr_FR-upmc-medium.tar.bz2
+          Fixed archive SHA256: e9830a331a16f6cc5ef3116a287065e015d3495c3f56b974889a266da7f89a7f
+          Sherpa AAR source: https://github.com/k2-fsa/sherpa-onnx/tree/v1.13.8
+          Voice speaker ID 0 is Jessica, 1 is Pierre.
+          Speech generation on CPU fully offline after APK installation.
+          NOTICE
+          rm -rf "$tmp"
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
@@ -72,11 +112,14 @@ jobs:
           unzip -l "$apk" | grep -F 'lib/arm64-v8a/libstockfish.so'
           unzip -l "$apk" | grep -F 'assets/licenses/STOCKFISH-GPLv3.txt'
           unzip -l "$apk" | grep -F 'assets/licenses/STOCKFISH-SOURCE.txt'
+          unzip -l "$apk" | grep -F 'assets/tts/piper/pierre/fr_FR-upmc-medium.onnx'
+          unzip -l "$apk" | grep -F 'assets/tts/piper/pierre/tokens.txt'
+          unzip -l "$apk" | grep -F 'assets/licenses/PIPER-VOICE-SOURCE.txt'
       - name: Publish direct test APK in GitHub pre-release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          cp app/build/outputs/apk/debug/app-debug.apk GambitDrame-v0.3.1-debug-arm64.apk
+          cp app/build/outputs/apk/debug/app-debug.apk GambitDrame-v0.3.2-debug-arm64.apk
           tag="gd-test-${{ github.run_number }}"
-          gh release create "$tag" GambitDrame-v0.3.1-debug-arm64.apk             --target "${{ github.sha }}" --prerelease             --title "GambitDrame 0.3.1 experimental test ${{ github.run_number }}"             --notes "ARM64 Stockfish 18 UCI GPLv3 analysis + Lichess opening-explorer sampled moves below 1000 + non-calibrated local fallback. Early prototype; hardware launch and human Elo calibration NOT proven. No main merge."
+          gh release create "$tag" GambitDrame-v0.3.2-debug-arm64.apk             --target "${{ github.sha }}" --prerelease             --title "GambitDrame 0.3.2 experimental test ${{ github.run_number }}"             --notes "ARM64 Stockfish 18 analysis, experimental human policy, French voice Piper offline Jessica/Pierre (Sherpa-ONNX), spoken chess moves and sound cues, TalkBack-friendly controls. Physical Samsung testing and Elo calibration remain open. No main merge."

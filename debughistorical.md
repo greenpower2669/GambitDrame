@@ -66,3 +66,9 @@
 - Stockfish officiel ARM64 présent : `lib/arm64-v8a/libstockfish.so` 113 750 704 octets ; licence GPL 35 149 octets et notice source vérifiées.
 - GitHub Release `gd-test-7` : https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-7/GambitDrame-v0.3.1-debug-arm64.apk; 79 825 609 octets ; sha256 `d5b1062633a218914088fa1d5db70d03a74d7697ba300f755265675c32c5c8f7`. Publication `state=uploaded` vérifiée.
 - Pas encore d'essai physique sur SM-A576B Android 16 : jauge noire/blanche à gauche, toucher des cases, contrôle cinq boutons/lecture, reprise au direct, UCI après navigation, accessibilité visuelle doivent être confirmés.
+
+## 19/10/2026 — Préparation GD-008 (avant CI)
+- Fab demande explicitement sons et synthèse de parole IA pour accessibilité basse vision. Analyse dépôt GeckoDoku : `PierrePiperSpeechEngine.kt`, `VoicePcmPlayer.kt`, `PierreVoiceConfig.kt`, workflows Gecko avec Sherpa 1.13.8 et Piper fr_FR-upmc-medium; sources officielles et SHA256 repris.
+- Option retenue : vrai Piper VITS local dans APK, sid 0 Jessica, sid 1 Pierre, système Android TTS comme secours. Son synthétisé ToneGenerator pour les événements. Pas de copie aveugle de l'application Gecko.
+- Tests Java attendus de `ChessNarrationTest.java`, pipeline Kotlin/Gradle, binaire Piper natif et modèle ONNX dans .apk, source/licence ; aucun résultat hardware affirmé à ce stade.
+- Risques CI : conflit AAR natif, plugin Kotlin, archive voice et extraction. Risques fonctionnels : premières paroles coupées, double parole avec TalkBack, fortes latences CPU lors des longues descriptions, mode silencieux Android et chargement modèle.

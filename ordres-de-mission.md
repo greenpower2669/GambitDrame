@@ -42,3 +42,10 @@
 - APK directe (sans zip) publiée : https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-7/GambitDrame-v0.3.1-debug-arm64.apk; taille 79 825 609 octets ; SHA256 `d5b1062633a218914088fa1d5db70d03a74d7697ba300f755265675c32c5c8f7`.
 - Tests : règles 18 ; choix d'adversaire probabiliste 130 ; navigation/jauge 21. Stockfish natif ARM64 et GPLv3 vérifiés à l'intérieur de l'APK.
 - Validation matérielle Android 16/visibilité de la jauge/exécution UCI reste à effectuer sur le Samsung ; ne pas confondre build réussi et essai matériel.
+
+## GD-008 — Demande de Fab : son et voix IA pour déficience visuelle (19/10/2026)
+- Fab demande des effets sonores et de la voix pour compenser la difficulté à voir les pièces et la jauge. Livraison à **vérifier** : lecture des pièces touchées, destinations légales, déplacements, prises, échec/mat/promotion/roque, historique, lecture d'ensemble du plateau et avantage Stockfish.
+- Sons courts différenciés : sélection, pose, prise, échec, erreur, navigation. Options ON/OFF indépendantes, volume Android respecté.
+- Reprendre véritable **Piper français UPMC Medium Sherpa-ONNX 1.13.8** déjà validé par GeckoDoku : Jessica sid=0 voix féminine par défaut, Pierre sid=1 option, warmup audio muet, synthèse locale via CPU et lecture AudioTrack. Voix Android TTS française hors ligne comme secours en cas de chargement/échec Piper.
+- Ne jamais prétendre que Piper est intégré avant succès de la CI et vérification du modèle dans l'APK. Se conformer aux licences des modèles/ONNX, publier .apk directe de test, garder `main` intacte.
+- Modes voix et sons indépendants et persistants, vitesse réglable, annonces d'évaluation uniquement sur demande sauf option automatique, éviter bavardage permanent.

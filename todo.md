@@ -56,3 +56,12 @@ Les commits purement Markdown n'ont pas besoin de recompiler Android ; workflow 
 - [x] Ajouter tests JVM `ReviewTest` (curseur, évaluation) et vérifications dans le workflow.
 - [x] Build 0.3.1 / workflow #7 réussi, 18+130+21 tests, Stockfish ARM64+GPL vérifiés dans l'APK et .apk directe `gd-test-7` publiée; lien et SHA256 dans debughistorical.
 - [ ] Vérifier sur Samsung SM-A576B : jauge noire/blanche visible à gauche même en portrait, largeur, tactile case a..h, navigation, autoplay, reprise, et scores qui ne se mélangent pas en recul/avance rapides.
+
+## Mission GD-008 accessibilité sonore et Piper
+- [x] Traduction coups/positions en phrases françaises testables, annonce échec, prise, promotion, roque, case touchée, coup illégal.
+- [x] Sons sélection/coup/prise/échec/erreur/relecture, switch son/voix indépendants et persistants.
+- [x] Boutons Décrire la position/Lire l'échiquier/Coups possibles/Répéter/Écouter Stockfish, contrôle du débit et des profils voix Jessica/Pierre.
+- [x] Code d'intégration Piper Sherpa VITS UPMC local (+ secours Android TTS) et CI prépare les modèles par SHA256.
+- [ ] Vérifier compilation CI et APK `0.3.2` effectivement générée avec modèle ONNX, Sherpa natif ARM64, licence et Stockfish ; corriger erreurs, sauver URL & SHA256.
+- [ ] Tester sur Samsung Android 16 sid 0 Jessica et sid 1 Pierre, audioTrack startup/warmup, latence, priorité audio, talkback et annonce de pions/gauche droite + mode voix désactivé.
+- [ ] Améliorer l'accessibilité TalkBack des 64 cases (canvas actuel a une seule description globale) et gérer le contrôle de jeu par voix si validé plus tard.

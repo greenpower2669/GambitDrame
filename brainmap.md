@@ -53,3 +53,11 @@
 - Tests Java : 18 légalité, 130 échantillonnages humains, 21 calculs/propriétés de curseur de relecture, tous réussis par workflow #7.
 - Build Android passe, Stockfish 18 ARM64/notice GPL vérifiés dans le zip de l'APK, prérelease gd-test-7 directe publiée; détails de SHA256 et lien dans brain.md.
 - Conserver la distinction : vérification CI = réussite du packaging ; validation Samsung/TalkBack/animation/jauge en situation = à faire.
+
+## 0.3.2 composants son et voix
+- `app/src/main/java/fr/gambitdrame/ChessNarration.java` : texte français pur testable par Java sans Android (positions, coups légaux, évaluation et événements).
+- `AccessibleAudio.java` : contrôle paramètres + TTS Android hors ligne secours + ToneGenerator; délègue la synthèse principale à `PiperSpeechEngine.kt`.
+- `PiperSpeechEngine.kt` : worker arrière-plan pour load + warmup + inference Piper + AudioTrack ; copie `espeak-ng-data` des assets vers fichiers internes; vitesse et speaker sid ; aucune dépendance réseau runtime.
+- Workflow `android-debug.yml` : en plus Stockfish ARM64, prépare Sherpa AAR fixe et modèle VITS fr_FR-upmc-medium d'archive SHA256 fixe (`e9830a...67f89a7f`), sources/licences embarquées, vérifie .onnx dans .apk.
+- `app/build.gradle` : version 0.3.2 code 6, plugin Kotlin 2.0.21 (nécessaire à l'interface Sherpa issue GeckoDoku), dépendance AAR locale téléchargée par CI.
+- `MainActivity` : sons ponctuels, cinq boutons relecture conservés, aide parlante case/jeu/relecture/évaluation, sélecteurs directs et vitesse, mode silence contrôlable.

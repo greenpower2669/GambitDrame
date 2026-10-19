@@ -1,0 +1,175 @@
+package fr.gambitdrame;
+
+import android.app.Activity;
+import android.content.SharedPreferences;
+import android.media.AudioAttributes;
+import android.media.AudioManager;
+import android.media.ToneGenerator;
+import android.os.Handler;
+import android.os.Looper;
+import android.speech.tts.TextToSpeech;
+import android.speech.tts.Voice;
+import java.util.Locale;
+import java.util.Set;
+
+/**
+ * Offline neural Piper speech with the Android offline TTS engine as fallback.
+ * Speech is optional and never controls gameplay; no network is used for voices.
+ */
+public final class AccessibleAudio {
+    public interface StatusListener {void onStatus(String value);}
+    public enum Sound { SELECT, MOVE, CAPTURE, CHECK, INVALID, NAVIGATE }
+    private final Activity activity;
+    private final SharedPreferences prefs;
+    private final StatusListener statusListener;
+    private final Handler handler=new Handler(Looper.getMainLooper());
+    private TextToSpeech tts;
+    private PiperSpeechEngine piper;
+    private String piperStatus="Piper : initialisation…";
+    private ToneGenerator tones;
+    private boolean initialized=false;
+    private boolean closed=false;
+    private String state="Voix : initialisation…";
+    private String lastMessage="";
+    private String pendingMessage=null;
+
+    public AccessibleAudio(Activity activity,SharedPreferences prefs,StatusListener listener){
+        this.activity=activity;this.prefs=prefs;this.statusListener=listener;
+        try{
+            piper=new PiperSpeechEngine(activity,
+                prefs.getInt("piperVoiceSid",0),
+                message->handler.post(()->{
+                    piperStatus=message;
+                    if(!closed)statusListener.onStatus(message);
+                }));
+            piper.setSpeed(prefs.getFloat("speechRate",0.88f));
+        }catch(Throwable ex){
+            piperStatus="Piper indisponible : "+ex.getClass().getSimpleName();
+        }
+        try{tones=new ToneGenerator(AudioManager.STREAM_MUSIC,65);}
+        catch(RuntimeException ignored){tones=null;}
+        try{
+            tts=new TextToSpeech(activity,status->handler.post(()->initialize(status)));
+        }catch(RuntimeException ex){
+            initialized=false;
+            state="Synthèse Android indisponible : "+ex.getClass().getSimpleName();
+            statusListener.onStatus(state);
+        }
+    }
+    private void initialize(int result){
+        if(closed)return;
+        if(result!=TextToSpeech.SUCCESS||tts==null){
+            state="Voix indisponible : vérifier la synthèse vocale Android.";
+            statusListener.onStatus(state);
+            return;
+        }
+        int code=tts.setLanguage(Locale.FRANCE);
+        if(code==TextToSpeech.LANG_MISSING_DATA||
+           code==TextToSpeech.LANG_NOT_SUPPORTED){
+            state="Voix française absente : installer une voix hors ligne dans Android.";
+            statusListener.onStatus(state);
+            return;
+        }
+        Voice chosen=null;
+        Set<Voice> installed=tts.getVoices();
+        if(installed!=null){
+            for(Voice voice:installed){
+                if(voice.getLocale()!=null&&
+                   "fr".equals(voice.getLocale().getLanguage())&&
+                   !voice.isNetworkConnectionRequired()&&
+                   (chosen==null||voice.getQuality()>chosen.getQuality())){
+                    chosen=voice;
+                }
+            }
+        }
+        if(chosen!=null){
+            tts.setVoice(chosen);
+            state="Secours Android local disponible ("+chosen.getName()+")";
+            if(piper==null)statusListener.onStatus(state);
+        }else{
+            // Do not ask a potentially network-only voice to synthesize speech.
+            state="Secours Android hors ligne absent. Piper reste prioritaire.";
+            if(piper==null)statusListener.onStatus(state);
+            return;
+        }
+        tts.setSpeechRate(prefs.getFloat("speechRate",0.88f));
+        tts.setPitch(1.0f);
+        tts.setAudioAttributes(new AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY)
+            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build());
+        initialized=true;
+        if(piper==null||!piper.isReady())statusListener.onStatus(state);
+        if(pendingMessage!=null){
+            String toSay=pendingMessage;
+            pendingMessage=null;
+            say(toSay);
+        }
+    }
+    public String status(){
+        return piper!=null&&piper.isReady()?piperStatus:state;
+    }
+    public void setPiperSpeaker(int id){
+        int chosen=Math.max(0,Math.min(1,id));
+        prefs.edit().putInt("piperVoiceSid",chosen).apply();
+        if(piper!=null)piper.setSpeakerId(chosen);
+        say("Voix "+(chosen==0?"Jessica":"Pierre")+".");
+    }
+    public boolean voiceOn(){return prefs.getBoolean("voiceOn",true);}
+    public boolean soundsOn(){return prefs.getBoolean("soundsOn",true);}
+    public void setVoiceOn(boolean on){
+        prefs.edit().putBoolean("voiceOn",on).apply();
+        if(!on)stopSpeech();
+        if(on)say("Guidage vocal activé.");
+    }
+    public void setSoundsOn(boolean on){
+        prefs.edit().putBoolean("soundsOn",on).apply();
+        if(on)play(Sound.NAVIGATE);
+    }
+    public void setSpeechRate(float rate){
+        float value=Math.max(0.65f,Math.min(1.3f,rate));
+        prefs.edit().putFloat("speechRate",value).apply();
+        if(tts!=null&&initialized)tts.setSpeechRate(value);
+        if(piper!=null)piper.setSpeed(value);
+    }
+    public void say(String message){
+        if(closed||message==null||message.isEmpty()||!voiceOn())return;
+        lastMessage=message;
+        if(piper!=null&&piper.isReady()){
+            if(tts!=null&&initialized)tts.stop();
+            piper.speak(message);
+            return;
+        }
+        if(!initialized){pendingMessage=message;return;}
+        tts.speak(message,TextToSpeech.QUEUE_FLUSH,null,
+            "gambit-"+System.nanoTime());
+    }
+    public void repeat(){
+        if(lastMessage.isEmpty())say("Aucun message à répéter.");
+        else say(lastMessage);
+    }
+    public void play(Sound kind){
+        if(closed||!soundsOn()||tones==null)return;
+        int tone,duration;
+        switch(kind){
+            case SELECT:tone=ToneGenerator.TONE_PROP_ACK;duration=45;break;
+            case CAPTURE:tone=ToneGenerator.TONE_PROP_BEEP2;duration=135;break;
+            case CHECK:tone=ToneGenerator.TONE_PROP_NACK;duration=185;break;
+            case INVALID:tone=ToneGenerator.TONE_SUP_ERROR;duration=120;break;
+            case NAVIGATE:tone=ToneGenerator.TONE_PROP_BEEP;duration=55;break;
+            default:tone=ToneGenerator.TONE_PROP_BEEP;duration=85;break;
+        }
+        try{tones.startTone(tone,duration);}catch(RuntimeException ignored){}
+    }
+    public void stopSpeech(){
+        pendingMessage=null;
+        if(piper!=null)piper.stop();
+        if(tts!=null&&initialized)tts.stop();
+    }
+    public void close(){
+        closed=true;
+        stopSpeech();
+        if(tts!=null){tts.shutdown();tts=null;}
+        if(piper!=null){piper.close();piper=null;}
+        if(tones!=null){tones.release();tones=null;}
+    }
+}

@@ -44,3 +44,11 @@ L'adversaire humain doit échantillonner des coups humains réels, avec continui
 - APK prérelease `gd-test-7` publiée : `https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-7/GambitDrame-v0.3.1-debug-arm64.apk`, taille 79 825 609 octets, SHA256 `d5b1062633a218914088fa1d5db70d03a74d7697ba300f755265675c32c5c8f7`. Pas de zip.
 - Contrôle zip CI : fichier binaire `lib/arm64-v8a/libstockfish.so` de 113 750 704 octets et `assets/licenses/STOCKFISH-GPLv3.txt` de 35 149 octets.
 - Réserve : le rendu graphique de l'échiquier et la réactivité tactile ne sont pas testés sur téléphone par les tests JVM/Gradle.
+
+## Lot 0.3.2 — guidage non visuel
+- `ChessNarration.java` transforme position et coups légaux en phrases courtes françaises, annonce matériel/prise en passant/roque/promotion, échec/mat/pat et avantage évalué en CP.
+- `AccessibleAudio.java` combine sons Android ToneGenerator, choix Piper Jessica/Pierre, synthèse TTS locale de secours, interruptions/reprise et préférences distinctes sons/voix/vitesse ; aucun flux réseau pour les annonces.
+- `PiperSpeechEngine.kt` : Piper VITS `fr_FR-upmc-medium` via Sherpa-ONNX 1.13.8 CPU, sid 0 Jessica et sid 1 Pierre, warmup voix muette, exécuteur arrière-plan, AudioTrack et annulations par génération. Audio de secours via Android si Piper non prêt.
+- `MainActivity.java` : sélection tactile parlante, annonce de chaque coup et événements, menus « Décrire la position », « Lire l'échiquier », « Coups possibles », « Répéter », « Écouter l'avantage Stockfish », réglages persistants et voix Piper féminine/masculine.
+- CI télécharge et vérifie SHA256 Sherpa AAR et modèle Piper, ajoute notices de sources/licence, vérifie le .onnx packagé et compile les tests Java de phrases.
+- LIMITES : pas de reconnaissance vocale pour entrer des coups ; voix Piper installée dans APK mais usage réel Samsung requiert test. Aucun mélange du moteur Stockfish à l'adversaire.

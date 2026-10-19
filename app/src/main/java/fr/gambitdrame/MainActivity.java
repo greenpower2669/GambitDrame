@@ -40,6 +40,12 @@ public final class MainActivity extends Activity {
     private HumanPolicy humanPolicy;
     private LichessOpeningExplorer explorer;
     private StockfishBridge stockfishBridge;
+    private AccessibleAudio audio;
+    private TextView speechStatus;
+    private Integer lastWhiteCp,lastWhiteMate;
+    private String lastEvaluatedFen;
+    private String lastSpokenEvaluationFen;
+    private boolean announceEvaluation=false;
     private TextView analysisPanel, botInfo;
     private Spinner levels;
     private Switch onlineSwitch;
@@ -84,7 +90,7 @@ public final class MainActivity extends Activity {
             return insets;
         });
         heading(root,"♟ GambitDrame",25);
-        label(root,"Version 0.3.1 — jauge Stockfish et navigation de partie",16);
+        label(root,"Version 0.3.2 — guidage sonore et vocal accessible",16);
         label(root,"Niveaux 400–900 EXPÉRIMENTAUX, pas encore calibrés par parties complètes.",14);
         chessView=new ChessView();
         analysisPanel=new TextView(this);
@@ -122,6 +128,83 @@ public final class MainActivity extends Activity {
             ()->manualSeek(moves.size()));
         replayPosition=label(root,"Partie en direct",15);
         button(root,"Reprendre la partie (sortir de la relecture)",this::resumeGame);
+        heading(root,"Accessibilité · écoute et sons",19);
+        label(root,"Voix IA Piper locale intégrée : Jessica ou Pierre, sans Internet. La voix française Android reste un secours si Piper ne démarre pas.",13);
+        speechStatus=label(root,"Voix : initialisation…",14);
+        Switch voiceToggle=new Switch(this);
+        voiceToggle.setText("Parler : annoncer les coups et les cases");
+        voiceToggle.setTextColor(Color.BLACK);
+        voiceToggle.setTextSize(16);
+        voiceToggle.setChecked(prefs.getBoolean("voiceOn",true));
+        voiceToggle.setContentDescription("Activer ou couper les annonces parlées des coups");
+        root.addView(voiceToggle);
+        voiceToggle.setOnCheckedChangeListener((button,on)->{
+            if(audio!=null)audio.setVoiceOn(on);
+        });
+        TextView speakerLabel=label(root,"Choisir une voix Piper française",15);
+        Spinner speakers=new Spinner(this);
+        speakers.setAdapter(new ArrayAdapter<String>(this,
+            android.R.layout.simple_spinner_dropdown_item,
+            new String[]{"Jessica · voix féminine","Pierre · voix masculine"}));
+        speakers.setSelection(Math.max(0,Math.min(1,prefs.getInt("piperVoiceSid",0))));
+        root.addView(speakers);
+        speakers.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener(){
+            private boolean first=true;
+            @Override public void onItemSelected(android.widget.AdapterView<?> parent,
+                    View view,int index,long id){
+                if(first){first=false;return;}
+                if(audio!=null)audio.setPiperSpeaker(index);
+            }
+            @Override public void onNothingSelected(android.widget.AdapterView<?> parent){}
+        });
+        Switch soundToggle=new Switch(this);
+        soundToggle.setText("Sons : sélection, coup, prise, échec, erreur");
+        soundToggle.setTextColor(Color.BLACK);
+        soundToggle.setTextSize(16);
+        soundToggle.setChecked(prefs.getBoolean("soundsOn",true));
+        soundToggle.setContentDescription("Activer ou couper les effets sonores du jeu");
+        root.addView(soundToggle);
+        soundToggle.setOnCheckedChangeListener((button,on)->{
+            if(audio!=null)audio.setSoundsOn(on);
+        });
+        Switch evaluationToggle=new Switch(this);
+        evaluationToggle.setText("Annoncer automatiquement une évaluation Stockfish par position");
+        evaluationToggle.setTextColor(Color.BLACK);
+        evaluationToggle.setTextSize(14);
+        announceEvaluation=prefs.getBoolean("autoEvalSpeech",false);
+        evaluationToggle.setChecked(announceEvaluation);
+        root.addView(evaluationToggle);
+        evaluationToggle.setOnCheckedChangeListener((button,on)->{
+            announceEvaluation=on;
+            prefs.edit().putBoolean("autoEvalSpeech",on).apply();
+            if(on)describeEvaluation();
+        });
+        TextView speedLabel=label(root,"Vitesse de parole",14);
+        SeekBar speed=new SeekBar(this);
+        speed.setMax(65);
+        speed.setProgress(Math.max(0,Math.min(65,Math.round((prefs.getFloat("speechRate",0.88f)-0.65f)*100))));
+        speed.setContentDescription("Régler la vitesse de la voix");
+        root.addView(speed);
+        speed.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
+            public void onProgressChanged(SeekBar bar,int value,boolean fromUser){
+                if(fromUser&&audio!=null)audio.setSpeechRate(0.65f+value/100.0f);
+            }
+            public void onStartTrackingTouch(SeekBar bar){}
+            public void onStopTrackingTouch(SeekBar bar){
+                if(audio!=null)audio.say("Vitesse de voix réglée.");
+            }
+        });
+        LinearLayout listening=new LinearLayout(this);
+        listening.setOrientation(LinearLayout.HORIZONTAL);
+        root.addView(listening);
+        button(listening,"Décrire la position",this::describePosition);
+        button(listening,"Répéter",()->audio.repeat());
+        LinearLayout detailedHelp=new LinearLayout(this);
+        detailedHelp.setOrientation(LinearLayout.HORIZONTAL);
+        root.addView(detailedHelp);
+        button(detailedHelp,"Lire l’échiquier",this::readFullBoard);
+        button(detailedHelp,"Coups possibles",this::readLegalMoves);
+        button(root,"Écouter l’avantage Stockfish",this::describeEvaluation);
         if(!wide)root.addView(analysisPanel,new LinearLayout.LayoutParams(-1,-2));
         status=label(root,"",18);
         status.setTypeface(null,Typeface.BOLD);
@@ -218,11 +301,21 @@ public final class MainActivity extends Activity {
                 startActivity(intent);
             }).setNegativeButton("Fermer",null).show());
         setContentView(scroller);
+        audio=new AccessibleAudio(this,prefs,value->speechStatus.setText(value));
         stockfishBridge=new StockfishBridge(this,(fen,message,whiteCp,whiteMate)->{
             if(fen!=null&&!fen.equals(displayed().fen()))return;
             analysisPanel.setText(message);
-            if(whiteCp!=null||whiteMate!=null)
+            if(whiteCp!=null||whiteMate!=null){
                 chessView.setEvaluation(whiteCp,whiteMate);
+                lastWhiteCp=whiteCp;
+                lastWhiteMate=whiteMate;
+                lastEvaluatedFen=fen;
+                if(announceEvaluation&&fen!=null&&!fen.equals(lastSpokenEvaluationFen)&&
+                   message.contains("profondeur 11")){
+                    lastSpokenEvaluationFen=fen;
+                    audio.say(ChessNarration.evaluation(whiteCp,whiteMate));
+                }
+            }
         });
         stockfishBridge.start();
         refresh();
@@ -235,9 +328,92 @@ public final class MainActivity extends Activity {
     }
     private void analyzeDisplayed(){
         if(chessView!=null)chessView.setEvaluation(null,null);
+        lastWhiteCp=null;lastWhiteMate=null;
+        lastEvaluatedFen=null;
+        lastSpokenEvaluationFen=null;
         if(stockfishBridge!=null)stockfishBridge.analyze(displayed().fen());
     }
     private int dp(float n){return Math.round(getResources().getDisplayMetrics().density*n);}
+    private void describeEvaluation(){
+        if(audio==null)return;
+        String fen=displayed().fen();
+        if(!fen.equals(lastEvaluatedFen))audio.say("L'analyse Stockfish est en cours.");
+        else audio.say(ChessNarration.evaluation(lastWhiteCp,lastWhiteMate));
+    }
+    private void readFullBoard(){
+        if(audio==null)return;
+        ChessGame.Position p=displayed();
+        StringBuilder full=new StringBuilder("Lecture de l'échiquier. ");
+        for(int rank=0;rank<8;rank++){
+            StringBuilder row=new StringBuilder();
+            for(int file=0;file<8;file++){
+                int sq=rank*8+file;
+                char piece=p.board[sq];
+                if(piece=='.')continue;
+                if(row.length()>0)row.append(". ");
+                row.append(Character.isUpperCase(piece)?"blanc ":"noir ")
+                    .append(ChessNarration.piece(piece))
+                    .append(" ").append(ChessNarration.square(sq));
+            }
+            if(row.length()>0)full.append("Rangée ").append(8-rank).append(": ")
+                .append(row).append(". ");
+        }
+        audio.say(full.toString());
+    }
+    private void readLegalMoves(){
+        if(audio==null)return;
+        ChessGame.Position p=displayed();
+        if(review.reviewing()){
+            audio.say("Relecture active. Appuyer sur Reprendre la partie avant de sélectionner un coup.");
+            return;
+        }
+        if(selected<0){
+            audio.say("Sélectionner d'abord une pièce pour entendre ses destinations.");
+            return;
+        }
+        StringBuilder desc=new StringBuilder(ChessNarration.squareContents(p,selected));
+        desc.append(". Destinations possibles : ");
+        int count=0;
+        for(ChessGame.Move m:ChessGame.legal(p))if(m.from==selected){
+            if(count++>0)desc.append(", ");
+            desc.append(ChessNarration.square(m.to));
+            if(m.promotion!=0)desc.append(" promotion en ").append(ChessNarration.piece(m.promotion));
+        }
+        if(count==0)desc.append("aucune.");
+        audio.say(desc.toString());
+    }
+    private void describePosition(){
+        if(audio==null)return;
+        ChessGame.Position p=displayed();
+        int bCount=0,nCount=0,kingWhite=-1,kingBlack=-1;
+        for(int i=0;i<64;i++){
+            char piece=p.board[i];
+            if(piece=='K')kingWhite=i;
+            if(piece=='k')kingBlack=i;
+            if(piece!='.'){
+                if(Character.isUpperCase(piece))bCount++;
+                else nCount++;
+            }
+        }
+        String message="Position "+(review.reviewing()?"en relecture, coup "+review.ply():"en direct")+
+            ". Aux "+(p.white?"blancs":"noirs")+" de jouer. "+
+            "Roi blanc en "+ChessNarration.square(kingWhite)+
+            ". Roi noir en "+ChessNarration.square(kingBlack)+
+            ". "+bCount+" pièces blanches, "+nCount+" pièces noires.";
+        if(ChessGame.inCheck(p,p.white))message+=" Attention, échec.";
+        if(review.ply()>0)message+=" Dernier coup : "+spokenAt(review.ply());
+        audio.say(message);
+    }
+    private String spokenAt(int ply){
+        if(ply<=0||ply>moves.size())return "début de partie";
+        ChessGame.Position before=positions.get(ply-1);
+        ChessGame.Position after=positions.get(ply);
+        for(ChessGame.Move m:ChessGame.legal(before)){
+            if(m.uci().equals(moves.get(ply-1)))
+                return ChessNarration.move(before,m,after);
+        }
+        return moves.get(ply-1);
+    }
     private Button replayButton(LinearLayout container,String title,String speech,Runnable callback){
         Button button=new Button(this);
         button.setText(title);button.setTextSize(12);
@@ -277,6 +453,10 @@ public final class MainActivity extends Activity {
         selected=-1;
         refresh();
         analyzeDisplayed();
+        if(audio!=null){
+            audio.play(AccessibleAudio.Sound.NAVIGATE);
+            audio.say(review.ply()==0?"Début de la partie.":spokenAt(review.ply()));
+        }
     }
     private void toggleReplay(){
         if(replayPlaying){stopReplay();return;}
@@ -287,12 +467,12 @@ public final class MainActivity extends Activity {
         if(!review.reviewing()||review.ply()>=moves.size())seekReview(0);
         replayPlaying=true;
         updatePlaybackUi();
-        handler.postDelayed(replayTick,900);
+        handler.postDelayed(replayTick,(audio!=null&&audio.voiceOn())?1850:900);
     }
     private void advanceReplay(){
         if(!replayPlaying)return;
         if(review.ply()<moves.size())seekReview(review.ply()+1);
-        if(review.ply()<moves.size())handler.postDelayed(replayTick,900);
+        if(review.ply()<moves.size())handler.postDelayed(replayTick,(audio!=null&&audio.voiceOn())?1850:900);
         else stopReplay();
     }
     private void leaveReview(){
@@ -305,6 +485,7 @@ public final class MainActivity extends Activity {
         selected=-1;
         refresh();
         analyzeDisplayed();
+        if(audio!=null)audio.say("Retour à la partie en cours.");
         scheduleBot();
     }
     private void restore(){
@@ -374,25 +555,53 @@ public final class MainActivity extends Activity {
     }
     private void playMove(ChessGame.Move m){
         if(review.reviewing())return;
-        positions.add(ChessGame.apply(current(),m));
+        ChessGame.Position before=current();
+        ChessGame.Position after=ChessGame.apply(before,m);
+        String narration=ChessNarration.move(before,m,after);
+        boolean capture=before.board[m.to]!='.'||
+            (Character.toUpperCase(before.board[m.from])=='P'&&m.to==before.ep&&m.from%8!=m.to%8);
+        boolean check=ChessGame.inCheck(after,after.white);
+        positions.add(after);
         moves.add(m.uci());
         review.setHistorySize(moves.size());
         selected=-1;revision++;persist();refresh();
+        if(audio!=null){
+            audio.play(check?AccessibleAudio.Sound.CHECK:
+                capture?AccessibleAudio.Sound.CAPTURE:AccessibleAudio.Sound.MOVE);
+            String ending=ChessGame.outcome(after,repetitionCount());
+            if(!ending.isEmpty()&&!ending.startsWith("Échec")&&!narration.contains("Nulle"))
+                narration+=". "+ending;
+            audio.say(narration);
+        }
         analyzeDisplayed();
         scheduleBot();
     }
     private void tryMove(String uci){
         if(review.reviewing()){
             Toast.makeText(this,"Quitter la relecture pour jouer",Toast.LENGTH_SHORT).show();
+            if(audio!=null)audio.say("Quitter la relecture pour jouer.");
             return;
         }
-        if(finished()){Toast.makeText(this,"Partie terminée",Toast.LENGTH_SHORT).show();return;}
-        if(botEnabled&&!current().white){Toast.makeText(this,"Tour du bot",Toast.LENGTH_SHORT).show();return;}
+        if(finished()){
+            Toast.makeText(this,"Partie terminée",Toast.LENGTH_SHORT).show();
+            if(audio!=null)audio.say("Partie terminée.");
+            return;
+        }
+        if(botEnabled&&!current().white){
+            Toast.makeText(this,"Tour du bot",Toast.LENGTH_SHORT).show();
+            if(audio!=null)audio.say("Au tour des noirs.");
+            return;
+        }
         for(ChessGame.Move m:ChessGame.legal(current()))if(m.uci().equals(uci)){playMove(m);return;}
         Toast.makeText(this,"Coup illégal : "+uci,Toast.LENGTH_SHORT).show();
+        if(audio!=null){
+            audio.play(AccessibleAudio.Sound.INVALID);
+            audio.say("Coup illégal : "+uci);
+        }
     }
     private void choose(int sq){
         if(review.reviewing()){
+            if(audio!=null)audio.say("La partie est en relecture. Reprendre la partie pour jouer.");
             Toast.makeText(this,"Appuyer sur Reprendre la partie pour jouer",Toast.LENGTH_SHORT).show();
             return;
         }
@@ -400,8 +609,17 @@ public final class MainActivity extends Activity {
         ChessGame.Position p=current();
         char c=p.board[sq];
         if(selected<0){
-            if(c!='.'&&Character.isUpperCase(c)==p.white)selected=sq;
-        }else if(selected==sq) selected=-1;
+            if(c!='.'&&Character.isUpperCase(c)==p.white){
+                selected=sq;
+                if(audio!=null){
+                    audio.play(AccessibleAudio.Sound.SELECT);
+                    audio.say(ChessNarration.squareContents(p,sq)+", sélectionné.");
+                }
+            }else if(audio!=null)audio.say(ChessNarration.squareContents(p,sq));
+        }else if(selected==sq){
+            selected=-1;
+            if(audio!=null)audio.say("Sélection annulée.");
+        }
         else {
             List<ChessGame.Move> candidates=new ArrayList<>();
             for(ChessGame.Move m:ChessGame.legal(p))
@@ -416,6 +634,11 @@ public final class MainActivity extends Activity {
                 return;
             }
             selected=(c!='.'&&Character.isUpperCase(c)==p.white)?sq:-1;
+            if(audio!=null){
+                audio.play(selected<0?AccessibleAudio.Sound.INVALID:AccessibleAudio.Sound.SELECT);
+                audio.say(selected<0?"Destination illégale. "+ChessNarration.squareContents(p,sq):
+                    ChessNarration.squareContents(p,sq)+", sélectionné.");
+            }
         }
         chessView.invalidate();
     }
@@ -461,7 +684,9 @@ public final class MainActivity extends Activity {
         prefs.edit().remove("baseFen").apply();
         moves.clear();positions.clear();positions.add(ChessGame.fromFen(ChessGame.START));
         review.setHistorySize(moves.size());
-        selected=-1;persist();refresh();analyzeDisplayed();scheduleBot();
+        selected=-1;persist();refresh();analyzeDisplayed();
+        if(audio!=null)audio.say("Nouvelle partie. Les blancs commencent.");
+        scheduleBot();
     }
     private void undo(){
         leaveReview();
@@ -472,7 +697,9 @@ public final class MainActivity extends Activity {
             moves.remove(moves.size()-1);positions.remove(positions.size()-1);
         }
         review.setHistorySize(moves.size());
-        selected=-1;persist();refresh();analyzeDisplayed();scheduleBot();
+        selected=-1;persist();refresh();analyzeDisplayed();
+        if(audio!=null)audio.say("Dernier coup annulé. "+(current().white?"Aux blancs":"Aux noirs")+" de jouer.");
+        scheduleBot();
     }
     private void importFen(){
         final EditText input=new EditText(this);
@@ -490,7 +717,9 @@ public final class MainActivity extends Activity {
                     positions.clear();positions.add(p);moves.clear();selected=-1;
                     review.setHistorySize(0);
                     prefs.edit().putString("baseFen",p.fen()).remove("history").apply();
-                    refresh();analyzeDisplayed();scheduleBot();
+                    refresh();analyzeDisplayed();
+                    if(audio!=null)audio.say("Position chargée. "+(p.white?"Aux blancs":"Aux noirs")+" de jouer.");
+                    scheduleBot();
                 }catch(RuntimeException ex){
                     new AlertDialog.Builder(this).setTitle("FEN invalide")
                         .setMessage(ex.getMessage()).setPositiveButton("OK",null).show();
@@ -505,10 +734,13 @@ public final class MainActivity extends Activity {
         }
         revision++;
         review.setHistorySize(moves.size());
-        persist();refresh();analyzeDisplayed();scheduleBot();
+        persist();refresh();analyzeDisplayed();
+        if(audio!=null)audio.say("Gambit de dame. Blancs : dé deux, dé quatre. Noirs : dé sept, dé cinq. Blancs : cé deux, cé quatre.");
+        scheduleBot();
     }
     @Override protected void onPause(){
         stopReplay();
+        if(audio!=null)audio.stopSpeech();
         if(stockfishBridge!=null)stockfishBridge.stop();
         super.onPause();
     }
@@ -521,6 +753,7 @@ public final class MainActivity extends Activity {
         stopReplay();
         revision++;
         botWorker.shutdownNow();
+        if(audio!=null)audio.close();
         if(stockfishBridge!=null)stockfishBridge.close();
         super.onDestroy();
     }
