@@ -49,3 +49,9 @@
 - Reprendre véritable **Piper français UPMC Medium Sherpa-ONNX 1.13.8** déjà validé par GeckoDoku : Jessica sid=0 voix féminine par défaut, Pierre sid=1 option, warmup audio muet, synthèse locale via CPU et lecture AudioTrack. Voix Android TTS française hors ligne comme secours en cas de chargement/échec Piper.
 - Ne jamais prétendre que Piper est intégré avant succès de la CI et vérification du modèle dans l'APK. Se conformer aux licences des modèles/ONNX, publier .apk directe de test, garder `main` intacte.
 - Modes voix et sons indépendants et persistants, vitesse réglable, annonces d'évaluation uniquement sur demande sauf option automatique, éviter bavardage permanent.
+
+## GD-008 — Livraison build #12 vérifiée, version 0.3.2 (19/10/2026)
+- GitHub Actions https://github.com/greenpower2669/GambitDrame/actions/runs/39302856790 — **succès** sur commit `a3a6471de25fa1579e13318969b1aaac198a211d`.
+- APK Android ARM64 directe https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-12/GambitDrame-v0.3.2-debug-arm64.apk (176 621 445 octets ; SHA-256 `641ea821ecf57b696b5c3b1179a597745d4d8eb8543ea2c153dfd528cd306ff0`), publiée GitHub prerelease `gd-test-12`. Pas d'archive ZIP à décompresser pour Fab.
+- Vérifiés par CI dans APK : Sherpa-ONNX 1.13.8, Piper UPMC VITS 76 682 529 octets, échantillons espeak-ng-data, sources/licences, binaire Stockfish 18 ARM64 113 750 704 octets. Tests 18+130+21+15 réussis.
+- **Non acquis** jusqu'au test SM-A576B : lancement/latence/sid Jessica-Pierrre d'Android AudioTrack, coexistence TalkBack, volumes, chauffe et fonctionnement Stockfish réel. Pas de merge main.

@@ -52,3 +52,10 @@ L'adversaire humain doit échantillonner des coups humains réels, avec continui
 - `MainActivity.java` : sélection tactile parlante, annonce de chaque coup et événements, menus « Décrire la position », « Lire l'échiquier », « Coups possibles », « Répéter », « Écouter l'avantage Stockfish », réglages persistants et voix Piper féminine/masculine.
 - CI télécharge et vérifie SHA256 Sherpa AAR et modèle Piper, ajoute notices de sources/licence, vérifie le .onnx packagé et compile les tests Java de phrases.
 - LIMITES : pas de reconnaissance vocale pour entrer des coups ; voix Piper installée dans APK mais usage réel Samsung requiert test. Aucun mélange du moteur Stockfish à l'adversaire.
+
+## Intégration v0.3.2 vérifiée en CI
+- Release directe `gd-test-12` : https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-12/GambitDrame-v0.3.2-debug-arm64.apk; 176 621 445 octets, SHA256 `641ea821ecf57b696b5c3b1179a597745d4d8eb8543ea2c153dfd528cd306ff0`.
+- Build GitHub Actions #12 : `BUILD SUCCESSFUL in 1m 8s` ; 18 tests de règles, 130 sélections humain, 21 jauge/navigation et **15 narrations** verts.
+- Archives AAR Sherpa et archive modèle vocal vérifiées par SHA-256 dans CI. L'APK contient `assets/tts/piper/pierre/fr_FR-upmc-medium.onnx` (76 682 529 octets), Sherpa libs `libonnxruntime.so`, `libsherpa-onnx-*.so`, GPL Stockfish et Apache licence Sherpa.
+- Du fait du modèle local hors ligne et de Stockfish, la taille de l'APK augmente à ~176,6 Mo : prévenir Fab de l'espace nécessaire pour téléchargement et installation.
+- L'expérience réelle Android AudioTrack + warmup + synthèse de Jessica/Pierre et latences n'est PAS encore confirmée par test sur le téléphone.

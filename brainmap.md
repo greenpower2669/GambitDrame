@@ -61,3 +61,8 @@
 - Workflow `android-debug.yml` : en plus Stockfish ARM64, prépare Sherpa AAR fixe et modèle VITS fr_FR-upmc-medium d'archive SHA256 fixe (`e9830a...67f89a7f`), sources/licences embarquées, vérifie .onnx dans .apk.
 - `app/build.gradle` : version 0.3.2 code 6, plugin Kotlin 2.0.21 (nécessaire à l'interface Sherpa issue GeckoDoku), dépendance AAR locale téléchargée par CI.
 - `MainActivity` : sons ponctuels, cinq boutons relecture conservés, aide parlante case/jeu/relecture/évaluation, sélecteurs directs et vitesse, mode silence contrôlable.
+
+## Preuves CI 0.3.2
+- Workflow #12 terminé `success` : https://github.com/greenpower2669/GambitDrame/actions/runs/39302856790.
+- Gradle Java/Kotlin jvmTarget 17 harmonisés, Kotlin builder corrigé ; voie intégration modèle + AAR + paquet native ARM64 réussie ; `BUILD SUCCESSFUL` et asset uploadé.
+- APK prérelease `gd-test-12`, taille 176 621 445 octets, SHA dans brain.md. Relever que le pack native libs reste extrait sur Samsung en install, avec espace libre supplémentaire à prévoir.

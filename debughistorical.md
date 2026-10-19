@@ -72,3 +72,12 @@
 - Option retenue : vrai Piper VITS local dans APK, sid 0 Jessica, sid 1 Pierre, système Android TTS comme secours. Son synthétisé ToneGenerator pour les événements. Pas de copie aveugle de l'application Gecko.
 - Tests Java attendus de `ChessNarrationTest.java`, pipeline Kotlin/Gradle, binaire Piper natif et modèle ONNX dans .apk, source/licence ; aucun résultat hardware affirmé à ce stade.
 - Risques CI : conflit AAR natif, plugin Kotlin, archive voice et extraction. Risques fonctionnels : premières paroles coupées, double parole avec TalkBack, fortes latences CPU lors des longues descriptions, mode silencieux Android et chargement modèle.
+
+## 19/10/2026 — Résolution des échecs CI 0.3.2
+- Run #8 `39301541395` : échec Gradle `Could not find method kotlinOptions() on project ':app'` à la ligne 19. Correction commit `fe3cb6f` : déplacer bloc kotlinOptions dans android.
+- Run #9 `39302112548` et #10 `39302153935` : JVM cibles incompatibles Java 1.8 / Kotlin 17. Correction commit `b18ac1c` : `compileOptions` Java VERSION_17 des deux côtés.
+- Run #11 `39302452741` : erreur syntaxe Kotlin PiperSpeechEngine.kt ligne 132 `Expecting an element`, parenthèse superflue dans builder AudioTrack. Correction commit `a3a6471`.
+- Run #12 `39302856790` **succès** : `CHESS_TESTS_OK 18`, `HUMAN_POLICY_TESTS_OK 130`, `REVIEW_AND_GAUGE_TESTS_OK 21`, `CHESS_NARRATION_TESTS_OK 15`, `BUILD SUCCESSFUL in 1m 8s`.
+- Contrôles archives SHA256 Sherpa AAR et Piper tar.bz2 **OK** ; APK contient `lib/arm64-v8a/libstockfish.so` 113 750 704 octets, `assets/tts/piper/pierre/fr_FR-upmc-medium.onnx` 76 682 529 octets, `SHERPA-ONNX-LICENSE.txt` 11 358 octets, source Piper. Avertissement Gradle non fatal : unable to strip libraries natives (inclut Stockfish/ONNX), présentes telles quelles.
+- Pre-release `gd-test-12` : https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-12/GambitDrame-v0.3.2-debug-arm64.apk ; taille 176 621 445 ; SHA256 `641ea821ecf57b696b5c3b1179a597745d4d8eb8543ea2c153dfd528cd306ff0`.
+- Les tests CI prouvent compilation et présence ressources, **pas l'audition réelle des voix/hardware**, à qualifier ainsi dans passation.

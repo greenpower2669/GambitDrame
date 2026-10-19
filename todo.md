@@ -62,6 +62,10 @@ Les commits purement Markdown n'ont pas besoin de recompiler Android ; workflow 
 - [x] Sons sélection/coup/prise/échec/erreur/relecture, switch son/voix indépendants et persistants.
 - [x] Boutons Décrire la position/Lire l'échiquier/Coups possibles/Répéter/Écouter Stockfish, contrôle du débit et des profils voix Jessica/Pierre.
 - [x] Code d'intégration Piper Sherpa VITS UPMC local (+ secours Android TTS) et CI prépare les modèles par SHA256.
-- [ ] Vérifier compilation CI et APK `0.3.2` effectivement générée avec modèle ONNX, Sherpa natif ARM64, licence et Stockfish ; corriger erreurs, sauver URL & SHA256.
+- [x] CI #12 réussi et APK `0.3.2` directe publiée `gd-test-12`; ONNX Piper, Sherpa ARM64 et Stockfish dans APK, licences incluses, 15 tests de narration + autres tests réussis ; lien/empreinte dans debughistorical.
 - [ ] Tester sur Samsung Android 16 sid 0 Jessica et sid 1 Pierre, audioTrack startup/warmup, latence, priorité audio, talkback et annonce de pions/gauche droite + mode voix désactivé.
 - [ ] Améliorer l'accessibilité TalkBack des 64 cases (canvas actuel a une seule description globale) et gérer le contrôle de jeu par voix si validé plus tard.
+
+- [ ] Urgent : vérifier sur Samsung SM-A576B Jessica sid0 / Pierre sid1, voix parlante par défaut, bascule ON/OFF, vitesse, boutons d'écoute, relecture, premier warmup muet.
+- [ ] Mesurer espace mémoire de l'APK 176,6 Mo + assets extraits, vérifier TalkBack ne double pas la parole, CPU Piper/Stockfish ne chauffe pas excessivement.
+- [ ] Retours utilisateur sur prononciation des colonnes A-H (étiquettes phonétiques) et éventuel ajout commandes vocales d'échecs, sans confusion sur les niveaux Elo 400–900.
