@@ -104,7 +104,7 @@ jobs:
           gradle-version: '8.9'
       - name: Assemble APK containing real Stockfish binary
         run: gradle :app:assembleDebug --no-daemon --stacktrace
-      - name: Verify packaged ARM64 native engine and licence
+      - name: Verify packaged Stockfish and Piper neural voice
         run: |
           set -euo pipefail
           apk=app/build/outputs/apk/debug/app-debug.apk
@@ -114,6 +114,7 @@ jobs:
           unzip -l "$apk" | grep -F 'assets/licenses/STOCKFISH-SOURCE.txt'
           unzip -l "$apk" | grep -F 'assets/tts/piper/pierre/fr_FR-upmc-medium.onnx'
           unzip -l "$apk" | grep -F 'assets/tts/piper/pierre/tokens.txt'
+          unzip -l "$apk" | grep -F 'assets/licenses/SHERPA-ONNX-LICENSE.txt'
           unzip -l "$apk" | grep -F 'assets/licenses/PIPER-VOICE-SOURCE.txt'
       - name: Publish direct test APK in GitHub pre-release
         env:
