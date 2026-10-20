@@ -3,6 +3,7 @@ package fr.gambitdrame;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.content.Intent;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -82,10 +83,13 @@ public final class MainActivity extends Activity {
     private int selected=-1;
     private boolean botEnabled=true;
     private SharedPreferences prefs;
+    private EngineDiagnostics engineLog;
+    private TextView engineDebugStatus;
 
     @Override public void onCreate(Bundle state){
         super.onCreate(state);
         prefs=getSharedPreferences("gambitdrame-v1",MODE_PRIVATE);
+        engineLog=new EngineDiagnostics(this);
         if(!prefs.getBoolean("gd-v041-preset",false)){
             prefs.edit().putBoolean("gd-v041-preset",true)
                 .putInt("opponentMode",1).putInt("precisionTarget",80)
@@ -102,6 +106,10 @@ public final class MainActivity extends Activity {
         deepDepth=prefs.getInt("precisionDepth",7);
         pieceTheme=prefs.getInt("pieceTheme",3);
         stockfishOpponent=new StockfishOpponent(this);
+        stockfishOpponent.setDiagnostics(engineLog);
+        engineLog.record("APP","GambitDrame v0.4.2 launched; mode="+opponentMode+
+            " target="+precisionTarget+" sigma="+precisionSigma+
+            " deep="+deepMode+" depth="+deepDepth);
         long seed=prefs.getLong("humanSeed",0L);
         if(seed==0L){seed=new Random().nextLong();prefs.edit().putLong("humanSeed",seed).apply();}
         humanPolicy=new HumanPolicy(targetRating,seed,aggression);
@@ -123,7 +131,7 @@ public final class MainActivity extends Activity {
             return insets;
         });
         heading(root,"♟ GambitDrame",25);
-        label(root,"Version 0.4.1 — Stockfish rapide, bois 3D, flèches et plein écran",16);
+        label(root,"Version 0.4.2 — diagnostic Stockfish / GET ERR, bois 3D et plein écran",16);
         label(root,"Niveaux 400–900 EXPÉRIMENTAUX, pas encore calibrés par parties complètes.",14);
         chessView=new ChessView();
         analysisPanel=new TextView(this);
@@ -147,6 +155,10 @@ public final class MainActivity extends Activity {
             root.addView(chessView,new LinearLayout.LayoutParams(-1,-2));
         }
         button(root,"⛶ ÉCHIQUIER PLEIN ÉCRAN — jouer ou tracer",this::openFullscreenBoard);
+        engineDebugStatus=label(root,"Stockfish : mode="+(opponentMode==1?"moteur":"Lichess")+
+            ", cible="+precisionTarget+" %, variabilité="+precisionSigma,15);
+        engineDebugStatus.setTypeface(null,Typeface.BOLD);
+        button(root,"🐞 GET ERR — JOURNAL STOCKFISH / COPIER",this::showEngineDebug);
         // All five replay controls sit next to the board, including TalkBack labels.
         LinearLayout playbackControls=new LinearLayout(this);
         playbackControls.setOrientation(LinearLayout.HORIZONTAL);
@@ -319,6 +331,8 @@ public final class MainActivity extends Activity {
                 if(opponentMode==index)return;
                 opponentMode=index;
                 prefs.edit().putInt("opponentMode",index).apply();
+                engineLog.record("SETTING","opponentMode="+index+" (0=Lichess,1=Stockfish)");
+                updateEngineDebugStatus("Mode adversaire modifié");
                 revision++;
                 failedBotRevision=-1;
                 handler.removeCallbacks(botRunnable);
@@ -344,6 +358,7 @@ public final class MainActivity extends Activity {
                 deepDepth=progress+1;
                 advancedText.setText("Profondeur du mode approfondi : "+deepDepth);
                 prefs.edit().putInt("precisionDepth",deepDepth).apply();
+                engineLog.record("SETTING","MultiPV depth="+deepDepth);
                 revision++;failedBotRevision=-1;scheduleBot();
             }
             @Override public void onStartTrackingTouch(SeekBar s){}
@@ -352,6 +367,8 @@ public final class MainActivity extends Activity {
         advanced.setOnCheckedChangeListener((b,on)->{
             deepMode=on;advancedDepth.setEnabled(on);
             prefs.edit().putBoolean("precisionDeep",on).apply();
+            engineLog.record("SETTING","advancedMultiPV="+on+" depth="+deepDepth);
+            updateEngineDebugStatus("Mode de calcul modifié");
             revision++;failedBotRevision=-1;scheduleBot();
         });
         label(root,"Rapide (défaut) : chaque coup légal est joué sur une copie, puis sa position est évaluée à profondeur 1.",14);
@@ -367,6 +384,8 @@ public final class MainActivity extends Activity {
                 precisionTarget=value;
                 precisionLabel.setText("Précision cible Stockfish : "+value+" %");
                 prefs.edit().putInt("precisionTarget",value).apply();
+                engineLog.record("SETTING","precisionTarget="+value+"%");
+                updateEngineDebugStatus("Cible modifiée");
                 revision++;failedBotRevision=-1;scheduleBot();
             }
             @Override public void onStartTrackingTouch(SeekBar b){}
@@ -383,6 +402,8 @@ public final class MainActivity extends Activity {
                 precisionSigma=value;
                 deviationLabel.setText("Variabilité habituelle : ± "+value+" points");
                 prefs.edit().putInt("precisionSigma",value).apply();
+                engineLog.record("SETTING","precisionSigma="+value);
+                updateEngineDebugStatus("Variabilité modifiée");
                 revision++;failedBotRevision=-1;scheduleBot();
             }
             @Override public void onStartTrackingTouch(SeekBar b){}
@@ -548,6 +569,51 @@ public final class MainActivity extends Activity {
                 View.SYSTEM_UI_FLAG_FULLSCREEN|View.SYSTEM_UI_FLAG_HIDE_NAVIGATION|
                 View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
         }
+    }
+    private void updateEngineDebugStatus(String description){
+        if(engineDebugStatus!=null)
+            engineDebugStatus.setText("Stockfish : "+(opponentMode==1?(deepMode?"MultiPV":"rapide"):"Lichess")+
+                " | cible "+precisionTarget+" % | sigma "+precisionSigma+
+                " | "+description);
+    }
+    private String currentEngineReport(){
+        return "GambitDrame 0.4.2 / Android "+Build.VERSION.RELEASE+
+            "\nMode adversaire="+opponentMode+" (0=Lichess, 1=Stockfish)"+
+            "\nMoteur approfondi="+deepMode+" / profondeur="+deepDepth+
+            "\nCurseur précision="+precisionTarget+" % / variabilité sigma="+precisionSigma+
+            "\nPersisté="+prefs.getInt("precisionTarget",-1)+"/"+prefs.getInt("precisionSigma",-1)+
+            " mode="+prefs.getInt("opponentMode",-1)+
+            "\nHistorique coups="+android.text.TextUtils.join(" ",moves)+
+            "\nFEN="+current().fen()+
+            "\nNombre de demi-coups="+moves.size()+
+            "\n=== JOURNAL STOCKFISH CONSERVÉ LOCALEMENT ===\n"+
+            engineLog.text();
+    }
+    private void showEngineDebug(){
+        final String report=currentEngineReport();
+        ScrollView scroller=new ScrollView(this);
+        TextView data=new TextView(this);
+        data.setText(report);
+        data.setTextColor(Color.BLACK);
+        data.setTextSize(14);
+        data.setTextIsSelectable(true);
+        data.setPadding(dp(12),dp(10),dp(12),dp(10));
+        scroller.addView(data);
+        new AlertDialog.Builder(this).setTitle("🐞 GET ERR — diagnostic Stockfish")
+            .setView(scroller)
+            .setPositiveButton("COPIER TOUT",(d,w)->{
+                ClipboardManager clipboard=(ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE);
+                clipboard.setPrimaryClip(ClipData.newPlainText("GambitDrame GET ERR",report));
+                Toast.makeText(this,"Journal copié : coller dans la conversation",Toast.LENGTH_LONG).show();
+            })
+            .setNeutralButton("PARTAGER",(d,w)->{
+                Intent send=new Intent(Intent.ACTION_SEND);
+                send.setType("text/plain");
+                send.putExtra(Intent.EXTRA_SUBJECT,"GambitDrame 0.4.2 GET ERR");
+                send.putExtra(Intent.EXTRA_TEXT,report);
+                startActivity(Intent.createChooser(send,"Partager le diagnostic GambitDrame"));
+            })
+            .setNegativeButton("Fermer",null).show();
     }
     private ChessGame.Position current(){return positions.get(positions.size()-1);}
     private ChessGame.Position displayed(){
@@ -932,6 +998,9 @@ public final class MainActivity extends Activity {
         final int target=precisionTarget,spread=precisionSigma;
         final boolean useDeep=deepMode;
         final int useDepth=deepDepth;
+        engineLog.record("TURN","START ply="+ply+" rev="+expectedRevision+
+            " mode="+engineMode+" target="+target+" sigma="+spread+
+            " deep="+useDeep+" depth="+useDepth+" fen="+initial.fen());
         botRunning=true;
         botInfo.setText(engineMode==1?(useDeep?"Stockfish MultiPV approfondi…":"Stockfish : toutes les positions à profondeur 1…"):
             "Profil Lichess expérimental : sélection d'un coup…");
@@ -941,14 +1010,21 @@ public final class MainActivity extends Activity {
             try{
                 if(engineMode==1){
                     StockfishOpponent.Result result=stockfishOpponent.select(initial,target,spread,useDeep,useDepth);
-                    if(result!=null){chosenUci=result.uci;detail=result.details;}
+                    if(result!=null){
+                        chosenUci=result.uci;detail=result.details;
+                        engineLog.record("RESULT",result.details);
+                    }
                 }else{
                     Map<String,Integer> sampled=explorer.moves(initial,ply,online);
                     HumanPolicy.Choice choice=policy.choose(initial,sampled,ply);
-                    if(choice!=null){chosenUci=choice.move.uci();detail=choice.source;}
+                    if(choice!=null){
+                        chosenUci=choice.move.uci();detail=choice.source;
+                        engineLog.record("HUMAN_POLICY","move="+chosenUci+" source="+detail);
+                    }
                 }
             }catch(Exception ex){
                 error=ex.getMessage();
+                engineLog.error("STOCKFISH_SELECT",ex);
                 android.util.Log.w("GambitOpponent","Moteur incapable de sélectionner le coup",ex);
             }
             final String moveUci=chosenUci,explanation=detail,failure=error;
@@ -956,11 +1032,16 @@ public final class MainActivity extends Activity {
                 botRunning=false;
                 if(trialMode||review.reviewing()||revision!=expectedRevision||!botEnabled||
                    current().white||!current().fen().equals(initial.fen())||opponentMode!=engineMode){
+                    engineLog.record("STALE","Discarded pending move="+moveUci+
+                        " oldRev="+expectedRevision+" newRev="+revision+
+                        " expectedFen="+initial.fen()+" nowFen="+current().fen());
                     scheduleBot();
                     return;
                 }
                 if(moveUci==null){
                     failedBotRevision=revision;
+                    engineLog.record("GET_ERR","Bot blocked: "+(failure==null?"null selected move":failure));
+                    updateEngineDebugStatus("ERREUR — ouvrir GET ERR");
                     botInfo.setText("Adversaire indisponible : "+(failure==null?"analyse incomplète":failure)+
                         ". Ajuster un réglage ou recommencer.");
                     if(stockfishBridge!=null)analyzeDisplayed();
@@ -969,16 +1050,28 @@ public final class MainActivity extends Activity {
                 for(ChessGame.Move m:ChessGame.legal(current())){
                     if(m.uci().equals(moveUci)){
                         botInfo.setText(explanation==null?moveUci:explanation);
+                        updateEngineDebugStatus(engineMode==1?
+                            "Coup "+moveUci+" : "+(explanation==null?"":explanation):
+                            "Coup expérimental Lichess "+moveUci);
+                        engineLog.record("APPLY","selected="+moveUci+" target="+target+
+                            " sigma="+spread+" mode="+engineMode+" currentFen="+current().fen());
                         playMove(m);
                         return;
                     }
                 }
                 failedBotRevision=revision;
+                engineLog.record("GET_ERR","Selected illegal move="+moveUci+
+                    " currentFen="+current().fen());
+                updateEngineDebugStatus("ERREUR : coup illégal, ouvrir GET ERR");
                 botInfo.setText("Erreur : coup Stockfish devenu illégal. Aucun coup automatique joué.");
             });
         });
     }
     private void reset(){
+        engineLog.record("NEW_GAME","New game; kept settings opponent="+opponentMode+
+            " target="+precisionTarget+" sigma="+precisionSigma+
+            " deep="+deepMode+" depth="+deepDepth);
+        updateEngineDebugStatus("Nouvelle partie — réglages conservés");
         if(trialMode)exitTrial();
         annotations.clear();
         leaveReview();
