@@ -35,6 +35,25 @@ public final class StockfishBridge {
     private volatile String activeFen;
     private volatile boolean awaitingReady=false;
     private final Map<Integer,String> variants=new HashMap<>();
+    private final Map<Integer,String> adviceMoves=new HashMap<>();
+    private final Map<Integer,Integer> adviceScores=new HashMap<>();
+    private volatile String adviceFen=null;
+    private int adviceDepth=0;
+    public static final class Suggestion {
+        public final String uci; public final int whiteCp,depth;
+        Suggestion(String u,int cp,int d){uci=u;whiteCp=cp;depth=d;}
+    }
+    public List<Suggestion> suggestions(String expectedFen,int limit){
+        synchronized(lock){
+            List<Suggestion> result=new ArrayList<>();
+            if(expectedFen==null||!expectedFen.equals(adviceFen))return result;
+            for(int i=1;i<=Math.max(1,Math.min(3,limit));i++){
+                String move=adviceMoves.get(i);Integer cp=adviceScores.get(i);
+                if(move!=null&&cp!=null)result.add(new Suggestion(move,cp,adviceDepth));
+            }
+            return result;
+        }
+    }
     private String currentWdl="WDL —";
     private final Random guardRandom=new Random();
     private final AdaptiveOpponent.State strategy=new AdaptiveOpponent.State();
@@ -255,6 +274,7 @@ public final class StockfishBridge {
             phase=1;
             send("setoption name MultiPV value 3");
             variants.clear();
+            adviceMoves.clear();adviceScores.clear();adviceFen=fen;adviceDepth=0;
             currentWdl="WDL —";
             send("position fen "+fen);
             send("go depth 11");
@@ -336,6 +356,15 @@ public final class StockfishBridge {
                     }
                 }
                 variants.put(rank,rank+". "+pvShort+" ("+score+")");
+                String depth=tokenAfter(line,"depth");
+                int current=depth==null?0:Integer.parseInt(depth);
+                if(current>adviceDepth){
+                    adviceDepth=current;adviceMoves.clear();adviceScores.clear();
+                }
+                if(current==adviceDepth&&whiteCp!=null){
+                    adviceMoves.put(rank,pvMoves[0]);
+                    adviceScores.put(rank,whiteCp);
+                }
                 StringBuilder s=new StringBuilder("Stockfish 18 · profondeur "+
                     tokenAfter(line,"depth")+"\n"+currentWdl+"\n");
                 for(int i=1;i<=3;i++)
