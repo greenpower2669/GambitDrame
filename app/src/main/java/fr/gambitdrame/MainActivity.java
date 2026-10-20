@@ -510,6 +510,7 @@ public final class MainActivity extends Activity {
         studyStatus=label(root,"Analyse Stockfish locale, hors ligne. Précision indicative différente de Lichess.",16);
         button(root,"📊 ANALYSER LA PARTIE (profondeur 9)",this::runStudy);
         button(root,"📖 JOURNAL — revoir les analyses",this::showStudyJournal);
+        button(root,"♟ RÉUSSITE PAR OUVERTURE",this::showOpeningSuccess);
         studyChart=new StudyTrendView(this);
         root.addView(studyChart,new LinearLayout.LayoutParams(-1,dp(205)));
         studyChart.setRecords(studyEntries());
@@ -1303,7 +1304,7 @@ public final class MainActivity extends Activity {
         if(item==null)return "Entrée invalide";
         String date=DateFormat.getDateTimeInstance(DateFormat.SHORT,DateFormat.SHORT,
             java.util.Locale.FRANCE).format(new Date(item.optLong("createdAt",0L)));
-        return date+" · "+item.optString("opening","ouverture inconnue")+
+        return date+" · "+item.optString("result","*")+" · "+item.optString("opening","ouverture inconnue")+
             " · Blancs "+item.optDouble("whiteAccuracy",0)+" % / Noirs "+
             item.optDouble("blackAccuracy",0)+" %";
     }
@@ -1328,6 +1329,44 @@ public final class MainActivity extends Activity {
         }
         return b.toString();
     }
+    private void showOpeningSuccess(){
+        JSONArray entries=studyEntries();
+        java.util.Map<String,int[]> openings=new java.util.TreeMap<>();
+        for(int i=0;i<entries.length();i++){
+            JSONObject r=entries.optJSONObject(i);
+            if(r==null)continue;
+            String outcome=r.optString("result","*");
+            if(outcome.equals("*"))continue; // Unfinished matches must not count as defeats.
+            String name=r.optString("opening","Ouverture non répertoriée");
+            int[] stats=openings.get(name);
+            if(stats==null){stats=new int[4];openings.put(name,stats);}
+            stats[0]++;
+            if(outcome.equals("1-0"))stats[1]++;
+            else if(outcome.equals("0-1"))stats[2]++;
+            else if(outcome.equals("1/2-1/2"))stats[3]++;
+        }
+        StringBuilder report=new StringBuilder("Résultats réels des parties terminées, par ouverture détectée. "+
+            "L'ouverture détectée vient d'un petit répertoire local, pas d'une base exhaustive. "+
+            "Le taux est calculé du point de vue des Blancs : (victoires + ½ nulles) / parties.\n\n");
+        if(openings.isEmpty())report.append("Pas encore de partie terminée et analysée.");
+        for(java.util.Map.Entry<String,int[]> e:openings.entrySet()){
+            int[] st=e.getValue();
+            double rate=100.0*(st[1]+0.5*st[3])/st[0];
+            report.append(e.getKey()).append(" : ")
+                .append(st[0]).append(" partie(s), ")
+                .append(st[1]).append(" gagnée(s), ")
+                .append(st[3]).append(" nulle(s), ")
+                .append(st[2]).append(" perdue(s) · réussite Blancs ")
+                .append(String.format(java.util.Locale.FRANCE,"%.1f%%",rate))
+                .append(st[0]<10?" (échantillon faible)":"").append("\n");
+        }
+        TextView text=new TextView(this);text.setText(report.toString());text.setTextSize(17);
+        text.setTextIsSelectable(true);text.setPadding(dp(12),dp(12),dp(12),dp(12));
+        ScrollView scroll=new ScrollView(this);scroll.addView(text);
+        new AlertDialog.Builder(this).setTitle("Réussite par ouverture")
+            .setView(scroll).setPositiveButton("Fermer",null).show();
+    }
+
     private void showStudyJournal(){
         JSONArray entries=studyEntries();
         if(entries.length()==0){
