@@ -37,17 +37,25 @@ public final class StockfishBridge {
     private final Map<Integer,String> variants=new HashMap<>();
     private String currentWdl="WDL —";
     private final Random guardRandom=new Random();
+    private final AdaptiveOpponent.State strategy=new AdaptiveOpponent.State();
+    private volatile int gaugeRootCp=0;
+    public void resetPlan(){strategy.clear();trace("PLAN","Réinitialisé");}
     private EngineDiagnostics diagnostics;
     private int phase=0; // 0 idle, 1 gauge, 2 candidate ranking
     private GuardRequest request;
     private static final class GuardRequest {
         final ChessGame.Position root; final int target,sigma;
+        final boolean adaptive;
+        final int sensitivity,recovery,stability;
         final List<String> legal=new ArrayList<>();
         final Map<String,Integer> cp=new HashMap<>();
         final CountDownLatch latch=new CountDownLatch(1);
         StockfishOpponent.Result result; Exception failure;
-        GuardRequest(ChessGame.Position root,int target,int sigma){
+        GuardRequest(ChessGame.Position root,int target,int sigma,
+                     boolean adaptive,int sensitivity,int recovery,int stability){
             this.root=root;this.target=target;this.sigma=sigma;
+            this.adaptive=adaptive;this.sensitivity=sensitivity;
+            this.recovery=recovery;this.stability=stability;
             for(ChessGame.Move m:ChessGame.legal(root))legal.add(m.uci());
         }
     }
@@ -69,7 +77,11 @@ public final class StockfishBridge {
         }
     }
     public StockfishOpponent.Result selectGuarded(ChessGame.Position root,int target,int sigma)throws Exception{
-        GuardRequest r=new GuardRequest(root,target,sigma);
+        return selectGuarded(root,target,sigma,false,75,95,70);
+    }
+    public StockfishOpponent.Result selectGuarded(ChessGame.Position root,int target,int sigma,
+                           boolean adaptive,int sensitivity,int recovery,int stability)throws Exception{
+        GuardRequest r=new GuardRequest(root,target,sigma,adaptive,sensitivity,recovery,stability);
         if(r.legal.isEmpty())return null;
         if(r.legal.size()==1)return new StockfishOpponent.Result(r.legal.get(0),100,100,1);
         synchronized(lock){
@@ -78,7 +90,9 @@ public final class StockfishBridge {
             if(!root.fen().equals(desiredFen))throw new IllegalStateException("FEN jauge différente de la partie");
             request=r;
             trace("GUARD_START","Réutilisation moteur et hash jauge11→MultiPV12, coups="+r.legal.size()+
-                " target="+target+" sigma="+sigma+" fen="+root.fen());
+                " target="+target+" sigma="+sigma+" adaptive="+adaptive+
+                " sensitivity="+sensitivity+" recovery="+recovery+" stability="+stability+
+                " fen="+root.fen());
             if(ready&&!awaitingReady&&phase==0&&root.fen().equals(activeFen))startGuard();
         }
         boolean ok;
@@ -132,18 +146,38 @@ public final class StockfishBridge {
                         scores.add(cp);
                     }
                     List<StockfishPrecision.Candidate> ranking=StockfishPrecision.normalize(r.legal,scores);
-                    TacticalGuard.Decision choice=TacticalGuard.choose(ranking,r.target,r.sigma,guardRandom);
+                    TacticalGuard.Decision choice=null;
+                    AdaptiveOpponent.Choice strategic=null;
+                    if(r.adaptive) strategic=AdaptiveOpponent.choose(r.root,ranking,r.target,r.sigma,
+                        r.sensitivity,r.recovery,r.stability,strategy,guardRandom,gaugeRootCp);
+                    else choice=TacticalGuard.choose(ranking,r.target,r.sigma,guardRandom);
                     int whiteSign=r.root.white?1:-1;
                     for(StockfishPrecision.Candidate m:ranking)
                         trace("GUARD_RANK",m.uci+" cp="+m.scoreCp+
                             " relative="+String.format(java.util.Locale.US,"%.1f",m.relativeQuality)+"%");
-                    trace("GUARD_CHOSEN","raw="+choice.original.move.uci+" chosen="+choice.chosen.move.uci+
-                        " draw="+choice.chosen.requested+" lossCp="+choice.lossCp+
-                        " limitCp="+choice.limitCp+" override="+choice.intervened);
-                    r.result=new StockfishOpponent.Result(choice.chosen.move.uci,
-                        choice.chosen.move.relativeQuality,choice.chosen.requested,r.legal.size(),
-                        choice.chosen.move.scoreCp*whiteSign,choice.bestCp*whiteSign,
-                        choice.lossCp,choice.limitCp,choice.intervened);
+                    if(strategic!=null){
+                        trace("ADAPTIVE","rootCp="+strategic.rootCp+" effective="+strategic.effectiveTarget+
+                            " bestCp="+strategic.bestCp+" chosen="+strategic.move.uci+
+                            " choiceCp="+strategic.move.scoreCp+
+                            " lossCp="+strategic.lossCp+" cap="+strategic.limitCp+
+                            " recovery="+strategic.recovery+" plan="+strategic.plan+
+                            " reason="+strategic.reason+" alternatives="+strategic.alternatives);
+                        strategy.lastMove=strategic.move.uci;
+                        strategy.plan=strategic.plan;
+                        strategy.lastScoreCp=strategic.move.scoreCp;
+                        r.result=new StockfishOpponent.Result(strategic.move.uci,
+                            strategic.move.relativeQuality,r.target,r.legal.size(),
+                            strategic.move.scoreCp*whiteSign,strategic.bestCp*whiteSign,
+                            strategic.lossCp,strategic.limitCp,false);
+                    }else{
+                        trace("GUARD_CHOSEN","raw="+choice.original.move.uci+" chosen="+choice.chosen.move.uci+
+                            " draw="+choice.chosen.requested+" lossCp="+choice.lossCp+
+                            " limitCp="+choice.limitCp+" override="+choice.intervened);
+                        r.result=new StockfishOpponent.Result(choice.chosen.move.uci,
+                            choice.chosen.move.relativeQuality,choice.chosen.requested,r.legal.size(),
+                            choice.chosen.move.scoreCp*whiteSign,choice.bestCp*whiteSign,
+                            choice.lossCp,choice.limitCp,choice.intervened);
+                    }
                 }catch(Exception ex){r.failure=ex;trace("GUARD_ERR",String.valueOf(ex));}
                 finally{r.latch.countDown();}
             }
@@ -217,6 +251,7 @@ public final class StockfishBridge {
             if(paused||desiredFen==null)return;
             fen=desiredFen;
             activeFen=fen;
+            gaugeRootCp=0;
             phase=1;
             send("setoption name MultiPV value 3");
             variants.clear();
@@ -280,6 +315,8 @@ public final class StockfishBridge {
             String rawMate=tokenAfter(line,"mate");
             int perspective=fen.contains(" w ")?1:-1;
             if(rawCp!=null)whiteCp=Integer.parseInt(rawCp)*perspective;
+            if(rank==1&&rawCp!=null&&"11".equals(tokenAfter(line,"depth")))
+                gaugeRootCp=Integer.parseInt(rawCp);
             if(rawMate!=null)whiteMate=Integer.parseInt(rawMate)*perspective;
             String score=EvaluationScale.label(whiteCp,whiteMate);
             String output;
