@@ -24,6 +24,14 @@ import android.view.WindowManager;
 import android.view.View;
 import android.widget.*;
 import java.util.ArrayList;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Date;
+import java.text.DateFormat;
 import java.util.List;
 import java.util.Random;
 import java.util.Map;
@@ -90,6 +98,12 @@ public final class MainActivity extends Activity {
     private SharedPreferences prefs;
     private EngineDiagnostics engineLog;
     private TextView engineDebugStatus;
+    private StudyTrendView studyChart;
+    private TextView studyStatus;
+    private final ExecutorService studyWorker=Executors.newSingleThreadExecutor();
+    private volatile boolean studyCancelled=false;
+    private boolean studyBusy=false;
+    private static final int STUDY_EXPORT=801, STUDY_IMPORT=802;
 
     @Override public void onCreate(Bundle state){
         super.onCreate(state);
@@ -113,7 +127,7 @@ public final class MainActivity extends Activity {
         pieceTheme=prefs.getInt("pieceTheme",3);
         stockfishOpponent=new StockfishOpponent(this);
         stockfishOpponent.setDiagnostics(engineLog);
-        engineLog.record("APP","GambitDrame v0.4.3 launched; mode="+opponentMode+
+        engineLog.record("APP","GambitDrame v0.4.4 launched; mode="+opponentMode+
             " target="+precisionTarget+" sigma="+precisionSigma+
             " deep="+deepMode+" depth="+deepDepth);
         long seed=prefs.getLong("humanSeed",0L);
@@ -137,7 +151,7 @@ public final class MainActivity extends Activity {
             return insets;
         });
         heading(root,"♟ GambitDrame",25);
-        label(root,"Version 0.4.3 — jauge 11 + garde-fou 12, pièces en bois, GET ERR",16);
+        label(root,"Version 0.4.4 — analyse des parties, journal et graphiques",16);
         label(root,"Niveaux 400–900 EXPÉRIMENTAUX, pas encore calibrés par parties complètes.",14);
         chessView=new ChessView();
         analysisPanel=new TextView(this);
@@ -492,6 +506,17 @@ public final class MainActivity extends Activity {
             tryMove(uci);
         });
         history=label(root,"",15);
+        heading(root,"📊 Étudier mes parties",18);
+        studyStatus=label(root,"Analyse Stockfish locale, hors ligne. Précision indicative différente de Lichess.",16);
+        button(root,"📊 ANALYSER LA PARTIE (profondeur 9)",this::runStudy);
+        button(root,"📖 JOURNAL — revoir les analyses",this::showStudyJournal);
+        studyChart=new StudyTrendView(this);
+        root.addView(studyChart,new LinearLayout.LayoutParams(-1,dp(205)));
+        studyChart.setRecords(studyEntries());
+        label(root,"Graphique : précision estimée des Blancs et des Noirs par partie analysée. "+
+            "Variabilité : écart-type des qualités de coups, différent du réglage adverse.",14);
+        button(root,"💾 EXPORTER toutes les analyses (.json)",this::exportStudyJournal);
+        button(root,"📂 IMPORTER un journal (.json)",this::importStudyJournal);
         button(root,"Importer FEN",this::importFen);
         button(root,"Copier FEN",()->{
             ClipboardManager cm=(ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE);
@@ -1035,11 +1060,12 @@ public final class MainActivity extends Activity {
     }
     private void scheduleBot(){
         handler.removeCallbacks(botRunnable);
+        if(studyBusy)return;
         if(!trialMode&&!review.reviewing()&&botEnabled&&revision!=failedBotRevision&&!current().white&&!finished())
             handler.postDelayed(botRunnable,300);
     }
     private void botMove(){
-        if(botRunning||trialMode||review.reviewing()||!botEnabled||current().white||finished())return;
+        if(studyBusy||botRunning||trialMode||review.reviewing()||!botEnabled||current().white||finished())return;
         final ChessGame.Position initial=current();
         final long expectedRevision=revision;
         final int ply=moves.size();
@@ -1205,7 +1231,235 @@ public final class MainActivity extends Activity {
         if(audio!=null)audio.say("Gambit de dame. Blancs : dé deux, dé quatre. Noirs : dé sept, dé cinq. Blancs : cé deux, cé quatre.");
         scheduleBot();
     }
+
+    private JSONArray studyEntries(){
+        try{return new JSONArray(prefs.getString("study-journal-v1","[]"));}
+        catch(Exception ignored){return new JSONArray();}
+    }
+    private void setStudyEntries(JSONArray entries){
+        // Bound local storage. Complete JSON backups can be exported before pruning.
+        JSONArray kept=new JSONArray();
+        int start=Math.max(0,entries.length()-40);
+        for(int i=start;i<entries.length();i++)kept.put(entries.opt(i));
+        prefs.edit().putString("study-journal-v1",kept.toString()).apply();
+        if(studyChart!=null)studyChart.setRecords(kept);
+    }
+    private void runStudy(){
+        if(studyBusy){
+            Toast.makeText(this,"Une analyse est déjà en cours.",Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if(botRunning){
+            Toast.makeText(this,"L'adversaire réfléchit. Relancer après son coup.",Toast.LENGTH_LONG).show();
+            return;
+        }
+        if(moves.isEmpty()){
+            Toast.makeText(this,"Joue quelques coups avant l'analyse.",Toast.LENGTH_LONG).show();
+            return;
+        }
+        if(trialMode){exitTrial();}
+        stopReplay();
+        revision++;handler.removeCallbacks(botRunnable);
+        if(stockfishBridge!=null)stockfishBridge.stop();
+        final List<ChessGame.Position> snapshotPositions=new ArrayList<>(positions);
+        final List<String> snapshotMoves=new ArrayList<>(moves);
+        studyCancelled=false;studyBusy=true;
+        studyStatus.setText("Analyse en cours : 0/"+snapshotPositions.size()+" positions · Stockfish profondeur 9.");
+        studyWorker.execute(()->{
+            JSONObject result=null;String error=null;
+            try{
+                result=GameStudyEngine.analyze(this,snapshotPositions,snapshotMoves,
+                    (done,total)->handler.post(()->{
+                        if(!studyCancelled&&studyBusy&&studyStatus!=null)
+                            studyStatus.setText("Analyse Stockfish : "+done+"/"+total+" positions.");
+                    }),()->studyCancelled||Thread.currentThread().isInterrupted());
+            }catch(Exception ex){error=ex.getMessage();}
+            final JSONObject completed=result;
+            final String failure=error;
+            handler.post(()->{
+                studyBusy=false;
+                if(completed!=null&&!studyCancelled){
+                    JSONArray entries=studyEntries();entries.put(completed);
+                    setStudyEntries(entries);
+                    studyStatus.setText("Analyse sauvegardée · Blancs "+
+                        completed.optDouble("whiteAccuracy")+" % ±"+
+                        completed.optDouble("whiteSigma")+
+                        " · Noirs "+completed.optDouble("blackAccuracy")+" % ±"+
+                        completed.optDouble("blackSigma")+
+                        "\n"+completed.optString("theoryText"));
+                    engineLog.record("STUDY","Analyse sauvegardée : "+snapshotMoves.size()+
+                        " coups, profondeur9, "+completed.optString("opening"));
+                }else{
+                    studyStatus.setText(studyCancelled?"Analyse interrompue ; aucune donnée partielle sauvegardée.":
+                        "Analyse impossible : "+(failure==null?"erreur inconnue":failure));
+                    engineLog.record("STUDY_ERR",String.valueOf(failure));
+                }
+                if(stockfishBridge!=null)analyzeDisplayed();
+                scheduleBot();
+            });
+        });
+    }
+    private String studyDescription(JSONObject item){
+        if(item==null)return "Entrée invalide";
+        String date=DateFormat.getDateTimeInstance(DateFormat.SHORT,DateFormat.SHORT,
+            java.util.Locale.FRANCE).format(new Date(item.optLong("createdAt",0L)));
+        return date+" · "+item.optString("opening","ouverture inconnue")+
+            " · Blancs "+item.optDouble("whiteAccuracy",0)+" % / Noirs "+
+            item.optDouble("blackAccuracy",0)+" %";
+    }
+    private String studyReport(JSONObject item){
+        StringBuilder b=new StringBuilder(studyDescription(item));
+        b.append("\n").append(item.optString("theoryText"));
+        b.append("\nBlancs : variabilité ").append(item.optDouble("whiteSigma"))
+            .append(" points, erreurs graves ").append(item.optInt("whiteBlunders"))
+            .append(", récupération : ").append(item.optString("whiteRecovery"));
+        b.append("\nNoirs : variabilité ").append(item.optDouble("blackSigma"))
+            .append(" points, erreurs graves ").append(item.optInt("blackBlunders"))
+            .append(", récupération : ").append(item.optString("blackRecovery"));
+        b.append("\nProfondeur moteur : ").append(item.optInt("depth",9))
+            .append(". Précision indicative interne, pas Accuracy officielle ni sigma du curseur.");
+        JSONArray rows=item.optJSONArray("perMove");
+        if(rows!=null)for(int i=0;i<rows.length();i++){
+            JSONObject row=rows.optJSONObject(i);
+            if(row!=null)b.append("\n").append(i/2+1).append(i%2==0?". Blancs ":"... Noirs ")
+                .append(row.optString("uci")).append(" : perte ")
+                .append(row.optInt("lossCp")).append(" cp, précision ")
+                .append(row.optDouble("accuracy")).append(" %");
+        }
+        return b.toString();
+    }
+    private void showStudyJournal(){
+        JSONArray entries=studyEntries();
+        if(entries.length()==0){
+            new AlertDialog.Builder(this).setTitle("Journal des analyses")
+                .setMessage("Aucune partie analysée. Le journal est conservé localement après chaque analyse terminée.")
+                .setPositiveButton("Fermer",null).show();
+            return;
+        }
+        String[] names=new String[entries.length()];
+        for(int i=0;i<names.length;i++)
+            names[i]=studyDescription(entries.optJSONObject(entries.length()-1-i));
+        new AlertDialog.Builder(this).setTitle("Journal · "+names.length+" analyses")
+            .setItems(names,(d,which)->{
+                JSONObject record=entries.optJSONObject(entries.length()-1-which);
+                if(record==null)return;
+                String report=studyReport(record);
+                TextView details=new TextView(this);
+                details.setText(report);details.setTextSize(17);details.setTextIsSelectable(true);
+                details.setPadding(dp(14),dp(12),dp(14),dp(12));
+                ScrollView scroll=new ScrollView(this);scroll.addView(details);
+                new AlertDialog.Builder(this).setTitle("Analyse détaillée")
+                    .setView(scroll)
+                    .setPositiveButton("Copier",(dialog,b)->{
+                        ClipboardManager cm=(ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE);
+                        cm.setPrimaryClip(ClipData.newPlainText("Analyse GambitDrame",report));
+                    }).setNegativeButton("Fermer",null).show();
+            }).setNegativeButton("Fermer",null).show();
+    }
+    private JSONObject exportStudyData()throws Exception{
+        JSONObject root=new JSONObject();
+        root.put("format","GambitDrame-study-journal");
+        root.put("version",1);
+        root.put("exportedAt",System.currentTimeMillis());
+        root.put("entries",studyEntries());
+        return root;
+    }
+    private void exportStudyJournal(){
+        if(studyEntries().length()==0){
+            Toast.makeText(this,"Aucune analyse à exporter.",Toast.LENGTH_LONG).show();
+            return;
+        }
+        Intent intent=new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.setType("application/json");
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.putExtra(Intent.EXTRA_TITLE,"GambitDrame-analyses.json");
+        startActivityForResult(intent,STUDY_EXPORT);
+    }
+    private void importStudyJournal(){
+        Intent intent=new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.setType("*/*");
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.putExtra(Intent.EXTRA_MIME_TYPES,new String[]{"application/json","text/plain","application/octet-stream"});
+        startActivityForResult(intent,STUDY_IMPORT);
+    }
+    @Override protected void onActivityResult(int request,int result,Intent data){
+        super.onActivityResult(request,result,data);
+        if(result!=RESULT_OK||data==null||data.getData()==null)return;
+        if(request==STUDY_EXPORT){
+            try(OutputStream out=getContentResolver().openOutputStream(data.getData())){
+                if(out==null)throw new IllegalStateException("Impossible d'ouvrir le fichier");
+                byte[] json=exportStudyData().toString(2).getBytes(StandardCharsets.UTF_8);
+                out.write(json);
+                Toast.makeText(this,"Journal JSON exporté.",Toast.LENGTH_LONG).show();
+            }catch(Exception ex){
+                Toast.makeText(this,"Export échoué : "+ex.getMessage(),Toast.LENGTH_LONG).show();
+            }
+        }else if(request==STUDY_IMPORT){
+            try(InputStream in=getContentResolver().openInputStream(data.getData())){
+                if(in==null)throw new IllegalArgumentException("Fichier illisible");
+                ByteArrayOutputStream bytes=new ByteArrayOutputStream();
+                byte[] chunk=new byte[8192];int n;
+                while((n=in.read(chunk))!=-1){
+                    if(bytes.size()+n>2_000_000)throw new IllegalArgumentException("Journal supérieur à 2 Mo");
+                    bytes.write(chunk,0,n);
+                }
+                JSONObject root=new JSONObject(new String(bytes.toByteArray(),StandardCharsets.UTF_8));
+                if(!"GambitDrame-study-journal".equals(root.optString("format"))||
+                    root.optInt("version")!=1)throw new IllegalArgumentException("Format de journal inconnu");
+                JSONArray imported=root.getJSONArray("entries"),original=studyEntries();
+                if(imported.length()>100)throw new IllegalArgumentException("Trop d'entrées");
+                JSONArray combined=new JSONArray();
+                java.util.HashSet<String> keys=new java.util.HashSet<>();
+                for(int i=0;i<original.length();i++){
+                    JSONObject record=original.optJSONObject(i);
+                    if(record!=null){
+                        combined.put(record);
+                        keys.add(studyKey(record));
+                    }
+                }
+                int added=0;
+                for(int i=0;i<imported.length();i++){
+                    JSONObject record=imported.optJSONObject(i);
+                    if(!validStudy(record))throw new IllegalArgumentException("Partie "+(i+1)+" invalide");
+                    String key=studyKey(record);
+                    if(keys.add(key)){combined.put(record);added++;}
+                }
+                setStudyEntries(combined);
+                studyStatus.setText(added+" analyse(s) importée(s), partie en cours conservée.");
+                Toast.makeText(this,added+" analyses ajoutées au journal.",Toast.LENGTH_LONG).show();
+            }catch(Exception ex){
+                Toast.makeText(this,"Import annulé : "+ex.getMessage(),Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+    private static String studyKey(JSONObject study){
+        JSONArray list=study.optJSONArray("uciMoves");
+        return study.optLong("createdAt")+"|"+study.optString("baseFen")+"|"+
+            (list==null?"":list.toString());
+    }
+    private static boolean validStudy(JSONObject study){
+        if(study==null||study.optInt("schema")!=1)return false;
+        JSONArray moves=study.optJSONArray("uciMoves"),rows=study.optJSONArray("perMove");
+        if(moves==null||rows==null||moves.length()<1||moves.length()>512||
+           moves.length()!=rows.length())return false;
+        for(String metric:new String[]{"whiteAccuracy","blackAccuracy","whiteSigma","blackSigma"}){
+            double v=study.optDouble(metric,Double.NaN);
+            if(!Double.isFinite(v)||v<0||v>100)return false;
+        }
+        try{
+            ChessGame.Position p=ChessGame.fromFen(study.getString("baseFen"));
+            for(int i=0;i<moves.length();i++){
+                JSONObject row=rows.optJSONObject(i);
+                String uci=moves.getString(i);
+                if(row==null||!uci.equals(row.optString("uci"))||row.optInt("lossCp",-1)<0)return false;
+                p=ChessGame.play(p,uci);
+            }
+            return true;
+        }catch(Exception ex){return false;}
+    }
+
     @Override protected void onPause(){
+        studyCancelled=true;
         stopReplay();
         if(audio!=null)audio.stopSpeech();
         if(stockfishBridge!=null)stockfishBridge.stop();
@@ -1220,6 +1474,8 @@ public final class MainActivity extends Activity {
         stopReplay();
         revision++;
         botWorker.shutdownNow();
+        studyCancelled=true;
+        studyWorker.shutdownNow();
         if(stockfishOpponent!=null)stockfishOpponent.close();
         if(audio!=null)audio.close();
         if(stockfishBridge!=null)stockfishBridge.close();
