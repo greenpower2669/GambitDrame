@@ -59,3 +59,10 @@ L'adversaire humain doit échantillonner des coups humains réels, avec continui
 - Archives AAR Sherpa et archive modèle vocal vérifiées par SHA-256 dans CI. L'APK contient `assets/tts/piper/pierre/fr_FR-upmc-medium.onnx` (76 682 529 octets), Sherpa libs `libonnxruntime.so`, `libsherpa-onnx-*.so`, GPL Stockfish et Apache licence Sherpa.
 - Du fait du modèle local hors ligne et de Stockfish, la taille de l'APK augmente à ~176,6 Mo : prévenir Fab de l'espace nécessaire pour téléchargement et installation.
 - L'expérience réelle Android AudioTrack + warmup + synthèse de Jessica/Pierre et latences n'est PAS encore confirmée par test sur le téléphone.
+
+## 0.4.0 : développement en attente de confirmation CI
+- StockfishPrecision.java : candidats évalués en centipions depuis le trait, qualité min0/max100, distribution gaussienne autour de moyenne 75 sigma 10 par défaut; candidats égaux tous 100; pas une métrique Elo/Chess.com.
+- StockfishOpponent.java : moteur secondaire UCI Stockfish 18, MultiPV=N coups légaux, profondeur 7, timeout 25 secondes, refus complet si moins de N scores, aucune substitution de mauvais coups au hasard. Risques performance et mémoire à tester.
+- MainActivity : choix joueur humain Lichess / Stockfish / bot désactivé (deux humains), paramètres cible/sigma, essais non persistants et flèches vectorielles, thèmes pièces contrastés accessibles.
+- PiperSpeechEngine.kt remplace annulation immédiate de chaque phrase par une file sérialisée; conserve AudioTrack, warmup muet, attend progression du playbackHeadPosition et pause configurable APRES audio, max12 messages. AccessibleAudio.java réserve Android TTS au cas d'échec de Piper.
+- Ne pas confondre code poussé, CI et test téléphone SM-A576B; audit évaluation correcte des coups et coupures vocales en condition réelle.

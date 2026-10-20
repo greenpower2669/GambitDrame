@@ -40,9 +40,15 @@ public final class AccessibleAudio {
                 prefs.getInt("piperVoiceSid",0),
                 message->handler.post(()->{
                     piperStatus=message;
-                    if(!closed)statusListener.onStatus(message);
+                    if(!closed){
+                        statusListener.onStatus(message);
+                        if(piper!=null&&piper.hasFailed()&&initialized&&pendingMessage!=null){
+                            String last=pendingMessage;pendingMessage=null;say(last);
+                        }
+                    }
                 }));
             piper.setSpeed(prefs.getFloat("speechRate",0.88f));
+            piper.setGapMs(prefs.getInt("voiceGapMs",500));
         }catch(Throwable ex){
             piperStatus="Piper indisponible : "+ex.getClass().getSimpleName();
         }
@@ -99,7 +105,7 @@ public final class AccessibleAudio {
             .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build());
         initialized=true;
         if(piper==null||!piper.isReady())statusListener.onStatus(state);
-        if(pendingMessage!=null){
+        if(pendingMessage!=null&&(piper==null||piper.hasFailed())){
             String toSay=pendingMessage;
             pendingMessage=null;
             say(toSay);
@@ -125,6 +131,11 @@ public final class AccessibleAudio {
         prefs.edit().putBoolean("soundsOn",on).apply();
         if(on)play(Sound.NAVIGATE);
     }
+    public void setGapMs(int pause){
+        int value=Math.max(100,Math.min(2000,pause));
+        prefs.edit().putInt("voiceGapMs",value).apply();
+        if(piper!=null)piper.setGapMs(value);
+    }
     public void setSpeechRate(float rate){
         float value=Math.max(0.65f,Math.min(1.3f,rate));
         prefs.edit().putFloat("speechRate",value).apply();
@@ -134,13 +145,14 @@ public final class AccessibleAudio {
     public void say(String message){
         if(closed||message==null||message.isEmpty()||!voiceOn())return;
         lastMessage=message;
-        if(piper!=null&&piper.isReady()){
-            if(tts!=null&&initialized)tts.stop();
+        // Never use Android TTS during Piper warm-up: it would speak over the
+        // muted warm-up and the first real sentence could be interrupted.
+        if(piper!=null&&!piper.hasFailed()){
             piper.speak(message);
             return;
         }
         if(!initialized){pendingMessage=message;return;}
-        tts.speak(message,TextToSpeech.QUEUE_FLUSH,null,
+        tts.speak(message,TextToSpeech.QUEUE_ADD,null,
             "gambit-"+System.nanoTime());
     }
     public void repeat(){

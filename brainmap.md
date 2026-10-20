@@ -66,3 +66,11 @@
 - Workflow #12 terminé `success` : https://github.com/greenpower2669/GambitDrame/actions/runs/39302856790.
 - Gradle Java/Kotlin jvmTarget 17 harmonisés, Kotlin builder corrigé ; voie intégration modèle + AAR + paquet native ARM64 réussie ; `BUILD SUCCESSFUL` et asset uploadé.
 - APK prérelease `gd-test-12`, taille 176 621 445 octets, SHA dans brain.md. Relever que le pack native libs reste extrait sur Samsung en install, avec espace libre supplémentaire à prévoir.
+
+## Architecture 0.4.0
+- StockfishPrecision.java + StockfishPrecisionTest.java : normalisation relative 0/100 et variance, comportement pure Java.
+- StockfishOpponent.java : ProcessBuilder moteur Stockfish natif déjà distribué; un second processus pour évaluer tous coups légaux selon MultiPV; indépendante de l'analyse graphique StockfishBridge; mémoire Android à surveiller.
+- BoardArrows.java + BoardArrowsTest.java : annotations transitoires flèches max12, Canvas Path et toucher ACTION_DOWN/UP converti sur grille avec jauge gauche.
+- MainActivity : trialPositions/trialMoves sont distincts positions/moves; displayed() consulte pile d'essais si activée; 3 palettes de pièces sont rendues au Canvas avec fond de silhouette contrasté et contours.
+- PiperSpeechEngine : générateur Sherpa ONNX et AudioTrack persistant en un worker, une phrase complète à la fois, mise en attente des suivantes. Délai 100..2000 ms réglable.
+- Workflow CI : nouveaux tests StockfishPrecisionTest et BoardArrowsTest avant NDK/Gradle, publication APK 0.4.0 après succès.

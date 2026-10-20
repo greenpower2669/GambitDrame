@@ -55,3 +55,11 @@
 - APK Android ARM64 directe https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-12/GambitDrame-v0.3.2-debug-arm64.apk (176 621 445 octets ; SHA-256 `641ea821ecf57b696b5c3b1179a597745d4d8eb8543ea2c153dfd528cd306ff0`), publiée GitHub prerelease `gd-test-12`. Pas d'archive ZIP à décompresser pour Fab.
 - Vérifiés par CI dans APK : Sherpa-ONNX 1.13.8, Piper UPMC VITS 76 682 529 octets, échantillons espeak-ng-data, sources/licences, binaire Stockfish 18 ARM64 113 750 704 octets. Tests 18+130+21+15 réussis.
 - **Non acquis** jusqu'au test SM-A576B : lancement/latence/sid Jessica-Pierrre d'Android AudioTrack, coexistence TalkBack, volumes, chauffe et fonctionnement Stockfish réel. Pas de merge main.
+
+## GD-009 : mission du 20/10/2026 — voix, Stockfish relatif, essais et flèches
+- Voix : warmup Piper réellement joué muet par AudioTrack persistant, lecture intégrale avant prochain message, file bornée et délai après lecture de 100 à 2000 ms. Interruption uniquement sur arrêt explicite.
+- Adversaire : conserver le profil humain Lichess expérimental comme option; nouveau vrai Stockfish calculant tous coups légaux par MultiPV=N et profondeur 7, puis sélectionner un coup selon score relatif minimum 0, maximum 100 avec cible réglable 0..100 et gaussienne sigma 0..30. Score relatif de POSITION, jamais prétendre précision officielle d'une partie ou Elo calibré. Si évaluation incomplète, signaler échec et ne jouer aucun coup.
+- Essayer des coups : position copiée en pile fictive, annuler/quitter, aucune mutation de l'historique sauvegardé. Réanalyser via Stockfish lors des essais, et laisser bot arrêté.
+- Flèches vectorielles tactiles par glissé d'une case à une autre, toggle du segment par répétition, effacement manuel, max 12, couleur orange.
+- Pièces : style ivoire/ébène, minimal et contraste élevé, fonds lisibles, sélecteur persistant.
+- Identité fr.gambitdrame, branche proposal/stockfish-multipv-human-training-v1 seulement, pas de merge main, APK directe non ZIP et CI obligatoirement vérifiée avant annonce.

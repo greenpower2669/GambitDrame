@@ -69,3 +69,12 @@ Les commits purement Markdown n'ont pas besoin de recompiler Android ; workflow 
 - [ ] Urgent : vérifier sur Samsung SM-A576B Jessica sid0 / Pierre sid1, voix parlante par défaut, bascule ON/OFF, vitesse, boutons d'écoute, relecture, premier warmup muet.
 - [ ] Mesurer espace mémoire de l'APK 176,6 Mo + assets extraits, vérifier TalkBack ne double pas la parole, CPU Piper/Stockfish ne chauffe pas excessivement.
 - [ ] Retours utilisateur sur prononciation des colonnes A-H (étiquettes phonétiques) et éventuel ajout commandes vocales d'échecs, sans confusion sur les niveaux Elo 400–900.
+
+## GD-009 livrable 0.4.0
+- [x] Voix Piper warmup muet réel, file phrases non interruptives, délai de fin configurable et fallback Android seulement si échec Piper.
+- [x] Stockfish full MultiPV et précision relative gaussienne cible 0..100 sigma 0..30 en mode de jeu distinct de Lichess; tests mathématiques.
+- [x] Essais fictifs indépendants de partie, annuler/quitter, analyser chaque étape.
+- [x] Flèches Canvas par glissé, toggle et effacement; tests des segments.
+- [x] Pièces stylisées ivoire/ébène, minimal et haut contraste avec choix enregistré.
+- [ ] Passer tests GitHub Actions et obtenir APK directe 0.4.0 avec Stockfish/Piper; ajouter preuve et hash en mémoire.
+- [ ] Validation Samsung : début/fin véritables phrases, latence, moteur Stockfish recherche tous coups, mémoire, styles, flèches, cases et mode essais.

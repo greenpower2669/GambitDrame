@@ -81,3 +81,8 @@
 - Contrôles archives SHA256 Sherpa AAR et Piper tar.bz2 **OK** ; APK contient `lib/arm64-v8a/libstockfish.so` 113 750 704 octets, `assets/tts/piper/pierre/fr_FR-upmc-medium.onnx` 76 682 529 octets, `SHERPA-ONNX-LICENSE.txt` 11 358 octets, source Piper. Avertissement Gradle non fatal : unable to strip libraries natives (inclut Stockfish/ONNX), présentes telles quelles.
 - Pre-release `gd-test-12` : https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-12/GambitDrame-v0.3.2-debug-arm64.apk ; taille 176 621 445 ; SHA256 `641ea821ecf57b696b5c3b1179a597745d4d8eb8543ea2c153dfd528cd306ff0`.
 - Les tests CI prouvent compilation et présence ressources, **pas l'audition réelle des voix/hardware**, à qualifier ainsi dans passation.
+
+## 20/10/2026 — Diagnostic et correctifs 0.4.0 à compiler
+- Cause principale des coupures : ancienne méthode Piper.speak() incrémentait generation et appelait track.pause/flush dès une nouvelle annonce, même pendant une phrase. Ancien AudioTrack recréé à chaque phrase. Modifié en file d'attente sérialisée et lecture persistance de la piste, warmup muet avant prêt, délai après progression complète du pointeur audio.
+- Stockfish humain : ancien adversaire expérimental Lichess a été jugé peu crédible. Nouveau choix Stockfish évalue exhaustivement N coups légaux MultiPV, normalise 0..100, tire cible gaussienne, refuse score manquant. À vérifier sur Android; aucun label Elo certain.
+- Autres interventions : essais sur pile non sauvegardée, flèches vectorielles, pièces ivoire/ébène et deux thèmes alternatifs. Compilation/prêt téléphone NON ENCORE VALIDÉS.
