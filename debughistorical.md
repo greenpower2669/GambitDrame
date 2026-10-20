@@ -120,3 +120,10 @@
 - Prérelease `gd-test-27` : APK directe `GambitDrame-v0.4.2-debug-arm64.apk` (176 673 417 octets), lien https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-27/GambitDrame-v0.4.2-debug-arm64.apk ; pas de ZIP à décompresser.
 - GET ERR : journal Stockfish local copiable et partageable, scores CP et rangs de tous les candidats, curseurs/modes, score réellement sélectionné, cas `BEST_FORCED_BY_NEAREST_SCORE` et `ALL_SCORES_EQUAL`, traces de l'analyse gauche en profondeur 11 vs choix profondeur 1, erreurs moteur.
 - Tests manuels Samsung Android 16 restent requis pour vérifier le moteur UCI et l'ergonomie réelle. Rien fusionné sur main.
+
+
+## 20/10/2026 — GD-012 décision et vérifications à réaliser
+- Incident témoin v0.4.2 : 6…Qf5 choisi avec score profondeur1 −343cp / qualité 55,45 % vs cible 75,06 % malgré 6…Qe7 −98cp; la jauge profondeur11 signalait +6,31 après coup. Une perte de dame peut aussi faire partie d'un sacrifice pertinent, à juger sur l'évaluation d'ensemble.
+- Protocole v0.4.3 : garder le processus UCI de la jauge profondeur11 et demander MultiPV complet profondeur12 *après* bestmove depth11 ; moteur et hash persistants. Score du joueur noir signé correctement ; plafond de perte relative 60 cp à 80 %.
+- Risques à tester : latence Stockfish MultiPV n lignes à depth12, lignes UCI manquantes, Android lifecycle/pause, barre prédictive après coup, checkbox avancé et annulation du calcul; aucune garantie de vérification matérielle par seule CI.
+- Test Java TacticalGuard + code Android ; consulter Actions avant d'affirmer APK prête.
