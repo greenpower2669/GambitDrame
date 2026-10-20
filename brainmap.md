@@ -90,3 +90,8 @@
 - `WoodPieces.java` : silhouettes Canvas en bois contrasté, sans cercle de fond; anciennes palettes accessibles.
 - `app/build.gradle` : 0.4.1 code 8 ; workflow publie APK directe non ZIP sur prérelease.
 - CI v0.4.1 run #18 réussi (version avant tests de conversion et prévisualisation). Attendre statut dernier run #22 avant validation finale. Pas de test Samsung par CI.
+
+## GD-010 — Validation CI finale, 20/10/2026
+- GitHub Actions #22 (39394368345) sur d8aac2e3d21d47b3ac35340f34cf9d9c94b76b63 : completed success ; BUILD SUCCESSFUL in 58s, règles 18 tests, politique humaine 130, précision/orientation Stockfish 15, flèches 4.
+- APK directe .apk (pas ZIP), v0.4.1 code 8, dans gd-test-22 : https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-22/GambitDrame-v0.4.1-debug-arm64.apk ; taille 176659809 octets.
+- Livrée pour test réel Samsung SM-A576B Android 16. CI ne vérifie pas la qualité de l'affichage 3D, les gestes physiques ni le temps de réponse de Stockfish sur ce téléphone. Pas de merge main.
