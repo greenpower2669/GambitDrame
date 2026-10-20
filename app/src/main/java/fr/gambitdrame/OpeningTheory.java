@@ -1,6 +1,7 @@
 package fr.gambitdrame;
 
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Locale;
 
 /** Tiny offline opening reference. Departure from this repertoire is NOT an error. */
@@ -37,6 +38,43 @@ public final class OpeningTheory {
                 "%s · %d/%d premiers demi-coups concordants (%d%% du début comparé). Sortir du livre n'est pas une faute.",
                 name,matches,compared,percent);
         }
+    }
+    public static final class Next {
+        public final String opening,uci,idea;
+        Next(String opening,String uci,String idea){this.opening=opening;this.uci=uci;this.idea=idea;}
+    }
+    public static List<Next> next(List<String> played,ChessGame.Position p){
+        List<Next> found=new ArrayList<>();
+        if(played==null)return found;
+        List<ChessGame.Move> legal=ChessGame.legal(p);
+        for(String[] line:BOOK){
+            String[] path=line[1].split(" ");
+            if(played.size()>=path.length)continue;
+            boolean prefix=true;
+            for(int i=0;i<played.size();i++)
+                if(!path[i].equals(played.get(i))){prefix=false;break;}
+            if(!prefix)continue;
+            String next=path[played.size()];
+            boolean possible=false;
+            for(ChessGame.Move move:legal)if(move.uci().equals(next))possible=true;
+            if(possible){
+                found.add(new Next(line[0],next,ideas(line[0])));
+                if(found.size()>=5)break;
+            }
+        }
+        return found;
+    }
+    public static String ideas(String opening){
+        String s=opening.toLowerCase(Locale.ROOT);
+        if(s.contains("accepté"))return "Les Blancs cherchent à récupérer le pion c4 et construire un centre actif.";
+        if(s.contains("refusé"))return "Développer les pièces et maintenir la tension centrale autour de d4 et d5.";
+        if(s.contains("semi-slave"))return "Solidifier d5, puis choisir le moment d'une rupture centrale.";
+        if(s.contains("slave"))return "Soutenir le pion d5 avec c6 et développer les pièces sans bloquer le fou.";
+        if(s.contains("albin"))return "Les Noirs avancent leur pion d4 pour créer une initiative centrale.";
+        if(s.contains("tchigorine"))return "Les Noirs contestent le centre par l'activité rapide des pièces.";
+        if(s.contains("catalane"))return "Le fou en g2 exerce une pression à longue distance sur le centre.";
+        if(s.contains("gambit de dame"))return "Créer une pression sur le centre d5 et développer les pièces.";
+        return "Développer les pièces, préserver le roi et surveiller le centre.";
     }
     public static Result measure(List<String> played){
         int best=-1;String name="Ouverture non répertoriée";
