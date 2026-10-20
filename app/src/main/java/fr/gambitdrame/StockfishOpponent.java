@@ -173,7 +173,7 @@ public final class StockfishOpponent {
                     if(!finished||childCp==null)throw new IllegalStateException(
                         "Score Stockfish profondeur 1 manquant pour "+candidate.uci()+
                         " ("+names.size()+"/"+legal.size()+")");
-                    rootScore=-childCp;
+                    rootScore=StockfishPrecision.parentScoreFromChild(childCp);
                 }
                 names.add(candidate.uci());
                 scores.add(rootScore);
