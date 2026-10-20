@@ -112,3 +112,11 @@ L'adversaire humain doit échantillonner des coups humains réels, avec continui
 - Tests confirmés dans le log : `TACTICAL_GUARD_TESTS_OK 8`, `STOCKFISH_PRECISION_TESTS_OK 18`, `CHESS_TESTS_OK 18`, `BOARD_ARROWS_TESTS_OK 4`; `BUILD SUCCESSFUL in 1m 19s`.
 - Prérelease `gd-test-37`, APK **directe non ZIP** `GambitDrame-v0.4.3-debug-arm64.apk`, 176684097 octets : https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-37/GambitDrame-v0.4.3-debug-arm64.apk.
 - ⚠️ Validation Android 16 physique à faire : UCI pause/reprise, latence MultiPV12, score et bande prédictive, voix, journal GET ERR. CI ≠ preuve de performance réelle sur Samsung. Pas de fusion main.
+
+
+## GD-013 — Analyseur de partie expérimental (20/10/2026)
+- Branche proposal : GameStudyEngine.java (Stockfish 18 local profondeur 9 par position, processus séparé et cache préservé entre positions), StudyMetrics.java (perte CP, précision expérimentale exp(-loss/180), sigma écart-type), OpeningTheory.java (répertoire OFFLINE restreint), StudyTrendView.java (graphe natif Android), MainActivity (analyse, journal, sauvegarde/import/export JSON), StudyMetricsTest.
+- Code v0.4.4 code11, CI en vérification. Garder en tête que précision interne n'est ni Lichess Accuracy ni sigma du réglage Stockfish ; fidélité à notre petit livre n'est pas la qualité du coup, taux de succès théorique est séparé de résultat réel.
+- Archive SAF JSON pour migrer entre versions ; import ne modifie pas partie en cours, vérifie replay légal et méta. Limitation 40 études conservées localement, exporter périodiquement.
+- La capture du résultat de la partie (1-0,0-1,1/2-1/2,*) permet les points Blancs par ouverture. Source non exhaustive.
+- Tests Samsung non encore réalisés. Aucun merge main.
