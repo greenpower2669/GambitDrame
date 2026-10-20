@@ -143,3 +143,8 @@ Les commits purement Markdown n'ont pas besoin de recompiler Android ; workflow 
 - [ ] Vérifier calibration de la métrique de précision et de variabilité avec corpus de parties ; ne pas présenter l'écart-type individuel comme sigma du sélecteur sans validation.
 - [ ] Ajouter le PGN/SAN pour importer des parties externes ; l'import initial accepte uniquement les sauvegardes de journal JSON v1.
 - [ ] Pas de merge main/release publique sans autorisation explicite de Fab.
+
+### GD-013 — Livraison confirmée, 20/10/2026
+- [x] CI GitHub Actions #48 `39431587270` : completed success, tests JVM + compilation Gradle Android + release directe.
+- [x] APK : https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-48/GambitDrame-v0.4.4-debug-arm64.apk (176715029 octets), tag prérelease gd-test-48. Aucune fusion main.
+- [ ] Tester en conditions réelles le flux Android 16 et la conservation d'un journal après installation de versions signées différemment ; sauvegarder/exporter le JSON avant désinstallation éventuelle.
