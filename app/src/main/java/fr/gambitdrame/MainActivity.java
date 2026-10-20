@@ -53,6 +53,13 @@ public final class MainActivity extends Activity {
     private StockfishOpponent stockfishOpponent;
     private int opponentMode=1; // 0 = Lichess, 1 = Stockfish
     private int precisionTarget=80,precisionSigma=5;
+    private boolean adaptiveOpponent=true;
+    private int adaptiveSensitivity=70,adaptiveRecovery=95,adaptiveStability=70;
+    private boolean speechPending=false;
+    private long speechSequence=0;
+    private Runnable waitingBotApply;
+    private final Handler speechHandler=new Handler(Looper.getMainLooper());
+    private boolean moveHighlights=true;
     private boolean deepMode=false;
     private int deepDepth=7;
     private boolean tacticalGuard=true;
@@ -121,6 +128,10 @@ public final class MainActivity extends Activity {
         opponentMode=prefs.getInt("opponentMode",1);
         precisionTarget=prefs.getInt("precisionTarget",80);
         precisionSigma=prefs.getInt("precisionSigma",5);
+        adaptiveOpponent=prefs.getBoolean("gd015Adaptive",true);
+        adaptiveSensitivity=prefs.getInt("gd015Sensitivity",70);
+        adaptiveRecovery=prefs.getInt("gd015Recovery",95);
+        adaptiveStability=prefs.getInt("gd015Stability",70);
         deepMode=prefs.getBoolean("precisionDeep",false);
         deepDepth=prefs.getInt("precisionDepth",7);
         tacticalGuard=prefs.getBoolean("tacticalGuard",true);
@@ -151,7 +162,7 @@ public final class MainActivity extends Activity {
             return insets;
         });
         heading(root,"♟ GambitDrame",25);
-        label(root,"Version 0.4.4 — analyse des parties, journal et graphiques",16);
+        label(root,"Version 0.4.6 — adversaire adaptatif, voix et aides aux ouvertures",16);
         label(root,"Niveaux 400–900 EXPÉRIMENTAUX, pas encore calibrés par parties complètes.",14);
         chessView=new ChessView();
         analysisPanel=new TextView(this);
@@ -342,6 +353,8 @@ public final class MainActivity extends Activity {
         button(detailedHelp,"Lire l’échiquier",this::readFullBoard);
         button(detailedHelp,"Coups possibles",this::readLegalMoves);
         button(root,"Écouter l’avantage Stockfish",this::describeEvaluation);
+        button(root,"Quel coup jouer ?",()->showMoveAdvice(false));
+        button(root,"Quels coups sont possibles et pourquoi ?",()->showMoveAdvice(true));
         if(!wide)root.addView(analysisPanel,new LinearLayout.LayoutParams(-1,-2));
         status=label(root,"",18);
         status.setTypeface(null,Typeface.BOLD);
@@ -380,6 +393,22 @@ public final class MainActivity extends Activity {
             @Override public void onNothingSelected(android.widget.AdapterView<?> parent){}
         });
         root.addView(opponents);
+        CheckBox adaptiveBox=new CheckBox(this);
+        adaptiveBox.setText("Adversaire stratégique adaptatif (défaut) — ancien algorithme accessible");
+        adaptiveBox.setChecked(adaptiveOpponent);adaptiveBox.setTextColor(Color.BLACK);
+        root.addView(adaptiveBox);
+        adaptiveBox.setOnCheckedChangeListener((b,on)->{
+            adaptiveOpponent=on;prefs.edit().putBoolean("gd015Adaptive",on).apply();
+            engineLog.record("SETTING","adaptative="+on);
+            if(stockfishBridge!=null)stockfishBridge.cancelGuard();
+            revision++;failedBotRevision=-1;scheduleBot();
+        });
+        addAdaptiveSlider(root,"Sensibilité aux positions déséquilibrées",adaptiveSensitivity,
+            n->{adaptiveSensitivity=n;prefs.edit().putInt("gd015Sensitivity",n).apply();});
+        addAdaptiveSlider(root,"Intensité de récupération",adaptiveRecovery,
+            n->{adaptiveRecovery=n;prefs.edit().putInt("gd015Recovery",n).apply();});
+        addAdaptiveSlider(root,"Stabilité du plan",adaptiveStability,
+            n->{adaptiveStability=n;prefs.edit().putInt("gd015Stability",n).apply();});
         Switch advanced=new Switch(this);
         advanced.setText("Activer MultiPV approfondi (désactivé par défaut)");
         advanced.setTextColor(Color.BLACK);
@@ -562,11 +591,8 @@ public final class MainActivity extends Activity {
                 lastWhiteCp=whiteCp;
                 lastWhiteMate=whiteMate;
                 lastEvaluatedFen=fen;
-                if(announceEvaluation&&fen!=null&&!fen.equals(lastSpokenEvaluationFen)&&
-                   message.contains("profondeur 11")){
-                    lastSpokenEvaluationFen=fen;
-                    audio.say(ChessNarration.evaluation(whiteCp,whiteMate));
-                }
+                // GD-015: analysis/gauge is silent unless the user presses
+                // the explicit "Écouter l’avantage Stockfish" button.
             }
         });
         stockfishBridge.setDiagnostics(engineLog);
@@ -849,6 +875,7 @@ public final class MainActivity extends Activity {
         seekReview(ply);
     }
     private void seekReview(int ply){
+        clearSpeechGate("relecture");
         handler.removeCallbacks(botRunnable);
         revision++; // Drop pending network/bot replies; do not alter recorded moves.
         review.setHistorySize(moves.size());
@@ -987,7 +1014,19 @@ public final class MainActivity extends Activity {
             String ending=ChessGame.outcome(after,trialMode?0:repetitionCount());
             if(!ending.isEmpty()&&!ending.startsWith("Échec")&&!narration.contains("Nulle"))
                 narration+=". "+ending;
-            audio.say(narration);
+            if(!trialMode&&!before.white&&botEnabled){
+                audio.sayTracked(narration,ok->engineLog.record("VOICE_BOT","played="+ok));
+            }else if(!trialMode&&before.white&&botEnabled){
+                speechPending=audio.voiceOn();
+                final long generation=++speechSequence;
+                engineLog.record("VOICE_WAIT","attente joueur, active="+speechPending+" rev="+revision);
+                if(speechPending){
+                    audio.sayTracked(narration,ok->releaseSpeechGate(generation,
+                        ok?"AudioTrack/UtteranceProgress terminé":"audio interrompu ou échoué"));
+                    // Emergency only. Actual audio-completion callback releases first.
+                    speechHandler.postDelayed(()->releaseSpeechGate(generation,"secours 45s"),45000);
+                }
+            }else audio.say(narration);
         }
         analyzeDisplayed();
         scheduleBot();
@@ -1077,20 +1116,25 @@ public final class MainActivity extends Activity {
         final boolean useDeep=deepMode;
         final int useDepth=deepDepth;
         final boolean useGuard=tacticalGuard&&!useDeep;
+        final boolean useAdaptive=adaptiveOpponent&&engineMode==1;
+        final int sensitivity=adaptiveSensitivity,recovery=adaptiveRecovery,stability=adaptiveStability;
         engineLog.record("TURN","START ply="+ply+" rev="+expectedRevision+
             " mode="+engineMode+" target="+target+" sigma="+spread+
-            " deep="+useDeep+" depth="+useDepth+" guard="+useGuard+" fen="+initial.fen());
+            " deep="+useDeep+" depth="+useDepth+" guard="+useGuard+
+            " adaptive="+useAdaptive+" sensitivity="+sensitivity+" recovery="+recovery+
+            " stability="+stability+" fen="+initial.fen());
         botRunning=true;
-        botInfo.setText(engineMode==1?(useDeep?"Stockfish MultiPV approfondi…":useGuard?"Jauge 11 → garde-fou MultiPV 12…":"Stockfish rapide sans garde-fou (profondeur 1)…"):
+        botInfo.setText(engineMode==1?(useAdaptive?"Adversaire adaptatif : maintien du plan et contre-jeu…":useDeep?"Stockfish MultiPV approfondi…":useGuard?"Jauge 11 → garde-fou MultiPV 12…":"Stockfish rapide ancien (profondeur 1)…"):
             "Profil Lichess expérimental : sélection d'un coup…");
-        if(engineMode==1&&stockfishBridge!=null&&!useGuard)stockfishBridge.stop();
+        if(engineMode==1&&stockfishBridge!=null&&!useGuard&&!useAdaptive)stockfishBridge.stop();
         botWorker.execute(()->{
             String chosenUci=null,detail=null,error=null;
             StockfishOpponent.Result engineResult=null;
             try{
                 if(engineMode==1){
-                    StockfishOpponent.Result result=useGuard?
-                        stockfishBridge.selectGuarded(initial,target,spread):
+                    StockfishOpponent.Result result=useAdaptive?
+                        stockfishBridge.selectGuarded(initial,target,spread,true,sensitivity,recovery,stability):
+                        useGuard?stockfishBridge.selectGuarded(initial,target,spread):
                         stockfishOpponent.select(initial,target,spread,useDeep,useDepth);
                     engineResult=result;
                     if(result!=null){
@@ -1112,7 +1156,7 @@ public final class MainActivity extends Activity {
             }
             final String moveUci=chosenUci,explanation=detail,failure=error;
             final StockfishOpponent.Result resolvedResult=engineResult;
-            handler.post(()->{
+            final Runnable applyComputedMove=()->{
                 botRunning=false;
                 if(trialMode||review.reviewing()||revision!=expectedRevision||!botEnabled||
                    current().white||!current().fen().equals(initial.fen())||opponentMode!=engineMode){
@@ -1159,10 +1203,18 @@ public final class MainActivity extends Activity {
                     " currentFen="+current().fen());
                 updateEngineDebugStatus("ERREUR : coup illégal, ouvrir GET ERR");
                 botInfo.setText("Erreur : coup Stockfish devenu illégal. Aucun coup automatique joué.");
+            };
+            handler.post(()->{
+                if(speechPending){
+                    waitingBotApply=applyComputedMove;
+                    engineLog.record("VOICE_WAIT","Calcul terminé, attente de la diffusion complète du coup humain");
+                }else applyComputedMove.run();
             });
         });
     }
     private void reset(){
+        clearSpeechGate("nouvelle partie");
+        if(stockfishBridge!=null)stockfishBridge.resetPlan();
         engineLog.record("NEW_GAME","New game; kept settings opponent="+opponentMode+
             " target="+precisionTarget+" sigma="+precisionSigma+
             " deep="+deepMode+" depth="+deepDepth);
@@ -1180,6 +1232,7 @@ public final class MainActivity extends Activity {
         scheduleBot();
     }
     private void undo(){
+        clearSpeechGate("annulation");
         if(trialMode){undoTrial();return;}
         leaveReview();
         revision++;
@@ -1498,6 +1551,7 @@ public final class MainActivity extends Activity {
     }
 
     @Override protected void onPause(){
+        clearSpeechGate("pause Android");
         studyCancelled=true;
         stopReplay();
         if(audio!=null)audio.stopSpeech();
@@ -1519,6 +1573,35 @@ public final class MainActivity extends Activity {
         if(audio!=null)audio.close();
         if(stockfishBridge!=null)stockfishBridge.close();
         super.onDestroy();
+    }
+    private void addAdaptiveSlider(LinearLayout parent,String name,int initial,
+                                   java.util.function.IntConsumer onChange){
+        TextView title=label(parent,name+" : "+initial,14);
+        SeekBar bar=new SeekBar(this);bar.setMax(100);bar.setProgress(initial);
+        parent.addView(bar);
+        bar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
+            public void onProgressChanged(SeekBar b,int value,boolean fromUser){
+                if(!fromUser)return;
+                onChange.accept(value);title.setText(name+" : "+value);
+                engineLog.record("SETTING",name+"="+value);
+                if(stockfishBridge!=null)stockfishBridge.cancelGuard();
+                revision++;failedBotRevision=-1;scheduleBot();
+            }
+            public void onStartTrackingTouch(SeekBar b){}
+            public void onStopTrackingTouch(SeekBar b){}
+        });
+    }
+    private void releaseSpeechGate(long generation,String cause){
+        if(generation!=speechSequence||!speechPending)return;
+        speechPending=false;
+        engineLog.record("VOICE_END",cause+" rev="+revision);
+        Runnable run=waitingBotApply;waitingBotApply=null;
+        if(run!=null)run.run();
+    }
+    private void clearSpeechGate(String why){
+        ++speechSequence;
+        speechPending=false;waitingBotApply=null;
+        if(engineLog!=null)engineLog.record("VOICE_CANCEL",why);
     }
     private final class ChessView extends View {
         private final Paint paint=new Paint(3);
