@@ -492,6 +492,18 @@ public final class MainActivity extends Activity {
         stockfishBridge=new StockfishBridge(this,(fen,message,whiteCp,whiteMate)->{
             if(fen!=null&&!fen.equals(displayed().fen()))return;
             analysisPanel.setText(message);
+            if(message!=null&&message.contains("profondeur 11")&&
+               (whiteCp!=null||whiteMate!=null)){
+                engineLog.record("GAUGE_DEPTH11","fen="+fen+
+                    " whiteCp="+whiteCp+" whiteMate="+whiteMate+
+                    " (NB: jauge profondeur 11, choix rapide profondeur 1)");
+            }
+            if(message!=null&&message.startsWith("Stockfish :")&&
+                (message.contains("interrompu")||message.contains("impossible")||
+                 message.contains("absent")||message.contains("terminé")||
+                 message.contains("communication"))){
+                engineLog.record("GAUGE_ERR",message+" fen="+fen);
+            }
             if(whiteCp!=null||whiteMate!=null){
                 chessView.setEvaluation(whiteCp,whiteMate);
                 if(fullscreenChessView!=null)fullscreenChessView.setEvaluation(whiteCp,whiteMate);
@@ -585,6 +597,8 @@ public final class MainActivity extends Activity {
             " mode="+prefs.getInt("opponentMode",-1)+
             "\nHistorique coups="+android.text.TextUtils.join(" ",moves)+
             "\nFEN="+current().fen()+
+            "\nDernière jauge cp blanc="+lastWhiteCp+" mate blanc="+lastWhiteMate+
+            " (profondeur 11 différente des candidats à profondeur 1)"+
             "\nNombre de demi-coups="+moves.size()+
             "\n=== JOURNAL STOCKFISH CONSERVÉ LOCALEMENT ===\n"+
             engineLog.text();
