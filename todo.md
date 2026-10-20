@@ -148,3 +148,13 @@ Les commits purement Markdown n'ont pas besoin de recompiler Android ; workflow 
 - [x] CI GitHub Actions #48 `39431587270` : completed success, tests JVM + compilation Gradle Android + release directe.
 - [x] APK : https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-48/GambitDrame-v0.4.4-debug-arm64.apk (176715029 octets), tag prérelease gd-test-48. Aucune fusion main.
 - [ ] Tester en conditions réelles le flux Android 16 et la conservation d'un journal après installation de versions signées différemment ; sauvegarder/exporter le JSON avant désinstallation éventuelle.
+
+## GD-014 — Flèches individuelles et annonces brèves, 20/10/2026
+- [x] Remplacer la flèche orange unique par une couleur semi-transparente propre à chaque identité de pièce (32 couleurs pour l’échiquier standard, pas un code Blanc/Noir).
+- [x] Rejouer l’historique pour suivre l’identité depuis la position de départ, y compris prises, roques, prises en passant et promotions ; mode relecture et essais pris en compte.
+- [x] Conserver la couleur capturée dans chaque annotation ; même pièce = même couleur pour toutes ses flèches, y compris après déplacement. Une flèche tracée depuis une case vide reçoit une couleur de secours liée à la case.
+- [x] Uniquement dire la destination à la voix après un geste flèche (« E4 »), sans annonce du départ ni phrase « flèche vers ».
+- [x] Tests JVM de couleurs uniques, opacité, identité mobile, roques, promotion et en passant, et conservation des annotations ; CI exécutée automatiquement.
+- [ ] Confirmer GitHub Actions run #53 (39439482987) : Gradle, APK directe 0.4.5, publication de prérelease ; ne pas annoncer de succès avant vérification.
+- [ ] Vérification physique Samsung Android 16 : flèches en demi-transparence et couleurs différenciées sur cases claires/foncées, lecture vocale, plein écran, interactions, deux cavaliers/pions distincts.
+- [ ] Pas de merge vers main ni release publique sans accord explicite.
