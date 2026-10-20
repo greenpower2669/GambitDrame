@@ -45,6 +45,10 @@ public final class StockfishOpponent {
         return end<0?line.substring(start):line.substring(start,end);
     }
     public Result select(ChessGame.Position position,int mean,int sigma)throws Exception{
+        return select(position,mean,sigma,false,7);
+    }
+    public Result select(ChessGame.Position position,int mean,int sigma,boolean deep,int requestedDepth)throws Exception{
+        if(!deep)return selectFast(position,mean,sigma);
         if(closed)throw new IllegalStateException("Moteur arrêté");
         List<ChessGame.Move> legal=ChessGame.legal(position);
         if(legal.isEmpty())return null;
@@ -67,7 +71,7 @@ public final class StockfishOpponent {
             send(output,"isready");
             await(input,"readyok",deadline);
             send(output,"position fen "+position.fen());
-            send(output,"go depth 7");
+            send(output,"go depth "+Math.max(1,Math.min(20,requestedDepth)));
             boolean done=false;
             while(!closed&&System.nanoTime()<deadline){
                 String line=pollLine(input,deadline);
@@ -108,6 +112,76 @@ public final class StockfishOpponent {
             StockfishPrecision.Pick pick=StockfishPrecision.choose(
                 StockfishPrecision.normalize(names,scores),mean,sigma,random);
             return new Result(pick.move.uci,pick.move.relativeQuality,pick.requested,legal.size());
+        }finally{
+            try{p.destroy();}catch(RuntimeException ignored){}
+            if(active==p)active=null;
+        }
+    }
+    /**
+     * Fast method requested by Fab: enumerate EVERY legal root move, apply it,
+     * then evaluate the resulting position with a one-ply Stockfish search.
+     * Engine scores refer to the SIDE TO MOVE; after applying a move that side
+     * is the opponent, so negate every child score for the root player.
+     * Reuse a single engine process; never silently substitute random scores.
+     */
+    private Result selectFast(ChessGame.Position root,int mean,int sigma)throws Exception{
+        if(closed)throw new IllegalStateException("Moteur arrêté");
+        List<ChessGame.Move> legal=ChessGame.legal(root);
+        if(legal.isEmpty())return null;
+        if(legal.size()==1)return new Result(legal.get(0).uci(),100,100,1);
+        File binary=new File(context.getApplicationInfo().nativeLibraryDir,"libstockfish.so");
+        if(!binary.exists())throw new IllegalStateException("Stockfish ARM64 non installé");
+        Process p=new ProcessBuilder(binary.getAbsolutePath()).redirectErrorStream(true).start();
+        active=p;
+        final long deadline=System.nanoTime()+45_000_000_000L;
+        List<String> names=new ArrayList<>();
+        List<Integer> scores=new ArrayList<>();
+        try(BufferedReader input=new BufferedReader(new InputStreamReader(p.getInputStream(),"UTF-8"));
+            BufferedWriter output=new BufferedWriter(new OutputStreamWriter(p.getOutputStream(),"UTF-8"))){
+            send(output,"uci");
+            await(input,"uciok",deadline);
+            send(output,"setoption name Threads value 1");
+            send(output,"setoption name Hash value 16");
+            send(output,"setoption name MultiPV value 1");
+            send(output,"isready");
+            await(input,"readyok",deadline);
+            for(ChessGame.Move candidate:legal){
+                if(closed||System.nanoTime()>=deadline)throw new IllegalStateException(
+                    "Évaluation rapide interrompue ("+names.size()+"/"+legal.size()+")");
+                ChessGame.Position child=ChessGame.apply(root,candidate);
+                List<ChessGame.Move> childReplies=ChessGame.legal(child);
+                int rootScore;
+                if(childReplies.isEmpty()){
+                    // Child player is mated (root wins), or stalemate (draw).
+                    rootScore=ChessGame.inCheck(child,child.white)?10000:0;
+                }else{
+                    send(output,"position fen "+child.fen());
+                    send(output,"go depth 1");
+                    Integer childCp=null;
+                    boolean finished=false;
+                    while(!closed&&System.nanoTime()<deadline){
+                        String line=pollLine(input,deadline);
+                        if(line==null)break;
+                        if(line.startsWith("bestmove ")){finished=true;break;}
+                        if(!line.startsWith("info ")||!line.contains(" score "))continue;
+                        String d=token(line,"depth");
+                        if(d==null||Integer.parseInt(d)!=1)continue;
+                        String cp=token(line,"cp"), mate=token(line,"mate");
+                        if(cp!=null)childCp=Integer.parseInt(cp);
+                        else if(mate!=null)childCp=Integer.parseInt(mate)>0?10000:-10000;
+                    }
+                    if(!finished||childCp==null)throw new IllegalStateException(
+                        "Score Stockfish profondeur 1 manquant pour "+candidate.uci()+
+                        " ("+names.size()+"/"+legal.size()+")");
+                    rootScore=-childCp;
+                }
+                names.add(candidate.uci());
+                scores.add(rootScore);
+            }
+            StockfishPrecision.Pick selected=StockfishPrecision.choose(
+                StockfishPrecision.normalize(names,scores),mean,sigma,random);
+            return new Result(selected.move.uci,selected.move.relativeQuality,
+                selected.requested,legal.size());
         }finally{
             try{p.destroy();}catch(RuntimeException ignored){}
             if(active==p)active=null;
