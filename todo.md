@@ -168,9 +168,15 @@ Les commits purement Markdown n'ont pas besoin de recompiler Android ; workflow 
 - [x] Flèches anciennes conservées ; repères départ bleu/arrivée orange sur jeu et historique.
 - [x] Aide explicite Stockfish PV et petit livre d'ouvertures, origine différenciée, explications courtes et longues, pas de coup exécuté.
 - [x] Tests Java simulés AdaptiveOpponent et OpeningCoach dans workflow ; version candidate 0.4.6 code 13.
-- [ ] Vérifier dernier build GitHub Actions, nombre d'assertions et asset .apk directe réellement publiée ; ne jamais annoncer URL inventée.
+- [x] CI #70, tests JVM et asset APK directe 0.4.6 vérifiés dans gd-test-70.
 - [ ] Scénarios matériels Samsung Android16: annonces longues réelles/fin AudioTrack, voix OFF/fallback, réponse anticipée, arrière-plan, mode plein écran et repères.
 - [ ] Mesurer sur des parties complètes Stockfish vs anciens paramètres, analyse de jauge, pertes CP, défense stratégique, contre-attaque, risque de répétition/stagnation, latence MultiPV12/13/14.
 - [ ] Développer une base d'ouvertures plus large et vérifiable ; l'aide actuelle propose seulement les 15 lignes locales; aucune erreur attribuée à un coup hors livre.
 - [ ] Calibrer la force moyenne et l'Elo expérimental via cohortes humaines valides : 80% ne correspond pas à un Elo vérifié.
 - [ ] Certifier préservation des sauvegardes et la compatibilité des signatures debug avant désinstallation/réinstallation, garder export JSON.
+
+## GD-015 — Résultat final de CI 20/10/2026
+- GitHub Actions run #70 : https://github.com/greenpower2669/GambitDrame/actions/runs/39497491157 ; `success`, `BUILD SUCCESSFUL in 1m 17s`, code testé 294c4e0f60e6374cc12db7ca7c8c8b6f3557f0a4.
+- Tests confirmés : ADAPTIVE_OPPONENT_TESTS_OK 504, OPENING_COACH_TESTS_OK 10, BOARD_ARROWS_TESTS_OK 46, CHESS_TESTS_OK 18, HUMAN_POLICY_TESTS_OK 130, STOCKFISH_PRECISION_TESTS_OK 18, TACTICAL_GUARD_TESTS_OK 8, STUDY_METRICS_TESTS_OK 9.
+- APK ARM64 directe, sans ZIP : https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-70/GambitDrame-v0.4.6-debug-arm64.apk ; taille 176749305 octets, MIME application/vnd.android.package-archive ; Release https://github.com/greenpower2669/GambitDrame/releases/tag/gd-test-70.
+- Statut : livré à valider sur Samsung SM-A576B Android16. Pas de test physique, pas de mesure sur parties complètes, pas de calibration Elo ni de certification AudioTrack sur téléphone. Ancien mode conservé, main inchangé.
