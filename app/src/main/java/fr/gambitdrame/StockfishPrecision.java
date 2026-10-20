@@ -6,6 +6,9 @@ import java.util.Random;
 
 /** Normalized relative Stockfish move quality; not game-accuracy Elo or ACPL. */
 public final class StockfishPrecision {
+    /** Stockfish scores are from the side to move; after a candidate move that
+     * is the opponent, so invert the score for the original player. */
+    public static int parentScoreFromChild(int childCp){return -childCp;}
     public static final class Candidate {
         public final String uci;
         public final int scoreCp; // score from side-to-move perspective (mate clipped to ±10000)
