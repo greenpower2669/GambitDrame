@@ -29,6 +29,13 @@ public final class StockfishPrecisionTest {
         check(veryFar<100,"outliers rare");
         check(StockfishPrecision.choose(moves,-12,0,new Random(3)).requested==0,"clamp below 0");
         check(StockfishPrecision.choose(moves,120,0,new Random(3)).requested==100,"clamp above 100");
+        check(StockfishPrecision.parentScoreFromChild(200)==-200,"child advantage must be parent loss");
+        check(StockfishPrecision.parentScoreFromChild(-150)==150,"child disadvantage must be parent gain");
+        check(StockfishPrecision.parentScoreFromChild(0)==0,"balanced child remains balanced");
+        check(StockfishPrecision.parentScoreFromChild(-10000)==10000,"mate orientation");
+        List<StockfishPrecision.Candidate> black=StockfishPrecision.normalize(
+            Arrays.asList("blackWeak","blackStrong"),Arrays.asList(-45,120));
+        check(black.get(1).relativeQuality==100,"score must follow player perspective");
         System.out.println("STOCKFISH_PRECISION_TESTS_OK "+n);
     }
 }
