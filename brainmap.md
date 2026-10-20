@@ -139,3 +139,9 @@
 - `StockfishBridge.java` : état UCI/Hash partagé, mémorisation root cp et `AdaptiveOpponent.State`, paramètres d'adaptation, profondeur 12/13/14 bornée, diagnostic ADAPTIVE et recommandations MultiPV par FEN via `suggestions()`.
 - `OpeningTheory.java` : `next(played,position)` donne uniquement les suites légales réellement connues du petit livre, avec étiquette d'ouverture; `OpeningCoach.java` produit descriptions positionnelles prudentes; `OpeningCoachTest.java` vérifie Gambit de dame accepté/refusé et provenance.
 - `.github/workflows/android-debug.yml` : compile tests Java AdaptiveOpponentTest et OpeningCoachTest puis Gradle Android avec Piper/Stockfish; prérelease APK directe v0.4.6 quand CI passe.
+
+## GD-015 — Résultat final de CI 20/10/2026
+- GitHub Actions run #70 : https://github.com/greenpower2669/GambitDrame/actions/runs/39497491157 ; `success`, `BUILD SUCCESSFUL in 1m 17s`, code testé 294c4e0f60e6374cc12db7ca7c8c8b6f3557f0a4.
+- Tests confirmés : ADAPTIVE_OPPONENT_TESTS_OK 504, OPENING_COACH_TESTS_OK 10, BOARD_ARROWS_TESTS_OK 46, CHESS_TESTS_OK 18, HUMAN_POLICY_TESTS_OK 130, STOCKFISH_PRECISION_TESTS_OK 18, TACTICAL_GUARD_TESTS_OK 8, STUDY_METRICS_TESTS_OK 9.
+- APK ARM64 directe, sans ZIP : https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-70/GambitDrame-v0.4.6-debug-arm64.apk ; taille 176749305 octets, MIME application/vnd.android.package-archive ; Release https://github.com/greenpower2669/GambitDrame/releases/tag/gd-test-70.
+- Statut : livré à valider sur Samsung SM-A576B Android16. Pas de test physique, pas de mesure sur parties complètes, pas de calibration Elo ni de certification AudioTrack sur téléphone. Ancien mode conservé, main inchangé.
