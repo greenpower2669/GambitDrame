@@ -37,6 +37,7 @@ public final class AccessibleAudio {
     private String pendingMessage=null;
     private final ConcurrentHashMap<String,java.util.function.Consumer<Boolean>> tracked=new ConcurrentHashMap<>();
     private final AtomicLong utteranceIds=new AtomicLong();
+    private final AtomicLong cancelEpoch=new AtomicLong();
     private void finishSpeech(String id,boolean ok){
         java.util.function.Consumer<Boolean> cb=tracked.remove(id);
         if(cb!=null)handler.post(()->cb.accept(ok));
@@ -181,11 +182,19 @@ public final class AccessibleAudio {
             handler.post(()->finished.accept(false));return;
         }
         lastMessage=message;
+        final long epoch=cancelEpoch.get();
         if(piper!=null&&!piper.hasFailed()){
-            piper.speakTracked(message,finished);
+            piper.speakTracked(message,ok->{
+                if(!ok&&epoch==cancelEpoch.get()&&initialized&&tts!=null&&voiceOn()&&!closed){
+                    speakAndroidTracked(message,finished);
+                }else finished.accept(ok);
+            });
             return;
         }
-        if(!initialized||tts==null){
+        speakAndroidTracked(message,finished);
+    }
+    private void speakAndroidTracked(String message,java.util.function.Consumer<Boolean> finished){
+        if(!initialized||tts==null||closed||!voiceOn()){
             handler.post(()->finished.accept(false));return;
         }
         String id="gambit-move-"+utteranceIds.incrementAndGet();
@@ -211,6 +220,7 @@ public final class AccessibleAudio {
         try{tones.startTone(tone,duration);}catch(RuntimeException ignored){}
     }
     public void stopSpeech(){
+        cancelEpoch.incrementAndGet();
         pendingMessage=null;
         for(String id:tracked.keySet())finishSpeech(id,false);
         if(piper!=null)piper.stop();
