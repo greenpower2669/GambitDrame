@@ -120,3 +120,7 @@ L'adversaire humain doit échantillonner des coups humains réels, avec continui
 - Archive SAF JSON pour migrer entre versions ; import ne modifie pas partie en cours, vérifie replay légal et méta. Limitation 40 études conservées localement, exporter périodiquement.
 - La capture du résultat de la partie (1-0,0-1,1/2-1/2,*) permet les points Blancs par ouverture. Source non exhaustive.
 - Tests Samsung non encore réalisés. Aucun merge main.
+
+
+### GD-013 — Preuve de livraison
+- GitHub Actions #48 https://github.com/greenpower2669/GambitDrame/actions/runs/39431587270 : SUCCESS, APK v0.4.4 ARM64 direct 176715029 octets dans gd-test-48. Compilation/test JVM OK ; exécution Samsung non vérifiée. Attention : signature debug non garantie stable entre builds ; sauvegarde JSON avant remplacement potentiellement destructif.
