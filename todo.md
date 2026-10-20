@@ -86,8 +86,13 @@ Les commits purement Markdown n'ont pas besoin de recompiler Android ; workflow 
 - [x] Styles bois : silhouettes demi-pièces en coupe longitudinale au sol et mode relief/perspective, anciens thèmes préservés.
 - [x] Flèches semi-transparentes, aperçu durant glisser, désactivation interception ScrollView + échiquier plein écran immersif.
 - [x] Tests supplémentaires pure-Java pour la conversion du score enfant et classement meilleur/pire.
-- [ ] Vérifier réussite de la dernière CI GitHub Actions et **existence exacte** de l'asset .apk direct de sa Release, pas uniquement du ZIP Actions.
+- [x] Vérifier CI #22 success et existence APK v0.4.1 directe dans gd-test-22.
 - [ ] Essai visuel et tactile du vrai rendu bois/perspective et flèches plein écran sur Samsung SM-A576B Android 16 par Fab.
 - [ ] Tester sorties terminales (mat/pat), promotion, coups égaux en CP, analyse sur des positions avec beaucoup de coups, latence, mémoire et absence d'interruption de la voix sur appareil.
 - [ ] Réduire consommation si engine Stockfish d'analyse et sélectionneur simultanément posent problème; ne pas cacher les erreurs.
 - [ ] Vérifier les obligations GPLv3 de distribution APK; ne pas fusionner main sans aval explicite.
+
+## GD-010 — Validation CI finale, 20/10/2026
+- GitHub Actions #22 (39394368345) sur d8aac2e3d21d47b3ac35340f34cf9d9c94b76b63 : completed success ; BUILD SUCCESSFUL in 58s, règles 18 tests, politique humaine 130, précision/orientation Stockfish 15, flèches 4.
+- APK directe .apk (pas ZIP), v0.4.1 code 8, dans gd-test-22 : https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-22/GambitDrame-v0.4.1-debug-arm64.apk ; taille 176659809 octets.
+- Livrée pour test réel Samsung SM-A576B Android 16. CI ne vérifie pas la qualité de l'affichage 3D, les gestes physiques ni le temps de réponse de Stockfish sur ce téléphone. Pas de merge main.
