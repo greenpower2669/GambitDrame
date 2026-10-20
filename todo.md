@@ -79,3 +79,15 @@ Les commits purement Markdown n'ont pas besoin de recompiler Android ; workflow 
 - [x] CI #13 réussie et APK directe gd-test-13 publiée ; tests totaux 18+130+21+15+10+4, binaire Stockfish ARM64+Piper présents ; lien/hash consignés.
 - [ ] Audit matériel SM-A576B indispensable : Stockfish MultiPV=N (N coups légaux) peut coûter temps et RAM; jouer des parties complètes, mesurer délais. Vérifier queue Piper et fin de phrases par lecture réelle. Tester essai + annotations sur l'échiquier.
 - [ ] Validation Samsung : début/fin véritables phrases, latence, moteur Stockfish recherche tous coups, mémoire, styles, flèches, cases et mode essais.
+
+## GD-010 — Essai v0.4.1 demandé par Fab le 20/10/2026
+- [x] Nouveau sélectionneur Stockfish rapide : appliquer chaque coup légal sur copie, évaluer FEN fille UCI à profondeur 1, inverser le signe vers joueur initial, classer les scores 0–100, tirer selon cible sigma.
+- [x] Paramètres par défaut à la migration v0.4.1 : Stockfish Noir, cible 80 %, sigma 5 ; mode MultiPV profond optionnel et profondeur réglable, profil Lichess distinct préservé.
+- [x] Styles bois : silhouettes demi-pièces en coupe longitudinale au sol et mode relief/perspective, anciens thèmes préservés.
+- [x] Flèches semi-transparentes, aperçu durant glisser, désactivation interception ScrollView + échiquier plein écran immersif.
+- [x] Tests supplémentaires pure-Java pour la conversion du score enfant et classement meilleur/pire.
+- [ ] Vérifier réussite de la dernière CI GitHub Actions et **existence exacte** de l'asset .apk direct de sa Release, pas uniquement du ZIP Actions.
+- [ ] Essai visuel et tactile du vrai rendu bois/perspective et flèches plein écran sur Samsung SM-A576B Android 16 par Fab.
+- [ ] Tester sorties terminales (mat/pat), promotion, coups égaux en CP, analyse sur des positions avec beaucoup de coups, latence, mémoire et absence d'interruption de la voix sur appareil.
+- [ ] Réduire consommation si engine Stockfish d'analyse et sélectionneur simultanément posent problème; ne pas cacher les erreurs.
+- [ ] Vérifier les obligations GPLv3 de distribution APK; ne pas fusionner main sans aval explicite.
