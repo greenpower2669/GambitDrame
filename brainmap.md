@@ -83,3 +83,10 @@
 - Tests logs : CHESS_TESTS_OK 18 ; HUMAN_POLICY_TESTS_OK 130 choices e4=61 d4=39 ; REVIEW_AND_GAUGE_TESTS_OK 21 ; CHESS_NARRATION_TESTS_OK 15 ; STOCKFISH_PRECISION_TESTS_OK 10 ; BOARD_ARROWS_TESTS_OK 4 ; BUILD SUCCESSFUL in 1m18s.
 - Contenus natifs vérifiés ZIP APK : libstockfish.so ARM64 113 750 704 octets + GPL3, Piper fr_FR-upmc-medium.onnx 76 682 529 octets + Sherpa licences.
 - ATTENTION : CI n'a pas testé l'exécution réelle sur Samsung, ni la sélection all-MultiPV à profondeur7 sur téléphone, ni audio Piper avec première phrase / enchaînement, ni glissés/couleurs en contexte réel. Ne pas prétendre « testé téléphone ».
+
+## GD-010 — Extension v0.4.1 (20/10/2026)
+- `StockfishOpponent.select(...,deep,depth)` : défaut depth-1 *par coup légal* avec moteur UCI réutilisé, conversion en score du joueur initial (`StockfishPrecision.parentScoreFromChild`); mode MultiPV profond conservé et réglable.
+- `MainActivity` : migration préréglages Stockfish 80/5, bois demi-pièces (style 3) / relief perspective (style 4), Switch MultiPV profond, dialogue de plateau plein écran, flèches sans interception de ScrollView et aperçu semi-transparent.
+- `WoodPieces.java` : silhouettes Canvas en bois contrasté, sans cercle de fond; anciennes palettes accessibles.
+- `app/build.gradle` : 0.4.1 code 8 ; workflow publie APK directe non ZIP sur prérelease.
+- CI v0.4.1 run #18 réussi (version avant tests de conversion et prévisualisation). Attendre statut dernier run #22 avant validation finale. Pas de test Samsung par CI.
