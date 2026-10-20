@@ -86,3 +86,14 @@
 - Cause principale des coupures : ancienne méthode Piper.speak() incrémentait generation et appelait track.pause/flush dès une nouvelle annonce, même pendant une phrase. Ancien AudioTrack recréé à chaque phrase. Modifié en file d'attente sérialisée et lecture persistance de la piste, warmup muet avant prêt, délai après progression complète du pointeur audio.
 - Stockfish humain : ancien adversaire expérimental Lichess a été jugé peu crédible. Nouveau choix Stockfish évalue exhaustivement N coups légaux MultiPV, normalise 0..100, tire cible gaussienne, refuse score manquant. À vérifier sur Android; aucun label Elo certain.
 - Autres interventions : essais sur pile non sauvegardée, flèches vectorielles, pièces ivoire/ébène et deux thèmes alternatifs. Compilation/prêt téléphone NON ENCORE VALIDÉS.
+
+## 20/10/2026 — Vérification build 0.4.0
+
+## GD-009 — Livraison build v0.4.0 vérifiée 20/10/2026
+- GitHub Actions run #13 : https://github.com/greenpower2669/GambitDrame/actions/runs/39385921496 => completed success, source 4069713b1d96aaaea77566650d88da8b8d22eebe.
+- APK directe NON ZIP : https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-13/GambitDrame-v0.4.0-debug-arm64.apk, taille 176 645 865 octets, SHA256 c9d35ce9d65a8004ed3c0224f44c5d55a20afaa3416bd472e2feeaa65932f838, release gd-test-13, asset uploaded.
+- Tests logs : CHESS_TESTS_OK 18 ; HUMAN_POLICY_TESTS_OK 130 choices e4=61 d4=39 ; REVIEW_AND_GAUGE_TESTS_OK 21 ; CHESS_NARRATION_TESTS_OK 15 ; STOCKFISH_PRECISION_TESTS_OK 10 ; BOARD_ARROWS_TESTS_OK 4 ; BUILD SUCCESSFUL in 1m18s.
+- Contenus natifs vérifiés ZIP APK : libstockfish.so ARM64 113 750 704 octets + GPL3, Piper fr_FR-upmc-medium.onnx 76 682 529 octets + Sherpa licences.
+- ATTENTION : CI n'a pas testé l'exécution réelle sur Samsung, ni la sélection all-MultiPV à profondeur7 sur téléphone, ni audio Piper avec première phrase / enchaînement, ni glissés/couleurs en contexte réel. Ne pas prétendre « testé téléphone ».
+
+- Les classes sont compilées sur Android et tests Java ont passé. Avertissement Gradle « Unable to strip libonnxruntime.so, libsherpa-onnx..., libstockfish.so » n'a pas empêché le packaging natif, tous binaires présents.

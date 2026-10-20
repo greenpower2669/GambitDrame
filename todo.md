@@ -76,5 +76,6 @@ Les commits purement Markdown n'ont pas besoin de recompiler Android ; workflow 
 - [x] Essais fictifs indépendants de partie, annuler/quitter, analyser chaque étape.
 - [x] Flèches Canvas par glissé, toggle et effacement; tests des segments.
 - [x] Pièces stylisées ivoire/ébène, minimal et haut contraste avec choix enregistré.
-- [ ] Passer tests GitHub Actions et obtenir APK directe 0.4.0 avec Stockfish/Piper; ajouter preuve et hash en mémoire.
+- [x] CI #13 réussie et APK directe gd-test-13 publiée ; tests totaux 18+130+21+15+10+4, binaire Stockfish ARM64+Piper présents ; lien/hash consignés.
+- [ ] Audit matériel SM-A576B indispensable : Stockfish MultiPV=N (N coups légaux) peut coûter temps et RAM; jouer des parties complètes, mesurer délais. Vérifier queue Piper et fin de phrases par lecture réelle. Tester essai + annotations sur l'échiquier.
 - [ ] Validation Samsung : début/fin véritables phrases, latence, moteur Stockfish recherche tous coups, mémoire, styles, flèches, cases et mode essais.

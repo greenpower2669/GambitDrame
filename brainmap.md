@@ -74,3 +74,12 @@
 - MainActivity : trialPositions/trialMoves sont distincts positions/moves; displayed() consulte pile d'essais si activée; 3 palettes de pièces sont rendues au Canvas avec fond de silhouette contrasté et contours.
 - PiperSpeechEngine : générateur Sherpa ONNX et AudioTrack persistant en un worker, une phrase complète à la fois, mise en attente des suivantes. Délai 100..2000 ms réglable.
 - Workflow CI : nouveaux tests StockfishPrecisionTest et BoardArrowsTest avant NDK/Gradle, publication APK 0.4.0 après succès.
+
+## État livraison 0.4.0 : GitHub Actions #13 success
+
+## GD-009 — Livraison build v0.4.0 vérifiée 20/10/2026
+- GitHub Actions run #13 : https://github.com/greenpower2669/GambitDrame/actions/runs/39385921496 => completed success, source 4069713b1d96aaaea77566650d88da8b8d22eebe.
+- APK directe NON ZIP : https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-13/GambitDrame-v0.4.0-debug-arm64.apk, taille 176 645 865 octets, SHA256 c9d35ce9d65a8004ed3c0224f44c5d55a20afaa3416bd472e2feeaa65932f838, release gd-test-13, asset uploaded.
+- Tests logs : CHESS_TESTS_OK 18 ; HUMAN_POLICY_TESTS_OK 130 choices e4=61 d4=39 ; REVIEW_AND_GAUGE_TESTS_OK 21 ; CHESS_NARRATION_TESTS_OK 15 ; STOCKFISH_PRECISION_TESTS_OK 10 ; BOARD_ARROWS_TESTS_OK 4 ; BUILD SUCCESSFUL in 1m18s.
+- Contenus natifs vérifiés ZIP APK : libstockfish.so ARM64 113 750 704 octets + GPL3, Piper fr_FR-upmc-medium.onnx 76 682 529 octets + Sherpa licences.
+- ATTENTION : CI n'a pas testé l'exécution réelle sur Samsung, ni la sélection all-MultiPV à profondeur7 sur téléphone, ni audio Piper avec première phrase / enchaînement, ni glissés/couleurs en contexte réel. Ne pas prétendre « testé téléphone ».
