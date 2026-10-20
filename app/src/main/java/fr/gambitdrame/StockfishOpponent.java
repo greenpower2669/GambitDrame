@@ -32,6 +32,9 @@ public final class StockfishOpponent {
     private final Random random=new Random();
     private volatile Process active;
     private volatile boolean closed=false;
+    private volatile EngineDiagnostics diagnostics;
+    public void setDiagnostics(EngineDiagnostics d){diagnostics=d;}
+    private void trace(String category,String text){EngineDiagnostics d=diagnostics;if(d!=null)d.record(category,text);}
     public StockfishOpponent(Context context){this.context=context.getApplicationContext();}
     private static void send(BufferedWriter writer,String cmd)throws Exception{
         writer.write(cmd);writer.newLine();writer.flush();
@@ -49,10 +52,11 @@ public final class StockfishOpponent {
     }
     public Result select(ChessGame.Position position,int mean,int sigma,boolean deep,int requestedDepth)throws Exception{
         if(!deep)return selectFast(position,mean,sigma);
+        trace("START","mode=MultiPV depth="+requestedDepth+" target="+mean+" sigma="+sigma+" turn="+(position.white?"white":"black")+" fen="+position.fen());
         if(closed)throw new IllegalStateException("Moteur arrêté");
         List<ChessGame.Move> legal=ChessGame.legal(position);
         if(legal.isEmpty())return null;
-        if(legal.size()==1)return new Result(legal.get(0).uci(),100,100,1);
+        if(legal.size()==1){trace("FORCED","Un seul coup légal, sélection 100% malgré cible="+mean+" : "+legal.get(0).uci());return new Result(legal.get(0).uci(),100,100,1);}
         File binary=new File(context.getApplicationInfo().nativeLibraryDir,"libstockfish.so");
         if(!binary.exists())throw new IllegalStateException("Stockfish ARM64 non installé");
         Process p=new ProcessBuilder(binary.getAbsolutePath()).redirectErrorStream(true).start();
@@ -111,6 +115,7 @@ public final class StockfishOpponent {
             }
             StockfishPrecision.Pick pick=StockfishPrecision.choose(
                 StockfishPrecision.normalize(names,scores),mean,sigma,random);
+            reportChoice("MultiPV depth="+depth,names,scores,mean,sigma,pick);
             return new Result(pick.move.uci,pick.move.relativeQuality,pick.requested,legal.size());
         }finally{
             try{p.destroy();}catch(RuntimeException ignored){}
@@ -125,10 +130,13 @@ public final class StockfishOpponent {
      * Reuse a single engine process; never silently substitute random scores.
      */
     private Result selectFast(ChessGame.Position root,int mean,int sigma)throws Exception{
+        long started=System.nanoTime();
+        trace("START","mode=FAST child depth=1 target="+mean+" sigma="+sigma+
+            " turn="+(root.white?"white":"black")+" fen="+root.fen());
         if(closed)throw new IllegalStateException("Moteur arrêté");
         List<ChessGame.Move> legal=ChessGame.legal(root);
         if(legal.isEmpty())return null;
-        if(legal.size()==1)return new Result(legal.get(0).uci(),100,100,1);
+        if(legal.size()==1){trace("FORCED","Un seul coup légal : "+legal.get(0).uci());return new Result(legal.get(0).uci(),100,100,1);}
         File binary=new File(context.getApplicationInfo().nativeLibraryDir,"libstockfish.so");
         if(!binary.exists())throw new IllegalStateException("Stockfish ARM64 non installé");
         Process p=new ProcessBuilder(binary.getAbsolutePath()).redirectErrorStream(true).start();
@@ -158,12 +166,14 @@ public final class StockfishOpponent {
                     send(output,"position fen "+child.fen());
                     send(output,"go depth 1");
                     Integer childCp=null;
+                    String lastUciScore="aucune ligne de score";
                     boolean finished=false;
                     while(!closed&&System.nanoTime()<deadline){
                         String line=pollLine(input,deadline);
                         if(line==null)break;
                         if(line.startsWith("bestmove ")){finished=true;break;}
                         if(!line.startsWith("info ")||!line.contains(" score "))continue;
+                        lastUciScore=line;
                         String d=token(line,"depth");
                         if(d==null||Integer.parseInt(d)!=1)continue;
                         String cp=token(line,"cp"), mate=token(line,"mate");
@@ -172,20 +182,49 @@ public final class StockfishOpponent {
                     }
                     if(!finished||childCp==null)throw new IllegalStateException(
                         "Score Stockfish profondeur 1 manquant pour "+candidate.uci()+
-                        " ("+names.size()+"/"+legal.size()+")");
+                        " ("+names.size()+"/"+legal.size()+"), bestmove reçu="+finished+
+                        ", dernière ligne UCI="+lastUciScore);
                     rootScore=StockfishPrecision.parentScoreFromChild(childCp);
+                    trace("CP","candidate="+candidate.uci()+" childCp="+childCp+
+                        " rootCp="+rootScore+" depth=1 ("+(names.size()+1)+"/"+legal.size()+")");
                 }
+                if(childReplies.isEmpty())
+                    trace("CP","candidate="+candidate.uci()+" terminal rootCp="+rootScore);
                 names.add(candidate.uci());
                 scores.add(rootScore);
             }
             StockfishPrecision.Pick selected=StockfishPrecision.choose(
                 StockfishPrecision.normalize(names,scores),mean,sigma,random);
+            reportChoice("FAST depth=1",names,scores,mean,sigma,selected);
+            trace("TIME","FAST total_ms="+((System.nanoTime()-started)/1000000));
             return new Result(selected.move.uci,selected.move.relativeQuality,
                 selected.requested,legal.size());
         }finally{
             try{p.destroy();}catch(RuntimeException ignored){}
             if(active==p)active=null;
         }
+    }
+    private void reportChoice(String mode,List<String> names,List<Integer> scores,
+                              int target,int sigma,StockfishPrecision.Pick chosen){
+        List<StockfishPrecision.Candidate> candidates=StockfishPrecision.normalize(names,scores);
+        int min=Integer.MAX_VALUE,max=Integer.MIN_VALUE;
+        for(int cp:scores){min=Math.min(min,cp);max=Math.max(max,cp);}
+        trace("RANGE",mode+" n="+candidates.size()+" minCp="+min+" maxCp="+max+
+            " spanCp="+(max-min)+" target="+target+" sigma="+sigma+
+            " gaussianDraw="+String.format(java.util.Locale.US,"%.2f",chosen.requested));
+        for(StockfishPrecision.Candidate c:candidates)
+            trace("RANK",c.uci+" cp="+c.scoreCp+" relative="+
+                String.format(java.util.Locale.US,"%.2f",c.relativeQuality)+"%");
+        double quality=chosen.move.relativeQuality;
+        String reason="";
+        if(max==min)reason=" / ALL_SCORES_EQUAL=all100";
+        else if(quality>=99.999&&chosen.requested<99.999)
+            reason=" / BEST_FORCED_BY_NEAREST_SCORE";
+        trace("CHOSEN","move="+chosen.move.uci+" actualRelative="+
+            String.format(java.util.Locale.US,"%.2f",quality)+"% requested="+
+            String.format(java.util.Locale.US,"%.2f",chosen.requested)+"%"+
+            " gap="+String.format(java.util.Locale.US,"%.2f",Math.abs(quality-chosen.requested))+
+            reason);
     }
     private static void await(BufferedReader reader,String token,long deadline)throws Exception{
         while(System.nanoTime()<deadline){
