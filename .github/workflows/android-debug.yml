@@ -22,12 +22,13 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p build/chess-test-classes
-          javac -d build/chess-test-classes             app/src/main/java/fr/gambitdrame/ChessGame.java             app/src/main/java/fr/gambitdrame/HumanPolicy.java             app/src/test/java/fr/gambitdrame/ChessGameTest.java             app/src/test/java/fr/gambitdrame/HumanPolicyTest.java app/src/main/java/fr/gambitdrame/ReviewCursor.java app/src/main/java/fr/gambitdrame/EvaluationScale.java app/src/test/java/fr/gambitdrame/ReviewTest.java app/src/main/java/fr/gambitdrame/ChessNarration.java app/src/test/java/fr/gambitdrame/ChessNarrationTest.java app/src/main/java/fr/gambitdrame/StockfishPrecision.java app/src/test/java/fr/gambitdrame/StockfishPrecisionTest.java app/src/main/java/fr/gambitdrame/BoardArrows.java app/src/test/java/fr/gambitdrame/BoardArrowsTest.java
+          javac -d build/chess-test-classes             app/src/main/java/fr/gambitdrame/ChessGame.java             app/src/main/java/fr/gambitdrame/HumanPolicy.java             app/src/test/java/fr/gambitdrame/ChessGameTest.java             app/src/test/java/fr/gambitdrame/HumanPolicyTest.java app/src/main/java/fr/gambitdrame/ReviewCursor.java app/src/main/java/fr/gambitdrame/EvaluationScale.java app/src/test/java/fr/gambitdrame/ReviewTest.java app/src/main/java/fr/gambitdrame/ChessNarration.java app/src/test/java/fr/gambitdrame/ChessNarrationTest.java app/src/main/java/fr/gambitdrame/StockfishPrecision.java app/src/main/java/fr/gambitdrame/TacticalGuard.java app/src/test/java/fr/gambitdrame/StockfishPrecisionTest.java app/src/test/java/fr/gambitdrame/TacticalGuardTest.java app/src/main/java/fr/gambitdrame/BoardArrows.java app/src/test/java/fr/gambitdrame/BoardArrowsTest.java
           java -cp build/chess-test-classes fr.gambitdrame.ChessGameTest
           java -cp build/chess-test-classes fr.gambitdrame.HumanPolicyTest
           java -cp build/chess-test-classes fr.gambitdrame.ReviewTest
           java -cp build/chess-test-classes fr.gambitdrame.ChessNarrationTest
           java -cp build/chess-test-classes fr.gambitdrame.StockfishPrecisionTest
+          java -cp build/chess-test-classes fr.gambitdrame.TacticalGuardTest
           java -cp build/chess-test-classes fr.gambitdrame.BoardArrowsTest
       - name: Install Android SDK and NDK r27c
         run: |
@@ -123,6 +124,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          cp app/build/outputs/apk/debug/app-debug.apk GambitDrame-v0.4.2-debug-arm64.apk
+          cp app/build/outputs/apk/debug/app-debug.apk GambitDrame-v0.4.3-debug-arm64.apk
           tag="gd-test-${{ github.run_number }}"
-          gh release create "$tag" GambitDrame-v0.4.2-debug-arm64.apk             --target "${{ github.sha }}" --prerelease             --title "GambitDrame 0.4.2 experimental test ${{ github.run_number }}"             --notes "Persistent GET ERR debug export: every legal candidate centipawn score, normalized rank, selected quality and gaussian draw, modes/settings and UCI errors. Stockfish depth-1 default, adjustable original MultiPV, wooden pieces and fullscreen arrows. GPL source and Sherpa ONNX. Unverified Samsung hardware. No main merge."
+          gh release create "$tag" GambitDrame-v0.4.3-debug-arm64.apk             --target "${{ github.sha }}" --prerelease             --title "GambitDrame 0.4.3 experimental test ${{ github.run_number }}"             --notes "Depth11 gauge extended to depth12 on same UCI process and hash, full legal MultiPV, tactical centipawn loss cap checkbox, narrow predictive overlaid gauge, regression for queen sacrifice, persistent GET ERR, wooden pieces and fullscreen arrows. GPL source and Sherpa ONNX. Unverified Samsung hardware. No main merge."
