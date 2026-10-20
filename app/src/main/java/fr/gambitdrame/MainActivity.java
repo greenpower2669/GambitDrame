@@ -266,7 +266,7 @@ public final class MainActivity extends Activity {
         label(root,"Voix IA Piper locale intégrée : Jessica ou Pierre, sans Internet. La voix française Android reste un secours si Piper ne démarre pas.",13);
         speechStatus=label(root,"Voix : initialisation…",14);
         Switch voiceToggle=new Switch(this);
-        voiceToggle.setText("Parler : annoncer les coups et les cases");
+        voiceToggle.setText("Parler : annoncer les coups joués");
         voiceToggle.setTextColor(Color.BLACK);
         voiceToggle.setTextSize(16);
         voiceToggle.setChecked(prefs.getBoolean("voiceOn",true));
@@ -301,18 +301,9 @@ public final class MainActivity extends Activity {
         soundToggle.setOnCheckedChangeListener((button,on)->{
             if(audio!=null)audio.setSoundsOn(on);
         });
-        Switch evaluationToggle=new Switch(this);
-        evaluationToggle.setText("Annoncer automatiquement une évaluation Stockfish par position");
-        evaluationToggle.setTextColor(Color.BLACK);
-        evaluationToggle.setTextSize(14);
-        announceEvaluation=prefs.getBoolean("autoEvalSpeech",false);
-        evaluationToggle.setChecked(announceEvaluation);
-        root.addView(evaluationToggle);
-        evaluationToggle.setOnCheckedChangeListener((button,on)->{
-            announceEvaluation=on;
-            prefs.edit().putBoolean("autoEvalSpeech",on).apply();
-            if(on)describeEvaluation();
-        });
+        // Historical autoEvalSpeech preference remains stored for reversibility;
+        // GD-015 requires no automatic score/variation announcements.
+        label(root,"Évaluations et variantes : uniquement par les boutons d'aide ou d'écoute.",13);
         TextView speedLabel=label(root,"Vitesse de parole",14);
         SeekBar speed=new SeekBar(this);
         speed.setMax(65);
@@ -1322,7 +1313,7 @@ public final class MainActivity extends Activity {
         moves.clear();positions.clear();positions.add(ChessGame.fromFen(ChessGame.START));
         review.setHistorySize(moves.size());
         selected=-1;persist();refresh();analyzeDisplayed();
-        if(audio!=null)audio.say("Nouvelle partie. Les blancs commencent.");
+        // Voice stays silent for non-move housekeeping (GD-015).
         scheduleBot();
     }
     private void undo(){
