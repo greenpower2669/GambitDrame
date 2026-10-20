@@ -1523,7 +1523,7 @@ public final class MainActivity extends Activity {
     private final class ChessView extends View {
         private final Paint paint=new Paint(3);
         private final String symbols="♔♕♖♗♘♙♚♛♜♝♞♟";
-        private int arrowStart=-1,arrowEnd=-1;
+        private int arrowStart=-1,arrowEnd=-1,arrowColor=0;
         private Integer whiteCp=null,whiteMate=null;
         private double whiteFraction=0.5;
         private Double guardFraction=null,bestFraction=null;
@@ -1663,23 +1663,28 @@ public final class MainActivity extends Activity {
         }
         private void drawArrows(Canvas canvas,float cell){
             for(BoardArrows.Arrow arrow:annotations.all())
-                drawVector(canvas,cell,arrow.from,arrow.to);
-            // Show a live translucent preview as the finger moves.
+                drawVector(canvas,cell,arrow.from,arrow.to,arrow.color);
+            // Preview and stored arrow must have exactly the same piece-specific hue.
             if(arrowMode&&arrowStart>=0&&arrowEnd>=0&&arrowEnd!=arrowStart)
-                drawVector(canvas,cell,arrowStart,arrowEnd);
+                drawVector(canvas,cell,arrowStart,arrowEnd,arrowColor);
         }
-        private void drawVector(Canvas canvas,float cell,int from,int to){
+        private void drawVector(Canvas canvas,float cell,int from,int to,int color){
             float ax=(from%8+.5f)*cell,ay=(from/8+.5f)*cell;
             float bx=(to%8+.5f)*cell,by=(to/8+.5f)*cell;
             float dx=bx-ax,dy=by-ay,d=(float)Math.hypot(dx,dy);
             if(d<cell*.5f)return;
             float ux=dx/d,uy=dy/d;
             float tipX=bx-ux*cell*.18f,tipY=by-uy*cell*.18f;
-            paint.setColor(0x88ffae23);
+            float lineEndX=tipX-ux*cell*.22f,lineEndY=tipY-uy*cell*.22f;
+            // Thin graphite underlay adds contrast to vivid translucent hues on both squares.
             paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeWidth(Math.max(dp(3),cell*.12f));
             paint.setStrokeCap(Paint.Cap.ROUND);
-            canvas.drawLine(ax,ay,tipX-ux*cell*.22f,tipY-uy*cell*.22f,paint);
+            paint.setColor(0x88502719);
+            paint.setStrokeWidth(Math.max(dp(4),cell*.16f));
+            canvas.drawLine(ax,ay,lineEndX,lineEndY,paint);
+            paint.setColor(color);
+            paint.setStrokeWidth(Math.max(dp(3),cell*.105f));
+            canvas.drawLine(ax,ay,lineEndX,lineEndY,paint);
             Path head=new Path();
             head.moveTo(tipX,tipY);
             head.lineTo(tipX-ux*cell*.41f-uy*cell*.24f,
@@ -1688,6 +1693,10 @@ public final class MainActivity extends Activity {
                 tipY-uy*cell*.41f-ux*cell*.24f);
             head.close();
             paint.setStyle(Paint.Style.FILL);
+            paint.setColor(0x99502719);
+            canvas.drawPath(head,paint);
+            // Slightly inset colored head over the dark outer shape.
+            paint.setColor(color);
             canvas.drawPath(head,paint);
         }
         private String glyph(char p){
@@ -1709,6 +1718,15 @@ public final class MainActivity extends Activity {
                     getParent().requestDisallowInterceptTouchEvent(true);
                     arrowStart=squareAt(e.getX(),e.getY());
                     arrowEnd=-1;
+                    if(arrowStart>=0){
+                        List<String> path=new ArrayList<>(moves.subList(0,
+                            Math.min(review.ply(),moves.size())));
+                        if(trialMode)path.addAll(trialMoves);
+                        int pieceId=BoardArrows.identityAt(positions.get(0),path,arrowStart);
+                        // An empty origin remains colorful but does not impersonate a piece.
+                        arrowColor=BoardArrows.colorForIdentity(
+                            pieceId>=0?pieceId:32+arrowStart);
+                    }
                     return true;
                 }
                 if(action==MotionEvent.ACTION_MOVE){
@@ -1719,9 +1737,9 @@ public final class MainActivity extends Activity {
                 if(action==MotionEvent.ACTION_UP){
                     int target=squareAt(e.getX(),e.getY());
                     if(arrowStart>=0&&target>=0&&target!=arrowStart){
-                        annotations.toggle(arrowStart,target);
-                        if(audio!=null)audio.say("Flèche "+ChessNarration.square(arrowStart)+
-                            " vers "+ChessNarration.square(target));
+                        annotations.toggle(arrowStart,target,arrowColor);
+                        // Fab: announce only the destination, not the full vector.
+                        if(audio!=null)audio.say(ChessNarration.square(target));
                         refresh();
                     }
                     arrowStart=-1;arrowEnd=-1;
