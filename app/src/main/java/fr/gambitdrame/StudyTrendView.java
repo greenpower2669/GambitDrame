@@ -65,7 +65,7 @@ public final class StudyTrendView extends View {
             c.drawPath(path,p);p.setStyle(Paint.Style.FILL);
         }
         p.setTextSize(dp(11));p.setColor(0xff334444);
-        c.drawText("Partie "+(start+1),left,bottom+dp(18));
+        c.drawText("Partie "+(start+1),left,bottom+dp(18),p);
         String last=""+records.length();
         c.drawText("Partie "+last,right-dp(62),bottom+dp(18),p);
         p.setTextSize(dp(12));
