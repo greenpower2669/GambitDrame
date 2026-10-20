@@ -70,3 +70,12 @@
 - Tests logs : CHESS_TESTS_OK 18 ; HUMAN_POLICY_TESTS_OK 130 choices e4=61 d4=39 ; REVIEW_AND_GAUGE_TESTS_OK 21 ; CHESS_NARRATION_TESTS_OK 15 ; STOCKFISH_PRECISION_TESTS_OK 10 ; BOARD_ARROWS_TESTS_OK 4 ; BUILD SUCCESSFUL in 1m18s.
 - Contenus natifs vérifiés ZIP APK : libstockfish.so ARM64 113 750 704 octets + GPL3, Piper fr_FR-upmc-medium.onnx 76 682 529 octets + Sherpa licences.
 - ATTENTION : CI n'a pas testé l'exécution réelle sur Samsung, ni la sélection all-MultiPV à profondeur7 sur téléphone, ni audio Piper avec première phrase / enchaînement, ni glissés/couleurs en contexte réel. Ne pas prétendre « testé téléphone ».
+
+## GD-010 — Validation Fab du 20/10/2026 : essai nouveau moteur, bois, flèches
+- Fab autorise le développement et le test sur la branche de travail, sans merge main.
+- Adversaire par défaut Stockfish Noir, cible 80 %, sigma 5 ; mode rapide par défaut: chaque coup légal appliqué sur copie, résultat analysé par Stockfish depth 1, conversion score depuis le trait de l'enfant vers le joueur ayant joué (négation), classement pire 0 / meilleur 100, sélection au plus proche d'une cible gaussienne. Refuser un choix si les évaluations sont incomplètes.
+- Conserver en option (désactivée par défaut) l'exploration MultiPV à profondeur réglable.
+- Deux styles bois: demi-pièces longitudinales à plat (défaut), perspective 3D commutable ; anciens thèmes préservés. Retirer les médaillons circulaires sur les deux modes bois.
+- Flèches semi-transparentes avec aperçu pendant déplacement, empêcher ScrollView d'intercepter le glisser; plateau en vrai plein écran avec commandes flèches/effacer/retour.
+- v0.4.1 code 8, tests JVM étendus conversion orientation score enfant, CI GitHub Actions. Test physique Samsung non automatisable ici.
+- Attention: comparer score centipions des positions résultantes, pas des pourcentages affichés par la jauge ; profondeur 1 n'est pas une recherche exhaustive de toutes les suites.
