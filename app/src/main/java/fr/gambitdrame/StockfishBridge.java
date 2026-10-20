@@ -8,6 +8,11 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Independent Stockfish 18 UCI analytical engine.
@@ -31,6 +36,119 @@ public final class StockfishBridge {
     private volatile boolean awaitingReady=false;
     private final Map<Integer,String> variants=new HashMap<>();
     private String currentWdl="WDL —";
+    private final Random guardRandom=new Random();
+    private EngineDiagnostics diagnostics;
+    private int phase=0; // 0 idle, 1 gauge, 2 candidate ranking
+    private GuardRequest request;
+    private static final class GuardRequest {
+        final ChessGame.Position root; final int target,sigma;
+        final List<String> legal=new ArrayList<>();
+        final Map<String,Integer> cp=new HashMap<>();
+        final CountDownLatch latch=new CountDownLatch(1);
+        StockfishOpponent.Result result; Exception failure;
+        GuardRequest(ChessGame.Position root,int target,int sigma){
+            this.root=root;this.target=target;this.sigma=sigma;
+            for(ChessGame.Move m:ChessGame.legal(root))legal.add(m.uci());
+        }
+    }
+    public void setDiagnostics(EngineDiagnostics diagnostics){this.diagnostics=diagnostics;}
+    private void trace(String label,String detail){
+        EngineDiagnostics d=diagnostics;if(d!=null)d.record(label,detail);
+    }
+    private void failRequest(String text){
+        GuardRequest r=request;request=null;
+        if(r!=null){r.failure=new IllegalStateException(text);r.latch.countDown();trace("GUARD_ERR",text);}
+    }
+    public void cancelGuard(){
+        synchronized(lock){
+            if(request==null)return;
+            failRequest("Position ou réglages changés");
+            if(phase==2&&!awaitingReady){
+                phase=0;activeFen=null;awaitingReady=true;send("stop");send("isready");
+            }
+        }
+    }
+    public StockfishOpponent.Result selectGuarded(ChessGame.Position root,int target,int sigma)throws Exception{
+        GuardRequest r=new GuardRequest(root,target,sigma);
+        if(r.legal.isEmpty())return null;
+        if(r.legal.size()==1)return new StockfishOpponent.Result(r.legal.get(0),100,100,1);
+        synchronized(lock){
+            if(closed||writer==null)throw new IllegalStateException("Moteur de jauge absent");
+            if(request!=null)throw new IllegalStateException("Garde-fou précédent actif");
+            if(!root.fen().equals(desiredFen))throw new IllegalStateException("FEN jauge différente de la partie");
+            request=r;
+            trace("GUARD_START","Réutilisation moteur et hash jauge11→MultiPV12, coups="+r.legal.size()+
+                " target="+target+" sigma="+sigma+" fen="+root.fen());
+            if(ready&&!awaitingReady&&phase==0&&root.fen().equals(activeFen))startGuard();
+        }
+        boolean ok;
+        try{ok=r.latch.await(90,TimeUnit.SECONDS);}
+        catch(InterruptedException ex){cancelGuard();Thread.currentThread().interrupt();throw ex;}
+        if(!ok){cancelGuard();throw new IllegalStateException("MultiPV12 dépasse 90 secondes, aucun coup non vérifié joué");}
+        if(r.failure!=null)throw r.failure;
+        if(r.result==null)throw new IllegalStateException("Garde-fou sans résultat");
+        return r.result;
+    }
+    private void startGuard(){
+        GuardRequest r=request;
+        if(r==null||phase!=0||paused||awaitingReady||closed)return;
+        if(!r.root.fen().equals(activeFen)){failRequest("FEN active incompatible");return;}
+        phase=2;r.cp.clear();
+        send("setoption name MultiPV value "+r.legal.size());
+        send("position fen "+activeFen);
+        send("go depth 12");
+        trace("GUARD_SEARCH","same Stockfish process + hash, MultiPV="+r.legal.size()+" depth=12");
+    }
+    private void guardInfo(String line){
+        synchronized(lock){
+            GuardRequest r=request;
+            if(r==null||phase!=2||awaitingReady)return;
+            try{
+                String depth=tokenAfter(line,"depth"),move=tokenAfter(line,"pv");
+                if(depth==null||!depth.equals("12")||move==null||!r.legal.contains(move))return;
+                String cp=tokenAfter(line,"cp"),mate=tokenAfter(line,"mate");
+                if(cp==null&&mate==null)return;
+                r.cp.put(move,cp!=null?Integer.parseInt(cp):
+                    (Integer.parseInt(mate)>0?10000:-10000));
+            }catch(RuntimeException ex){trace("GUARD_PARSE_ERR",String.valueOf(ex));}
+        }
+    }
+    private void finishedSearch(){
+        synchronized(lock){
+            if(awaitingReady)return;
+            if(phase==1){
+                phase=0;
+                if(request!=null&&request.root.fen().equals(activeFen))startGuard();
+            }else if(phase==2){
+                GuardRequest r=request;request=null;phase=0;
+                if(r==null)return;
+                try{
+                    if(r.cp.size()!=r.legal.size())
+                        throw new IllegalStateException("MultiPV 12 incomplet ("+r.cp.size()+"/"+r.legal.size()+")");
+                    List<Integer> scores=new ArrayList<>();
+                    for(String m:r.legal){
+                        Integer cp=r.cp.get(m);
+                        if(cp==null)throw new IllegalStateException("coup sans score "+m);
+                        scores.add(cp);
+                    }
+                    List<StockfishPrecision.Candidate> ranking=StockfishPrecision.normalize(r.legal,scores);
+                    TacticalGuard.Decision choice=TacticalGuard.choose(ranking,r.target,r.sigma,guardRandom);
+                    int whiteSign=r.root.white?1:-1;
+                    for(StockfishPrecision.Candidate m:ranking)
+                        trace("GUARD_RANK",m.uci+" cp="+m.scoreCp+
+                            " relative="+String.format(java.util.Locale.US,"%.1f",m.relativeQuality)+"%");
+                    trace("GUARD_CHOSEN","raw="+choice.original.move.uci+" chosen="+choice.chosen.move.uci+
+                        " draw="+choice.chosen.requested+" lossCp="+choice.lossCp+
+                        " limitCp="+choice.limitCp+" override="+choice.intervened);
+                    r.result=new StockfishOpponent.Result(choice.chosen.move.uci,
+                        choice.chosen.move.relativeQuality,choice.chosen.requested,r.legal.size(),
+                        choice.chosen.move.scoreCp*whiteSign,choice.bestCp*whiteSign,
+                        choice.lossCp,choice.limitCp,choice.intervened);
+                }catch(Exception ex){r.failure=ex;trace("GUARD_ERR",String.valueOf(ex));}
+                finally{r.latch.countDown();}
+            }
+        }
+    }
 
     public StockfishBridge(Activity activity,Listener listener){
         this.activity=activity;
