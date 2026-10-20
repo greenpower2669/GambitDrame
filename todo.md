@@ -155,6 +155,6 @@ Les commits purement Markdown n'ont pas besoin de recompiler Android ; workflow 
 - [x] Conserver la couleur capturée dans chaque annotation ; même pièce = même couleur pour toutes ses flèches, y compris après déplacement. Une flèche tracée depuis une case vide reçoit une couleur de secours liée à la case.
 - [x] Uniquement dire la destination à la voix après un geste flèche (« E4 »), sans annonce du départ ni phrase « flèche vers ».
 - [x] Tests JVM de couleurs uniques, opacité, identité mobile, roques, promotion et en passant, et conservation des annotations ; CI exécutée automatiquement.
-- [ ] Confirmer GitHub Actions run #53 (39439482987) : Gradle, APK directe 0.4.5, publication de prérelease ; ne pas annoncer de succès avant vérification.
+- [x] GitHub Actions run #53 (39439482987) : tests JVM, compilation Android, vérification du binaire et publication de l’APK directe 0.4.5 dans gd-test-53, 176717305 octets. Essais Samsung encore à faire.
 - [ ] Vérification physique Samsung Android 16 : flèches en demi-transparence et couleurs différenciées sur cases claires/foncées, lecture vocale, plein écran, interactions, deux cavaliers/pions distincts.
 - [ ] Pas de merge vers main ni release publique sans accord explicite.
