@@ -676,7 +676,8 @@ public final class MainActivity extends Activity {
                 " | "+description);
     }
     private String currentEngineReport(){
-        return "GambitDrame 0.4.3 / Android "+Build.VERSION.RELEASE+
+        return "GambitDrame 0.4.6 / Android "+Build.VERSION.RELEASE+
+            "\\nAdaptatif="+adaptiveOpponent+" paramètres="+adaptiveSensitivity+"/"+adaptiveRecovery+"/"+adaptiveStability+
             "\nMode adversaire="+opponentMode+" (0=Lichess, 1=Stockfish)"+
             "\nMoteur approfondi="+deepMode+" / profondeur="+deepDepth+
             "\nGarde fou partagé prof11→12="+tacticalGuard+
@@ -711,11 +712,25 @@ public final class MainActivity extends Activity {
             .setNeutralButton("PARTAGER",(d,w)->{
                 Intent send=new Intent(Intent.ACTION_SEND);
                 send.setType("text/plain");
-                send.putExtra(Intent.EXTRA_SUBJECT,"GambitDrame 0.4.3 GET ERR");
+                send.putExtra(Intent.EXTRA_SUBJECT,"GambitDrame 0.4.6 GET ERR");
                 send.putExtra(Intent.EXTRA_TEXT,report);
                 startActivity(Intent.createChooser(send,"Partager le diagnostic GambitDrame"));
             })
             .setNegativeButton("Fermer",null).show();
+    }
+    private int[] highlightedSquares(){
+        String move=null;
+        if(trialMode&&!trialMoves.isEmpty())move=trialMoves.get(trialMoves.size()-1);
+        else {
+            int ply=Math.min(review.ply(),moves.size());
+            if(ply>0)move=moves.get(ply-1);
+        }
+        if(move==null||move.length()<4)return new int[]{-1,-1};
+        int f1=move.charAt(0)-'a',r1=move.charAt(1)-'0';
+        int f2=move.charAt(2)-'a',r2=move.charAt(3)-'0';
+        if(f1<0||f1>7||f2<0||f2>7||r1<1||r1>8||r2<1||r2>8)
+            return new int[]{-1,-1};
+        return new int[]{(8-r1)*8+f1,(8-r2)*8+f2};
     }
     private ChessGame.Position current(){return positions.get(positions.size()-1);}
     private ChessGame.Position displayed(){
@@ -761,6 +776,70 @@ public final class MainActivity extends Activity {
         if(stockfishBridge!=null)stockfishBridge.analyze(displayed().fen());
     }
     private int dp(float n){return Math.round(getResources().getDisplayMetrics().density*n);}
+    private String adviceText(boolean many,boolean detailed){
+        ChessGame.Position p=displayed();
+        List<String> played=new ArrayList<>(moves.subList(0,Math.min(review.ply(),moves.size())));
+        if(trialMode)played.addAll(trialMoves);
+        List<OpeningTheory.Next> theoretical=OpeningTheory.next(played,p);
+        List<StockfishBridge.Suggestion> suggestions=stockfishBridge==null?
+            new ArrayList<>():stockfishBridge.suggestions(p.fen(),many?3:1);
+        StringBuilder sb=new StringBuilder();
+        if(!suggestions.isEmpty()){
+            sb.append("Conseil Stockfish, profondeur ").append(suggestions.get(0).depth)
+                .append(". ");
+            int i=0;
+            for(StockfishBridge.Suggestion suggestion:suggestions){
+                ChessGame.Move matched=null;
+                for(ChessGame.Move m:ChessGame.legal(p))
+                    if(m.uci().equals(suggestion.uci)){matched=m;break;}
+                if(matched==null)continue;
+                sb.append(++i).append(". ").append(OpeningCoach.explain(p,matched,detailed))
+                    .append(" Évaluation des Blancs : ")
+                    .append(String.format(java.util.Locale.FRANCE,"%.2f",
+                        suggestion.whiteCp/100.0)).append(" pions. ");
+            }
+        }else sb.append("Stockfish n'a pas encore terminé l'analyse de cette position. "+
+            "Aucun meilleur coup ne peut être certifié pour le moment. ");
+        if(!theoretical.isEmpty()){
+            sb.append("\nRépertoire théorique local (non exhaustif) : ");
+            int n=0;
+            for(OpeningTheory.Next next:theoretical){
+                if(!many&&n>=1)break;
+                ChessGame.Move matched=null;
+                for(ChessGame.Move m:ChessGame.legal(p))
+                    if(m.uci().equals(next.uci)){matched=m;break;}
+                if(matched==null)continue;
+                sb.append(next.opening).append(" : ")
+                    .append(OpeningCoach.explain(p,matched,detailed))
+                    .append(" Idée : ").append(next.idea).append(" ");
+                n++;
+            }
+            sb.append("Un coup hors du petit livre n'est pas nécessairement mauvais.");
+        }else if(detailed){
+            sb.append("\nAucune suite reconnue dans le petit répertoire local. "+
+                "L'analyse Stockfish peut rester valable hors théorie.");
+        }
+        return sb.toString();
+    }
+    private void showMoveAdvice(boolean many){
+        String shortText=adviceText(many,false),longText=adviceText(many,true);
+        engineLog.record("HELP","userRequested multi="+many+" fen="+displayed().fen());
+        TextView t=new TextView(this);
+        t.setText(shortText);t.setTextSize(17);t.setTextColor(Color.BLACK);
+        t.setPadding(dp(12),dp(10),dp(12),dp(12));
+        ScrollView scroll=new ScrollView(this);scroll.addView(t);
+        new AlertDialog.Builder(this).setTitle(many?
+            "Quels coups sont possibles et pourquoi ?":"Quel coup jouer ?")
+            .setView(scroll)
+            .setPositiveButton("ÉCOUTER",(d,w)->{if(audio!=null)audio.say(shortText);})
+            .setNeutralButton("DÉTAILS",(d,w)->new AlertDialog.Builder(this)
+                .setTitle("Explications et provenance")
+                .setMessage(longText)
+                .setPositiveButton("ÉCOUTER",(dd,ww)->{
+                    if(audio!=null)audio.say(longText);
+                }).setNegativeButton("Fermer",null).show())
+            .setNegativeButton("Fermer",null).show();
+    }
     private void describeEvaluation(){
         if(audio==null)return;
         String fen=displayed().fen();
@@ -885,7 +964,7 @@ public final class MainActivity extends Activity {
         analyzeDisplayed();
         if(audio!=null){
             audio.play(AccessibleAudio.Sound.NAVIGATE);
-            audio.say(review.ply()==0?"Début de la partie.":spokenAt(review.ply()));
+            // GD-015: manual playback navigation is visual; speech only on explicit request.
         }
     }
     private void toggleReplay(){
@@ -1066,14 +1145,11 @@ public final class MainActivity extends Activity {
         if(selected<0){
             if(c!='.'&&Character.isUpperCase(c)==p.white){
                 selected=sq;
-                if(audio!=null){
-                    audio.play(AccessibleAudio.Sound.SELECT);
-                    audio.say(ChessNarration.squareContents(p,sq)+", sélectionné.");
-                }
-            }else if(audio!=null)audio.say(ChessNarration.squareContents(p,sq));
+                if(audio!=null)audio.play(AccessibleAudio.Sound.SELECT);
+            }
         }else if(selected==sq){
             selected=-1;
-            if(audio!=null)audio.say("Sélection annulée.");
+            if(audio!=null)audio.play(AccessibleAudio.Sound.SELECT);
         }
         else {
             List<ChessGame.Move> candidates=new ArrayList<>();
@@ -1089,11 +1165,8 @@ public final class MainActivity extends Activity {
                 return;
             }
             selected=(c!='.'&&Character.isUpperCase(c)==p.white)?sq:-1;
-            if(audio!=null){
-                audio.play(selected<0?AccessibleAudio.Sound.INVALID:AccessibleAudio.Sound.SELECT);
-                audio.say(selected<0?"Destination illégale. "+ChessNarration.squareContents(p,sq):
-                    ChessNarration.squareContents(p,sq)+", sélectionné.");
-            }
+            if(audio!=null)audio.play(selected<0?
+                AccessibleAudio.Sound.INVALID:AccessibleAudio.Sound.SELECT);
         }
         chessView.invalidate();
         if(fullscreenChessView!=null)fullscreenChessView.invalidate();
@@ -1684,6 +1757,7 @@ public final class MainActivity extends Activity {
             canvas.save();
             canvas.translate(gaugeWidth,0);
             float cell=side/8f;char[] b=displayed().board;
+            int[] last=highlightedSquares();
             for(int i=0;i<64;i++){
                 int x=i%8,y=i/8;float left=x*cell,top=y*cell;
                 boolean light=(x+y)%2==0;
@@ -1693,6 +1767,17 @@ public final class MainActivity extends Activity {
                 else if(pieceTheme>=3)paint.setColor(light?0xffe3e6d2:0xff78927b);
                 else paint.setColor(light?0xffdde4cf:0xff7d9582);
                 canvas.drawRect(left,top,left+cell,top+cell,paint);
+                if(i==last[0]||i==last[1]){
+                    // Bold contrasting square corners remain visible on light and dark
+                    // squares without covering the wooden piece or colored arrows.
+                    paint.setStyle(Paint.Style.STROKE);
+                    paint.setStrokeWidth(Math.max(dp(3),cell*.07f));
+                    paint.setColor(i==last[0]?0xff1861c9:0xffffa50c);
+                    float inset=cell*.055f;
+                    canvas.drawRoundRect(left+inset,top+inset,
+                        left+cell-inset,top+cell-inset,cell*.11f,cell*.11f,paint);
+                    paint.setStyle(Paint.Style.FILL);
+                }
                 if(selected==i){
                     paint.setColor(0xfffac740);
                     canvas.drawRect(left+2,top+2,left+cell-2,top+cell-2,paint);
