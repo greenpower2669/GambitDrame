@@ -112,3 +112,13 @@ Les commits purement Markdown n'ont pas besoin de recompiler Android ; workflow 
 - Prérelease `gd-test-27` : APK directe `GambitDrame-v0.4.2-debug-arm64.apk` (176 673 417 octets), lien https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-27/GambitDrame-v0.4.2-debug-arm64.apk ; pas de ZIP à décompresser.
 - GET ERR : journal Stockfish local copiable et partageable, scores CP et rangs de tous les candidats, curseurs/modes, score réellement sélectionné, cas `BEST_FORCED_BY_NEAREST_SCORE` et `ALL_SCORES_EQUAL`, traces de l'analyse gauche en profondeur 11 vs choix profondeur 1, erreurs moteur.
 - Tests manuels Samsung Android 16 restent requis pour vérifier le moteur UCI et l'ergonomie réelle. Rien fusionné sur main.
+
+
+## GD-012 — Garde-fou tactique / jauges juxtaposées, 20/10/2026
+- [x] Réutiliser le processus UCI de Stockfish de la jauge : profondeur11 terminée puis recherche de tous les coups au niveau12, table hash conservée.
+- [x] Implémenter limite de pertes centipions selon précision + regression pure Java sur exemple dame offerte, conserver les sacrifices évalués correctement.
+- [x] Case cochable Garde-fou tactique persistée, activée initialement dans le mode rapide, désactivable ; garder mode MultiPV approfondi séparé et mode1 historique.
+- [x] Superposition fine dans jauge gauche (prédiction score choisi et meilleur possible), texte explicatif, journal GET ERR pour tous les scores/override.
+- [ ] Confirmer succès des tests JVM et compilation Android sur dernier commit / récupérer APK directe officielle GitHub.
+- [ ] Faire tester sur Samsung SM-A576B Android16 : temps de réponse à 20–40 coups légaux MultiPV12, réponse vs force, animation jauges et bouton checkbox, légalité coups et absence de mémoire excessive, GET ERR et reprise après pause.
+- [ ] Si délais >tolérance réelle ou scores insuffisants, optimiser le plan profond (budgets, cache, recherche ciblée avec preuve), sans fausse prétention de réutilisation d'un simple CP.
