@@ -21,11 +21,25 @@ public final class StockfishOpponent {
     public static final class Result {
         public final String uci,details;
         public final double selectedQuality,requestedQuality;
+        public final Integer projectedWhiteCp,bestWhiteCp;
+        public final int lossCp,limitCp;
+        public final boolean intervened,guarded;
         public Result(String uci,double quality,double requested,int legal){
             this.uci=uci;selectedQuality=quality;requestedQuality=requested;
+            projectedWhiteCp=null;bestWhiteCp=null;
+            lossCp=0;limitCp=0;intervened=false;guarded=false;
             details=String.format(java.util.Locale.FRANCE,
                 "Stockfish : coup %s, qualité relative %.1f%% (cible tirée %.1f%%), %d coups évalués",
                 uci,quality,requested,legal);
+        }
+        public Result(String uci,double quality,double requested,int legal,
+                      int whiteCp,int bestWhite,int loss,int cap,boolean override){
+            this.uci=uci;selectedQuality=quality;requestedQuality=requested;
+            projectedWhiteCp=whiteCp;bestWhiteCp=bestWhite;
+            lossCp=loss;limitCp=cap;intervened=override;guarded=true;
+            details=String.format(java.util.Locale.FRANCE,
+                "Stockfish profondeur 12 : %s, qualité %.1f%%, cible %.1f%% ; perte %d/%d cp%s ; %d coups",
+                uci,quality,requested,loss,cap,override?" (garde-fou actif)":"",legal);
         }
     }
     private final Context context;
