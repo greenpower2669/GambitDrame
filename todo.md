@@ -119,6 +119,12 @@ Les commits purement Markdown n'ont pas besoin de recompiler Android ; workflow 
 - [x] Implémenter limite de pertes centipions selon précision + regression pure Java sur exemple dame offerte, conserver les sacrifices évalués correctement.
 - [x] Case cochable Garde-fou tactique persistée, activée initialement dans le mode rapide, désactivable ; garder mode MultiPV approfondi séparé et mode1 historique.
 - [x] Superposition fine dans jauge gauche (prédiction score choisi et meilleur possible), texte explicatif, journal GET ERR pour tous les scores/override.
-- [ ] Confirmer succès des tests JVM et compilation Android sur dernier commit / récupérer APK directe officielle GitHub.
+- [x] Tests JVM, compilation Android et APK directe v0.4.3 vérifiés dans GitHub Actions #37.
 - [ ] Faire tester sur Samsung SM-A576B Android16 : temps de réponse à 20–40 coups légaux MultiPV12, réponse vs force, animation jauges et bouton checkbox, légalité coups et absence de mémoire excessive, GET ERR et reprise après pause.
 - [ ] Si délais >tolérance réelle ou scores insuffisants, optimiser le plan profond (budgets, cache, recherche ciblée avec preuve), sans fausse prétention de réutilisation d'un simple CP.
+
+## GD-012 — Livraison CI confirmée
+- GitHub Actions #37, https://github.com/greenpower2669/GambitDrame/actions/runs/39426144750 : success, commit `faa696ba9e86c52808087e8f3f04a640b4a36c59`.
+- Tests confirmés dans le log : `TACTICAL_GUARD_TESTS_OK 8`, `STOCKFISH_PRECISION_TESTS_OK 18`, `CHESS_TESTS_OK 18`, `BOARD_ARROWS_TESTS_OK 4`; `BUILD SUCCESSFUL in 1m 19s`.
+- Prérelease `gd-test-37`, APK **directe non ZIP** `GambitDrame-v0.4.3-debug-arm64.apk`, 176684097 octets : https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-37/GambitDrame-v0.4.3-debug-arm64.apk.
+- ⚠️ Validation Android 16 physique à faire : UCI pause/reprise, latence MultiPV12, score et bande prédictive, voix, journal GET ERR. CI ≠ preuve de performance réelle sur Samsung. Pas de fusion main.
