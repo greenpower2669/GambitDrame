@@ -133,3 +133,9 @@
 - Tests confirmés dans le log : `TACTICAL_GUARD_TESTS_OK 8`, `STOCKFISH_PRECISION_TESTS_OK 18`, `CHESS_TESTS_OK 18`, `BOARD_ARROWS_TESTS_OK 4`; `BUILD SUCCESSFUL in 1m 19s`.
 - Prérelease `gd-test-37`, APK **directe non ZIP** `GambitDrame-v0.4.3-debug-arm64.apk`, 176684097 octets : https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-37/GambitDrame-v0.4.3-debug-arm64.apk.
 - ⚠️ Validation Android 16 physique à faire : UCI pause/reprise, latence MultiPV12, score et bande prédictive, voix, journal GET ERR. CI ≠ preuve de performance réelle sur Samsung. Pas de fusion main.
+
+
+## GD-013 — Journal de développement analyseur (20/10/2026)
+- Mise en place moteur étude Stockfish local profondeur9 (N+1 positions, une seule session UCI), qualité par perte cp plafonnée, statistiques Blancs/Noirs, répertoire d'ouverture local, archive JSON, graphe historique et réussite par ouverture.
+- Vérifications CI : StudyMetricsTest ajouté au workflow. Tentatives préliminaires #42/#43 échec compilation Java StudyTrendView.drawText(String,float,float) sans argument Paint ; correction apportée au commit 7dcb94c, à confirmer par run ultérieur. Pas de test Samsung physique.
+- Limite métrique : évaluation séparée de deux positions à même profondeur peut subir bruit; valeurs expérimentales non assimilables à la précision Lichess. Import accepte JSON archive et valide séquence de coups.
