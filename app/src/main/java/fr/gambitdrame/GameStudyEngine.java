@@ -137,6 +137,16 @@ public final class GameStudyEngine {
             record.put("theoryCompared",opening.compared);
             record.put("theoryPercent",opening.percent);
             record.put("theoryText",opening.display());
+            ChessGame.Position last=positions.get(positions.size()-1);
+            int repeated=0;
+            for(ChessGame.Position pos:positions)
+                if(pos.repetitionKey().equals(last.repetitionKey()))repeated++;
+            String outcome=ChessGame.outcome(last,repeated);
+            String result=outcome.startsWith("Échec et mat")?
+                (last.white?"0-1":"1-0"):
+                ((outcome.startsWith("Pat")||outcome.startsWith("Nulle"))?"1/2-1/2":"*");
+            record.put("result",result);
+            record.put("outcome",result.equals("*")?"Partie non terminée":outcome);
             record.put("depth",DEPTH);
             record.put("metric","exp(-centipawnLoss/180) × 100; sigma=écart-type des précisions par coup (points), pas sigma du curseur adverse");
             return record;
