@@ -121,3 +121,9 @@
 - Tests confirmés dans le log : `TACTICAL_GUARD_TESTS_OK 8`, `STOCKFISH_PRECISION_TESTS_OK 18`, `CHESS_TESTS_OK 18`, `BOARD_ARROWS_TESTS_OK 4`; `BUILD SUCCESSFUL in 1m 19s`.
 - Prérelease `gd-test-37`, APK **directe non ZIP** `GambitDrame-v0.4.3-debug-arm64.apk`, 176684097 octets : https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-37/GambitDrame-v0.4.3-debug-arm64.apk.
 - ⚠️ Validation Android 16 physique à faire : UCI pause/reprise, latence MultiPV12, score et bande prédictive, voix, journal GET ERR. CI ≠ preuve de performance réelle sur Samsung. Pas de fusion main.
+
+
+## GD-013 — Entrée rapide (20/10/2026)
+- Études de partie : `GameStudyEngine.java` (analyse offline prof9), `StudyMetrics.java` (pertes centipions et sigma descriptive), `OpeningTheory.java` (petit livre non exhaustif), `StudyTrendView.java` (graphique), UI/journal `MainActivity.java`.
+- Contrat : ne pas confondre précision indicative, sigma réel, sigma du curseur, conformité théorique et taux de réussite ; détail dans `brain.md` / `todo.md`.
+- Livraison v0.4.4 et validation Android16 à confirmer ; ne pas fusionner main.
