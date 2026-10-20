@@ -73,3 +73,11 @@ L'adversaire humain doit échantillonner des coups humains réels, avec continui
 - Tests logs : CHESS_TESTS_OK 18 ; HUMAN_POLICY_TESTS_OK 130 choices e4=61 d4=39 ; REVIEW_AND_GAUGE_TESTS_OK 21 ; CHESS_NARRATION_TESTS_OK 15 ; STOCKFISH_PRECISION_TESTS_OK 10 ; BOARD_ARROWS_TESTS_OK 4 ; BUILD SUCCESSFUL in 1m18s.
 - Contenus natifs vérifiés ZIP APK : libstockfish.so ARM64 113 750 704 octets + GPL3, Piper fr_FR-upmc-medium.onnx 76 682 529 octets + Sherpa licences.
 - ATTENTION : CI n'a pas testé l'exécution réelle sur Samsung, ni la sélection all-MultiPV à profondeur7 sur téléphone, ni audio Piper avec première phrase / enchaînement, ni glissés/couleurs en contexte réel. Ne pas prétendre « testé téléphone ».
+
+## GD-010 — Nouveau protocole de coups rapides (20/10/2026)
+- Fab préfère le classement des **positions après chacun des coups légaux**, en exploitant les centipions qui sous-tendent la jauge à gauche. Ce n'est pas une lecture des pixels de la jauge.
+- Stockfish adversaire Noirs par défaut, cible 80 % et sigma 5 (gaussienne), qualité relative entre pire 0 et meilleur 100; Lichess expérimental conservé en option. Profondeur 1 sur chaque FEN fille avec un seul moteur réutilisé, orientation de score renversée pour le parent. En cas d'échec, aucune substitution aléatoire.
+- Mode MultiPV complet existant conservé désactivé par défaut; profondeur réglable, testé plus lent.
+- Stylistique : demi-pièces coupées longitudinalement en bois à plat, vue du dessus; second rendu 3D perspective; thème classique conservé; pas de cercle autour des pièces bois.
+- Plein écran dialogue immersif, contrôle de flèches, prévisualisation live, annotation translucide et demande de désactiver l'interception tactile parent ScrollView.
+- Vérifier sur SM-A576B Android 16 le temps de réponse de l'engine, précision des coups, lecture et lisibilité des silhouettes, toucher plein écran, coût mémoire. CI ne teste pas physiquement le téléphone.
