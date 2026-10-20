@@ -9,6 +9,9 @@ import android.os.Handler;
 import android.os.Looper;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.Voice;
+import android.speech.tts.UtteranceProgressListener;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.Locale;
 import java.util.Set;
 
@@ -32,6 +35,12 @@ public final class AccessibleAudio {
     private String state="Voix : initialisation…";
     private String lastMessage="";
     private String pendingMessage=null;
+    private final ConcurrentHashMap<String,java.util.function.Consumer<Boolean>> tracked=new ConcurrentHashMap<>();
+    private final AtomicLong utteranceIds=new AtomicLong();
+    private void finishSpeech(String id,boolean ok){
+        java.util.function.Consumer<Boolean> cb=tracked.remove(id);
+        if(cb!=null)handler.post(()->cb.accept(ok));
+    }
 
     public AccessibleAudio(Activity activity,SharedPreferences prefs,StatusListener listener){
         this.activity=activity;this.prefs=prefs;this.statusListener=listener;
@@ -69,6 +78,12 @@ public final class AccessibleAudio {
             statusListener.onStatus(state);
             return;
         }
+        tts.setOnUtteranceProgressListener(new UtteranceProgressListener(){
+            @Override public void onStart(String id){}
+            @Override public void onDone(String id){finishSpeech(id,true);}
+            @Override public void onError(String id){finishSpeech(id,false);}
+            @Override public void onStop(String id,boolean interrupted){finishSpeech(id,false);}
+        });
         int code=tts.setLanguage(Locale.FRANCE);
         if(code==TextToSpeech.LANG_MISSING_DATA||
            code==TextToSpeech.LANG_NOT_SUPPORTED){
@@ -155,6 +170,29 @@ public final class AccessibleAudio {
         tts.speak(message,TextToSpeech.QUEUE_ADD,null,
             "gambit-"+System.nanoTime());
     }
+    /**
+     * The callback indicates REAL completed playback: Piper waits for AudioTrack
+     * frame-head drainage, Android TTS uses the utterance onDone signal.
+     * Cancellation/errors deliver false, so the game never remains blocked.
+     */
+    public void sayTracked(String message,java.util.function.Consumer<Boolean> finished){
+        if(finished==null){say(message);return;}
+        if(closed||!voiceOn()||message==null||message.isEmpty()){
+            handler.post(()->finished.accept(false));return;
+        }
+        lastMessage=message;
+        if(piper!=null&&!piper.hasFailed()){
+            piper.speakTracked(message,finished);
+            return;
+        }
+        if(!initialized||tts==null){
+            handler.post(()->finished.accept(false));return;
+        }
+        String id="gambit-move-"+utteranceIds.incrementAndGet();
+        tracked.put(id,finished);
+        int code=tts.speak(message,TextToSpeech.QUEUE_ADD,null,id);
+        if(code!=TextToSpeech.SUCCESS)finishSpeech(id,false);
+    }
     public void repeat(){
         if(lastMessage.isEmpty())say("Aucun message à répéter.");
         else say(lastMessage);
@@ -174,6 +212,7 @@ public final class AccessibleAudio {
     }
     public void stopSpeech(){
         pendingMessage=null;
+        for(String id:tracked.keySet())finishSpeech(id,false);
         if(piper!=null)piper.stop();
         if(tts!=null&&initialized)tts.stop();
     }
