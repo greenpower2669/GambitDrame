@@ -31,7 +31,12 @@ class PiperSpeechEngine(context: Context, initialSpeakerId: Int,
         Thread(r,"Gambit-Piper-serial").apply { isDaemon = true }
     }
     private val lock = Object()
-    private val pending = ArrayDeque<String>()
+    private data class Utterance(val message:String,val completed:Consumer<Boolean>?)
+    private val pending = ArrayDeque<Utterance>()
+    private fun finished(entry:Utterance,ok:Boolean){
+        val callback=entry.completed ?: return
+        ui.post { callback.accept(ok) }
+    }
     private val cancelled = AtomicInteger(0)
     @Volatile private var closed = false
     @Volatile private var usable = false
@@ -71,6 +76,9 @@ class PiperSpeechEngine(context: Context, initialSpeakerId: Int,
                 drain()
             }catch(ex:Throwable){
                 failed=true
+                synchronized(lock){
+                    while(pending.isNotEmpty())finished(pending.removeFirst(),false)
+                }
                 post("Piper indisponible : ${ex.javaClass.simpleName}. Secours Android.")
             }
         }
@@ -81,12 +89,19 @@ class PiperSpeechEngine(context: Context, initialSpeakerId: Int,
     fun setSpeed(value:Float){speed=value.coerceIn(0.65f,1.3f)}
     fun setGapMs(value:Long){gapMs=value.coerceIn(100L,2000L)}
 
-    fun speak(message:String) {
-        if(closed||failed||message.isBlank())return
+    fun speak(message:String){speakTracked(message,null)}
+    fun speakTracked(message:String,completion:Consumer<Boolean>?){
+        if(closed||failed||message.isBlank()){
+            if(completion!=null)ui.post{completion.accept(false)}
+            return
+        }
         synchronized(lock){
-            // Avoid unbounded backlog: drop redundant quick help when saturated.
-            if(pending.size>=12)pending.removeFirst()
-            pending.addLast(message)
+            // A tracked move announcement must never be discarded as backlog.
+            if(pending.size>=12){
+                val remove=pending.firstOrNull { it.completed==null }
+                if(remove!=null)pending.remove(remove)
+            }
+            pending.addLast(Utterance(message,completion))
             if(usable&&!draining){
                 draining=true
                 worker.execute { drain() }
@@ -98,24 +113,29 @@ class PiperSpeechEngine(context: Context, initialSpeakerId: Int,
         synchronized(lock){draining=true}
         try{
             while(!closed){
-                val message=synchronized(lock){if(pending.isEmpty())null else pending.removeFirst()} ?: break
+                val utterance=synchronized(lock){if(pending.isEmpty())null else pending.removeFirst()} ?: break
                 val marker=cancelled.get()
-                val tts=engine ?: break
+                val tts=engine
+                var played=false
                 try{
-                    // Synthesize an entire utterance, never a series of interrupted fragments.
-                    val pcm=tts.generate(message,sid=speakerId,speed=speed)
-                    if(marker==cancelled.get()&&!closed){
-                        play(pcm.samples,pcm.sampleRate,marker,false)
-                        // Wait only after the real audio completion, not instead of it.
-                        var remaining=gapMs
-                        while(remaining>0&&!closed&&marker==cancelled.get()){
-                            val step=minOf(remaining,40L)
-                            Thread.sleep(step)
-                            remaining-=step
+                    if(tts!=null){
+                        val pcm=tts.generate(utterance.message,sid=speakerId,speed=speed)
+                        if(marker==cancelled.get()&&!closed){
+                            // play() returns only after the actual AudioTrack playback head
+                            // has crossed the last submitted PCM frame.
+                            played=play(pcm.samples,pcm.sampleRate,marker,false)
+                            var remaining=gapMs
+                            while(remaining>0&&!closed&&marker==cancelled.get()){
+                                val step=minOf(remaining,40L)
+                                Thread.sleep(step)
+                                remaining-=step
+                            }
                         }
                     }
                 }catch(ex:Throwable){
                     post("Piper : lecture impossible (${ex.javaClass.simpleName})")
+                }finally{
+                    finished(utterance,played&&!closed&&marker==cancelled.get())
                 }
             }
         }finally{
@@ -180,7 +200,9 @@ class PiperSpeechEngine(context: Context, initialSpeakerId: Int,
     }
     fun stop(){
         cancelled.incrementAndGet()
-        synchronized(lock){pending.clear()}
+        synchronized(lock){
+            while(pending.isNotEmpty())finished(pending.removeFirst(),false)
+        }
         val player=track
         try{
             player?.pause()
