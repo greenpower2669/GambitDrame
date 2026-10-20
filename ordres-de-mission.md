@@ -117,3 +117,5 @@
 - Donner un indice de concordance aux ouvertures théoriques et un bilan séparé de réussite par ouverture ; les coups rares peuvent être corrects, pas de condamnation d'une sortie du livre.
 - Ajouter journal persistant, migration par export/import, graphiques de statistiques par parties analysées.
 - Travail exclusivement sur la branche proposal, sans merge main, APK Android ARM64 .apk directe après CI réussie, tests Samsung ensuite. Code 0.4.4 en cours, ne pas prétendre livraison avant vérification.
+
+- GD-013 livraison test vérifiée : run #48 (39431587270) success, tag gd-test-48, APK ARM64 v0.4.4 176715029 octets ; prochaine étape tester Android16 et export JSON avant installation pouvant exiger désinstallation (signature debug éphémère).
