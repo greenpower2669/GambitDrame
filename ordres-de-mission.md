@@ -89,3 +89,9 @@
 - Fab juge incohérente la force de Stockfish malgré le curseur, veut `log` et `GET ERR` pour comprendre. Conserver comportement de sélection existant pour enregistrer des preuves, ne pas le modifier silencieusement.
 - Journal local exportable depuis interface sans ADB/PC, dernier réglage (cible/variabilité/mode), FEN, rangs et CP de chaque coup légal, score cible tiré et score réellement choisi, raisons de sélection à 100 %, erreurs UCI avec stacktrace, durées et coups.
 - Mise à jour tests, APK directe en prérelease depuis Actions, mémoires vivantes du projet ; pas de main merge.
+
+## GD-011 — Livrable v0.4.2 vérifié en CI, 20/10/2026
+- GitHub Actions #27 `39415650189` sur commit `4b5b68dc23f4c6c2938ec77c4db4509b8ea5906c`: completed success, BUILD SUCCESSFUL (1m20s). Tests précision 18, règles 18, revue/jauge 21, narrations 15, flèches 4.
+- Prérelease `gd-test-27` : APK directe `GambitDrame-v0.4.2-debug-arm64.apk` (176 673 417 octets), lien https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-27/GambitDrame-v0.4.2-debug-arm64.apk ; pas de ZIP à décompresser.
+- GET ERR : journal Stockfish local copiable et partageable, scores CP et rangs de tous les candidats, curseurs/modes, score réellement sélectionné, cas `BEST_FORCED_BY_NEAREST_SCORE` et `ALL_SCORES_EQUAL`, traces de l'analyse gauche en profondeur 11 vs choix profondeur 1, erreurs moteur.
+- Tests manuels Samsung Android 16 restent requis pour vérifier le moteur UCI et l'ergonomie réelle. Rien fusionné sur main.
