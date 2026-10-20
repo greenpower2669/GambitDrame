@@ -375,6 +375,7 @@ public final class MainActivity extends Activity {
         SeekBar advancedDepth=new SeekBar(this);
         advancedDepth.setMax(19);advancedDepth.setProgress(deepDepth-1);
         advancedDepth.setEnabled(deepMode);
+        tacticalCheck.setEnabled(!deepMode);
         root.addView(advancedDepth);
         advancedDepth.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener(){
             @Override public void onProgressChanged(SeekBar s,int progress,boolean fromUser){
@@ -390,12 +391,13 @@ public final class MainActivity extends Activity {
         });
         advanced.setOnCheckedChangeListener((b,on)->{
             deepMode=on;advancedDepth.setEnabled(on);
+            tacticalCheck.setEnabled(!on);
             prefs.edit().putBoolean("precisionDeep",on).apply();
             engineLog.record("SETTING","advancedMultiPV="+on+" depth="+deepDepth);
             updateEngineDebugStatus("Mode de calcul modifié");
             revision++;failedBotRevision=-1;scheduleBot();
         });
-        label(root,"Rapide (défaut) : chaque coup légal est joué sur une copie, puis sa position est évaluée à profondeur 1.",14);
+        label(root,"Garde-fou coché : même Stockfish que la jauge 11, continuation profondeur 12 sur tous les coups. Mode approfondi : MultiPV paramétrable. Garde-fou décoché : ancien mode rapide profondeur 1.",14);
         label(root,"Stockfish classe TOUS les coups légaux entre pire=0 et meilleur=100. Il s'agit d'une qualité RELATIVE à cette position, pas de l'indice de précision Chess.com ni d'un Elo.",13);
         TextView precisionLabel=label(root,"Précision cible Stockfish : "+precisionTarget+" %",16);
         SeekBar targetSlider=new SeekBar(this);
@@ -622,7 +624,7 @@ public final class MainActivity extends Activity {
                 " | "+description);
     }
     private String currentEngineReport(){
-        return "GambitDrame 0.4.2 / Android "+Build.VERSION.RELEASE+
+        return "GambitDrame 0.4.3 / Android "+Build.VERSION.RELEASE+
             "\nMode adversaire="+opponentMode+" (0=Lichess, 1=Stockfish)"+
             "\nMoteur approfondi="+deepMode+" / profondeur="+deepDepth+
             "\nGarde fou partagé prof11→12="+tacticalGuard+
@@ -657,7 +659,7 @@ public final class MainActivity extends Activity {
             .setNeutralButton("PARTAGER",(d,w)->{
                 Intent send=new Intent(Intent.ACTION_SEND);
                 send.setType("text/plain");
-                send.putExtra(Intent.EXTRA_SUBJECT,"GambitDrame 0.4.2 GET ERR");
+                send.putExtra(Intent.EXTRA_SUBJECT,"GambitDrame 0.4.3 GET ERR");
                 send.putExtra(Intent.EXTRA_TEXT,report);
                 startActivity(Intent.createChooser(send,"Partager le diagnostic GambitDrame"));
             })
