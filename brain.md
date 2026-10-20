@@ -106,3 +106,9 @@ L'adversaire humain doit échantillonner des coups humains réels, avec continui
 - `TacticalGuard` : échantillonnage relatif existant puis plafond autorisé de perte par rapport au meilleur CP; à 80 %, limite 60cp ; à 0 %, 1020cp. Valeurs expérimentales non calibrées Elo.
 - `MainActivity` : CheckBox garde-fou en haut; en mode rapide sans case garde l'ancien moteur profondeur1; profondeur approfondie legacy reste paramétrable. Deuxième jauge fine juxtaposée dans la jauge gauche; bleu clair=future position profondeur12, doré=choix, rose=meilleur candidat. GET ERR encore accessible.
 - Portée : ne garantit ni détection absolue de tous les pièges profonds ni force humaine calibrée ; MultiPV12 de tous les coups peut être coûteux sur Samsung, avec délai maximal 90sec et erreur visible plutôt qu'un choix non évalué.
+
+## GD-012 — Livraison CI confirmée
+- GitHub Actions #37, https://github.com/greenpower2669/GambitDrame/actions/runs/39426144750 : success, commit `faa696ba9e86c52808087e8f3f04a640b4a36c59`.
+- Tests confirmés dans le log : `TACTICAL_GUARD_TESTS_OK 8`, `STOCKFISH_PRECISION_TESTS_OK 18`, `CHESS_TESTS_OK 18`, `BOARD_ARROWS_TESTS_OK 4`; `BUILD SUCCESSFUL in 1m 19s`.
+- Prérelease `gd-test-37`, APK **directe non ZIP** `GambitDrame-v0.4.3-debug-arm64.apk`, 176684097 octets : https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-37/GambitDrame-v0.4.3-debug-arm64.apk.
+- ⚠️ Validation Android 16 physique à faire : UCI pause/reprise, latence MultiPV12, score et bande prédictive, voix, journal GET ERR. CI ≠ preuve de performance réelle sur Samsung. Pas de fusion main.
