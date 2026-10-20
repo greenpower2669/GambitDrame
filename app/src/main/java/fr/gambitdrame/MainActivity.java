@@ -54,7 +54,7 @@ public final class MainActivity extends Activity {
     private int opponentMode=1; // 0 = Lichess, 1 = Stockfish
     private int precisionTarget=80,precisionSigma=5;
     private boolean adaptiveOpponent=true;
-    private int adaptiveSensitivity=70,adaptiveRecovery=95,adaptiveStability=70;
+    private int adaptiveSensitivity=70,adaptiveRecovery=95,adaptiveStability=70,adaptiveMaxDepth=14;
     private boolean speechPending=false;
     private long speechSequence=0;
     private Runnable waitingBotApply;
@@ -132,6 +132,7 @@ public final class MainActivity extends Activity {
         adaptiveSensitivity=prefs.getInt("gd015Sensitivity",70);
         adaptiveRecovery=prefs.getInt("gd015Recovery",95);
         adaptiveStability=prefs.getInt("gd015Stability",70);
+        adaptiveMaxDepth=prefs.getInt("gd015MaxDepth",14);
         deepMode=prefs.getBoolean("precisionDeep",false);
         deepDepth=prefs.getInt("precisionDepth",7);
         tacticalGuard=prefs.getBoolean("tacticalGuard",true);
@@ -409,6 +410,23 @@ public final class MainActivity extends Activity {
             n->{adaptiveRecovery=n;prefs.edit().putInt("gd015Recovery",n).apply();});
         addAdaptiveSlider(root,"Stabilité du plan",adaptiveStability,
             n->{adaptiveStability=n;prefs.edit().putInt("gd015Stability",n).apply();});
+        TextView depthTitle=label(root,"Profondeur maximale adaptative : "+adaptiveMaxDepth,14);
+        SeekBar maxDepthBar=new SeekBar(this);
+        maxDepthBar.setMax(4);maxDepthBar.setProgress(adaptiveMaxDepth-12);
+        root.addView(maxDepthBar);
+        maxDepthBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
+            public void onProgressChanged(SeekBar b,int value,boolean fromUser){
+                if(!fromUser)return;
+                adaptiveMaxDepth=12+value;
+                depthTitle.setText("Profondeur maximale adaptative : "+adaptiveMaxDepth);
+                prefs.edit().putInt("gd015MaxDepth",adaptiveMaxDepth).apply();
+                engineLog.record("SETTING","adaptiveMaxDepth="+adaptiveMaxDepth);
+                if(stockfishBridge!=null)stockfishBridge.cancelGuard();
+                revision++;failedBotRevision=-1;scheduleBot();
+            }
+            public void onStartTrackingTouch(SeekBar b){}
+            public void onStopTrackingTouch(SeekBar b){}
+        });
         Switch advanced=new Switch(this);
         advanced.setText("Activer MultiPV approfondi (désactivé par défaut)");
         advanced.setTextColor(Color.BLACK);
@@ -677,7 +695,7 @@ public final class MainActivity extends Activity {
     }
     private String currentEngineReport(){
         return "GambitDrame 0.4.6 / Android "+Build.VERSION.RELEASE+
-            "\\nAdaptatif="+adaptiveOpponent+" paramètres="+adaptiveSensitivity+"/"+adaptiveRecovery+"/"+adaptiveStability+
+            "\\nAdaptatif="+adaptiveOpponent+" paramètres="+adaptiveSensitivity+"/"+adaptiveRecovery+"/"+adaptiveStability+"/"+adaptiveMaxDepth+
             "\nMode adversaire="+opponentMode+" (0=Lichess, 1=Stockfish)"+
             "\nMoteur approfondi="+deepMode+" / profondeur="+deepDepth+
             "\nGarde fou partagé prof11→12="+tacticalGuard+
@@ -1191,11 +1209,14 @@ public final class MainActivity extends Activity {
         final boolean useGuard=tacticalGuard&&!useDeep;
         final boolean useAdaptive=adaptiveOpponent&&engineMode==1;
         final int sensitivity=adaptiveSensitivity,recovery=adaptiveRecovery,stability=adaptiveStability;
+        final int maximumDepth=adaptiveMaxDepth;
+        if(stockfishBridge!=null)stockfishBridge.setOpeningContext(
+            OpeningTheory.measure(moves).name);
         engineLog.record("TURN","START ply="+ply+" rev="+expectedRevision+
             " mode="+engineMode+" target="+target+" sigma="+spread+
             " deep="+useDeep+" depth="+useDepth+" guard="+useGuard+
             " adaptive="+useAdaptive+" sensitivity="+sensitivity+" recovery="+recovery+
-            " stability="+stability+" fen="+initial.fen());
+            " stability="+stability+" maxDepth="+maximumDepth+" fen="+initial.fen());
         botRunning=true;
         botInfo.setText(engineMode==1?(useAdaptive?"Adversaire adaptatif : maintien du plan et contre-jeu…":useDeep?"Stockfish MultiPV approfondi…":useGuard?"Jauge 11 → garde-fou MultiPV 12…":"Stockfish rapide ancien (profondeur 1)…"):
             "Profil Lichess expérimental : sélection d'un coup…");
@@ -1206,7 +1227,7 @@ public final class MainActivity extends Activity {
             try{
                 if(engineMode==1){
                     StockfishOpponent.Result result=useAdaptive?
-                        stockfishBridge.selectGuarded(initial,target,spread,true,sensitivity,recovery,stability):
+                        stockfishBridge.selectGuarded(initial,target,spread,true,sensitivity,recovery,stability,maximumDepth):
                         useGuard?stockfishBridge.selectGuarded(initial,target,spread):
                         stockfishOpponent.select(initial,target,spread,useDeep,useDepth);
                     engineResult=result;
@@ -1634,6 +1655,7 @@ public final class MainActivity extends Activity {
     @Override protected void onResume(){
         super.onResume();
         if(stockfishBridge!=null)analyzeDisplayed();
+        scheduleBot();
     }
     @Override protected void onDestroy(){
         handler.removeCallbacks(botRunnable);
