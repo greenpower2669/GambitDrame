@@ -109,3 +109,11 @@
 - Tests confirmés dans le log : `TACTICAL_GUARD_TESTS_OK 8`, `STOCKFISH_PRECISION_TESTS_OK 18`, `CHESS_TESTS_OK 18`, `BOARD_ARROWS_TESTS_OK 4`; `BUILD SUCCESSFUL in 1m 19s`.
 - Prérelease `gd-test-37`, APK **directe non ZIP** `GambitDrame-v0.4.3-debug-arm64.apk`, 176684097 octets : https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-37/GambitDrame-v0.4.3-debug-arm64.apk.
 - ⚠️ Validation Android 16 physique à faire : UCI pause/reprise, latence MultiPV12, score et bande prédictive, voix, journal GET ERR. CI ≠ preuve de performance réelle sur Samsung. Pas de fusion main.
+
+
+## GD-013 — Mission validée par Fab, 20/10/2026
+- Priorité n°1 : déployer au plus vite une analyse réutilisable des parties personnelles (y compris victoires médiocres et défaites utiles). Précision moyenne et variabilité, erreurs et rattrapages, étude de coups.
+- Garde-fou tactique déjà coché par défaut : conserver son comportement, ne pas retarder l'analyse par sa refonte.
+- Donner un indice de concordance aux ouvertures théoriques et un bilan séparé de réussite par ouverture ; les coups rares peuvent être corrects, pas de condamnation d'une sortie du livre.
+- Ajouter journal persistant, migration par export/import, graphiques de statistiques par parties analysées.
+- Travail exclusivement sur la branche proposal, sans merge main, APK Android ARM64 .apk directe après CI réussie, tests Samsung ensuite. Code 0.4.4 en cours, ne pas prétendre livraison avant vérification.
