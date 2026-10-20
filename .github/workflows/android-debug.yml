@@ -60,7 +60,7 @@ jobs:
           Build: make -C src net; make -C src -j2 build ARCH=armv8 COMP=ndk
           Toolchain: Android NDK r27c (27.2.12479018), aarch64 API 29.
           Stockfish is independent and receives UCI commands over a process pipe.
-          The engine is exclusively used to display analyses; not to select moves for the opponent.
+          The engine is used both for independent position analysis and for the optional precision-controlled Stockfish opponent.
           NOTICE
       - name: Download and verify Sherpa-ONNX Android neural TTS
         shell: bash
@@ -123,6 +123,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          cp app/build/outputs/apk/debug/app-debug.apk GambitDrame-v0.4.0-debug-arm64.apk
+          cp app/build/outputs/apk/debug/app-debug.apk GambitDrame-v0.4.1-debug-arm64.apk
           tag="gd-test-${{ github.run_number }}"
-          gh release create "$tag" GambitDrame-v0.4.0-debug-arm64.apk             --target "${{ github.sha }}" --prerelease             --title "GambitDrame 0.4.0 experimental test ${{ github.run_number }}"             --notes "Stockfish full legal MultiPV precision-relative opponent, Gaussian variation, trial moves, vector board arrows, ivory/ebony contrast themes, real Piper muted warmup and serialized uninterrupted speech. GPL source and Sherpa ONNX. Unverified Samsung hardware. No main merge."
+          gh release create "$tag" GambitDrame-v0.4.1-debug-arm64.apk             --target "${{ github.sha }}" --prerelease             --title "GambitDrame 0.4.1 experimental test ${{ github.run_number }}"             --notes "Stockfish depth-1 legal child-position scoring by default (80 percent, Gaussian sigma 5); adjustable original full MultiPV mode; transparent arrow gestures with scroll interception; fullscreen board; wooden relief and perspective pieces; trials, Piper speech. GPL source and Sherpa ONNX. Unverified Samsung hardware. No main merge."
