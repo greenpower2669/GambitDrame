@@ -158,3 +158,19 @@ Les commits purement Markdown n'ont pas besoin de recompiler Android ; workflow 
 - [x] GitHub Actions run #53 (39439482987) : tests JVM, compilation Android, vérification du binaire et publication de l’APK directe 0.4.5 dans gd-test-53, 176717305 octets. Essais Samsung encore à faire.
 - [ ] Vérification physique Samsung Android 16 : flèches en demi-transparence et couleurs différenciées sur cases claires/foncées, lecture vocale, plein écran, interactions, deux cavaliers/pions distincts.
 - [ ] Pas de merge vers main ni release publique sans accord explicite.
+
+
+## GD-015 — Exécution 20/10/2026, candidature v0.4.6
+- [x] Lire les cinq mémoires projet, Djipie et méthode FabCopilot, auditer les chemins moteur/voix/plateau actuels ; préserver package et branche.
+- [x] Mode adaptatif sélectionnable, force nominale sans erreur forcée chaque coup, récupération via CP de jauge, profondeur accrue 13/14 en difficulté, plan persistant léger et journal des décisions. Mode précédent conservé.
+- [x] Préférences sensibilité, récupération, stabilité, profondeur maximale 12–16 ; réglages 80%/sigma5 inchangés.
+- [x] Audio Piper suivi jusqu'au dernier sample réellement joué, secours TTS onDone, blocage de l'application du coup adversaire tant que parole humaine pas terminée ; gestion voix OFF/stop/timeout.
+- [x] Flèches anciennes conservées ; repères départ bleu/arrivée orange sur jeu et historique.
+- [x] Aide explicite Stockfish PV et petit livre d'ouvertures, origine différenciée, explications courtes et longues, pas de coup exécuté.
+- [x] Tests Java simulés AdaptiveOpponent et OpeningCoach dans workflow ; version candidate 0.4.6 code 13.
+- [ ] Vérifier dernier build GitHub Actions, nombre d'assertions et asset .apk directe réellement publiée ; ne jamais annoncer URL inventée.
+- [ ] Scénarios matériels Samsung Android16: annonces longues réelles/fin AudioTrack, voix OFF/fallback, réponse anticipée, arrière-plan, mode plein écran et repères.
+- [ ] Mesurer sur des parties complètes Stockfish vs anciens paramètres, analyse de jauge, pertes CP, défense stratégique, contre-attaque, risque de répétition/stagnation, latence MultiPV12/13/14.
+- [ ] Développer une base d'ouvertures plus large et vérifiable ; l'aide actuelle propose seulement les 15 lignes locales; aucune erreur attribuée à un coup hors livre.
+- [ ] Calibrer la force moyenne et l'Elo expérimental via cohortes humaines valides : 80% ne correspond pas à un Elo vérifié.
+- [ ] Certifier préservation des sauvegardes et la compatibilité des signatures debug avant désinstallation/réinstallation, garder export JSON.

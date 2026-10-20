@@ -119,3 +119,14 @@
 - Travail exclusivement sur la branche proposal, sans merge main, APK Android ARM64 .apk directe après CI réussie, tests Samsung ensuite. Code 0.4.4 en cours, ne pas prétendre livraison avant vérification.
 
 - GD-013 livraison test vérifiée : run #48 (39431587270) success, tag gd-test-48, APK ARM64 v0.4.4 176715029 octets ; prochaine étape tester Android16 et export JSON avant installation pouvant exiger désinstallation (signature debug éphémère).
+
+
+## GD-015 — Ordre explicite de Fab (20/10/2026)
+Référence v0.4.5 ; conserver toutes les fonctionnalités, réglages et sauvegardes, signatures et branche proposal. N'intervenir sur main qu'avec approbation.
+- Repenser l'adversaire Stockfish : viser un niveau moyen (par défaut 80 % sigma 5), sans erreur imposée à chaque coup. Jeu stratégique continu, adaptation progressive aux évaluations numériques de la jauge, effort défensif et contre-jeu accru en difficulté, consolidation en avantage. Ne pas forcer la jauge à 50 %, Elo non calibré.
+- Mémoire légère : plan courant, structures/ouverture, menaces et principales variantes, réévaluation après chaque coup adverse ; garder ancien algorithme activable pour comparaison, paramètres de sensibilité/récupération/stabilité/profondeur.
+- Voix : annoncer uniquement les coups effectivement joués par défaut, ne pas parler des variantes et jauges automatiquement. Ne jouer le coup IA qu'après la fin réelle AudioTrack/Android TTS de l'annonce du coup humain ; gérer interruptions et voix OFF. Préserver Piper warm-up et files.
+- Visuel : repères contraste départ/arrivée dernier coup y compris relecture ; ne pas altérer les flèches individuelles colorées.
+- Aide explicite : boutons « Quel coup jouer ? » et « Quels coups sont possibles et pourquoi ? », réponse courte et développable, détails d'ouverture et gambit de dame, attribution claire petit livre local/Stockfish. Aucun conseil ne joue automatiquement.
+- GET ERR : évaluations/début-fin/profondeur/mode, choix, alternatives, plan, temps et attente vocale ; tests scénarios équilibré/déséquilibré/avantage/sacrifices/voix/relecture, parties complètes, anciennes vs nouvelles méthodes.
+- Livrer APK ARM64 directe après CI (sans ZIP), mémoires synchronisées, aucune release définitive ni merge main avant aval. Mission considérée « Livré, à valider » seulement après preuve CI+APK, essais humains ensuite.

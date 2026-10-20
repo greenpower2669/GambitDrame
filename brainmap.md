@@ -129,3 +129,13 @@
 - Livraison v0.4.4 et validation Android16 à confirmer ; ne pas fusionner main.
 
 - GD-013 livrée en prérelease `gd-test-48` APK 0.4.4 ; validation Samsung et calibration métriques toujours à faire. Détails `brain.md` / `todo.md`.
+
+
+## GD-015 — Carte des dépendances candidates v0.4.6
+- `PiperSpeechEngine.kt` : `speakTracked` pousse une `Utterance(message, Consumer<Boolean>)` en file série; fin réelle `play()` quand AudioTrack playbackHeadPosition a dépassé `playedFrames`; callback false si échec/stop. Sécurité warm-up et conservation des messages.
+- `AccessibleAudio.java` : `sayTracked`, séquence de cancellation, secours TTS avec `UtteranceProgressListener` et ids de requête ; simple `say` inchangé.
+- `MainActivity.java` : préf `gd015Adaptive` et sliders sensibilité/récupération/stabilité/profondeur ; routine `botMove` calcule en worker, ne joue qu'après `releaseSpeechGate` ; historiques `highlightedSquares` repris en relecture et peints dans `ChessView.onDraw`; aide `showMoveAdvice` explicite. Réduction de la narration automatique.
+- `AdaptiveOpponent.java` : modèle Java pur par position, avantage racine `gaugeRootCp`, température de choix à perte CP plafonnée, profondeur adaptative, mémoire du plan; `AdaptiveOpponentTest.java` couvre équilibre et perte grave, non calibration Elo.
+- `StockfishBridge.java` : état UCI/Hash partagé, mémorisation root cp et `AdaptiveOpponent.State`, paramètres d'adaptation, profondeur 12/13/14 bornée, diagnostic ADAPTIVE et recommandations MultiPV par FEN via `suggestions()`.
+- `OpeningTheory.java` : `next(played,position)` donne uniquement les suites légales réellement connues du petit livre, avec étiquette d'ouverture; `OpeningCoach.java` produit descriptions positionnelles prudentes; `OpeningCoachTest.java` vérifie Gambit de dame accepté/refusé et provenance.
+- `.github/workflows/android-debug.yml` : compile tests Java AdaptiveOpponentTest et OpeningCoachTest puis Gradle Android avec Piper/Stockfish; prérelease APK directe v0.4.6 quand CI passe.

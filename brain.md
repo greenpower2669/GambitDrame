@@ -124,3 +124,12 @@ L'adversaire humain doit échantillonner des coups humains réels, avec continui
 
 ### GD-013 — Preuve de livraison
 - GitHub Actions #48 https://github.com/greenpower2669/GambitDrame/actions/runs/39431587270 : SUCCESS, APK v0.4.4 ARM64 direct 176715029 octets dans gd-test-48. Compilation/test JVM OK ; exécution Samsung non vérifiée. Attention : signature debug non garantie stable entre builds ; sauvegarde JSON avant remplacement potentiellement destructif.
+
+
+## GD-015 — Contrat actuel v0.4.6 candidat (20/10/2026)
+- Nouveau mode adaptatif par défaut : `AdaptiveOpponent` classe les candidats MultiPV/centipions du moteur de jauge, ajuste sa sélectivité selon le désavantage numérique, préfère une continuité du plan si la perte est faible; n'impose pas une erreur à chaque coup. Paramètres conservés 80/sigma5 + sensibilité, récupération, stabilité, limite profondeur 12..16 (cherche 13/14 en difficulté). Ce n'est PAS une calibration Elo ni une stratégie garantie humaine.
+- `StockfishBridge` conserve le processus et sa table de transposition : jauge 11 → MultiPV 12 par défaut, 13/14 si désavantage. Mémoire légère plan/dernier coup en préférences, ouverture détectée à partir de `OpeningTheory.measure`. Ancien moteur rapide/garde-fou/MultiPV toujours sélectionnable en décochant adaptatif.
+- `AccessibleAudio.sayTracked` s'appuie sur `PiperSpeechEngine.speakTracked` : callback au drainage réel AudioTrack, Android TTS en secours via `UtteranceProgressListener.onDone`, erreurs/cancellations libèrent l'attente. Le worker moteur peut calculer avant ; `MainActivity` retarde l'application réelle du bot jusqu'au callback (fallback 45 secondes, journalisé), voix OFF sans délai. Tous les commentaires de jauge et de variantes automatiques sont supprimés; conseils sur clic explicite.
+- Dernier coup : liserés bleu/orange distincts sous pièces aux cases d'origine et arrivée, recalculés depuis historique en relecture. Flèches colorées inchangées.
+- Aides Stockfish : PV1–3 et profondeur/FEN depuis moteur de jauge ; petit livre de 15 lignes indépendamment attribué, aucune sortie du livre jugée mauvaise. Description heuristique prudente; pas de coup joué sur conseil.
+- Régressions et limites : CI ne vérifie pas AudioTrack Samsung, stratégies mesurées contre humains ou parties entières, performance MultiPV >12, précision de l'oral en conditions réelles. Essai utilisateur requis; conserver les données avant changement de signature debug.

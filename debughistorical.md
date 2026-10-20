@@ -141,3 +141,11 @@
 - Limite métrique : évaluation séparée de deux positions à même profondeur peut subir bruit; valeurs expérimentales non assimilables à la précision Lichess. Import accepte JSON archive et valide séquence de coups.
 
 - CI #48 (39431587270) au commit `71d07bcdd6109cc1b81cfbbc6f489461686f49cf` : SUCCESS, build Android et tests locaux, APK v0.4.4 176715029 octets, release gd-test-48. Les échecs intermédiaires #42/#43 sont corrigés. Pas de certification de fonctionnement réel Samsung.
+
+
+## GD-015 — Diagnostic / risques et tests en cours (20/10/2026)
+- Incident d'origine : sélection artificielle de pourcentage relatif parmi les coups, provoquant parfois dégradation massive et absence de stratégie. Le code v0.4.5 a un garde-fou CP mais conserve une sélection de coups isolés, sans plan durable. Ce constat vient de l'audit du code, et non d'un test exhaustif de parties.
+- Modification candidate : softmax entre coups proches de la meilleure évaluation, plafond de perte CP, profondeur plus élevée quand jauge indique que Stockfish est en déficit, plan positionnel simple étiqueté et légèrement favorisé ; tous coups légaux peuvent entrer dans MultiPV. Nécessité d'une calibration de parties complètes ouverte.
+- Voix : le code antérieur ne possédait pas de signal explicite de fin AudioTrack pour bloquer l'application du coup IA. `PiperSpeechEngine` fournira un callback après réellement joué, Android TTS via onDone ; un délai de secours 45 secondes évite le blocage en cas de pilote dysfonctionnel. Ne pas présenter ce délai comme une preuve de lecture terminée ; tester matériel.
+- Visuel et assistances ajoutés au code, mais rendu/voix/explications exactes non certifiés sur SM-A576B par les seules Actions.
+- CI code v0.4.6 en cours : premier run #67 échoué lors de compilation Java car appel selectGuarded ancien nombre d'arguments (version transitoire). Appel corrigé avant dernier build ; attendre CI réussie. Historiser ensuite SHA/run/tag direct APK.
