@@ -114,3 +114,9 @@
 - Lecture code : `precisionTarget` est transmis au sélectionneur, mais seule la distance au pourcentage relatif le plus proche compte. Ex: coups relatifs 100,45,0 => cible 80 sélectionne 100. `normalize` en cas de CP tous égaux définit tous les coups à 100. Cela peut expliquer l'effet, sans prouver ce qui a eu lieu sur son appareil.
 - Avant 0.4.2 : aucune liste des coups évalués ni trace du choix accessible à l'utilisateur, d'où impossibilité d'expliquer une partie précise a posteriori.
 - Correctif d'observabilité : `EngineDiagnostics`, logs par score, paramètres et résultat, GET ERR copiable/partageable, dernier message UCI si profondeur1 manquante; CI à vérifier.
+
+## GD-011 — Livrable v0.4.2 vérifié en CI, 20/10/2026
+- GitHub Actions #27 `39415650189` sur commit `4b5b68dc23f4c6c2938ec77c4db4509b8ea5906c`: completed success, BUILD SUCCESSFUL (1m20s). Tests précision 18, règles 18, revue/jauge 21, narrations 15, flèches 4.
+- Prérelease `gd-test-27` : APK directe `GambitDrame-v0.4.2-debug-arm64.apk` (176 673 417 octets), lien https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-27/GambitDrame-v0.4.2-debug-arm64.apk ; pas de ZIP à décompresser.
+- GET ERR : journal Stockfish local copiable et partageable, scores CP et rangs de tous les candidats, curseurs/modes, score réellement sélectionné, cas `BEST_FORCED_BY_NEAREST_SCORE` et `ALL_SCORES_EQUAL`, traces de l'analyse gauche en profondeur 11 vs choix profondeur 1, erreurs moteur.
+- Tests manuels Samsung Android 16 restent requis pour vérifier le moteur UCI et l'ergonomie réelle. Rien fusionné sur main.
