@@ -139,3 +139,5 @@
 - Mise en place moteur étude Stockfish local profondeur9 (N+1 positions, une seule session UCI), qualité par perte cp plafonnée, statistiques Blancs/Noirs, répertoire d'ouverture local, archive JSON, graphe historique et réussite par ouverture.
 - Vérifications CI : StudyMetricsTest ajouté au workflow. Tentatives préliminaires #42/#43 échec compilation Java StudyTrendView.drawText(String,float,float) sans argument Paint ; correction apportée au commit 7dcb94c, à confirmer par run ultérieur. Pas de test Samsung physique.
 - Limite métrique : évaluation séparée de deux positions à même profondeur peut subir bruit; valeurs expérimentales non assimilables à la précision Lichess. Import accepte JSON archive et valide séquence de coups.
+
+- CI #48 (39431587270) au commit `71d07bcdd6109cc1b81cfbbc6f489461686f49cf` : SUCCESS, build Android et tests locaux, APK v0.4.4 176715029 octets, release gd-test-48. Les échecs intermédiaires #42/#43 sont corrigés. Pas de certification de fonctionnement réel Samsung.
