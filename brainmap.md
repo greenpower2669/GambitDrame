@@ -127,3 +127,5 @@
 - Études de partie : `GameStudyEngine.java` (analyse offline prof9), `StudyMetrics.java` (pertes centipions et sigma descriptive), `OpeningTheory.java` (petit livre non exhaustif), `StudyTrendView.java` (graphique), UI/journal `MainActivity.java`.
 - Contrat : ne pas confondre précision indicative, sigma réel, sigma du curseur, conformité théorique et taux de réussite ; détail dans `brain.md` / `todo.md`.
 - Livraison v0.4.4 et validation Android16 à confirmer ; ne pas fusionner main.
+
+- GD-013 livrée en prérelease `gd-test-48` APK 0.4.4 ; validation Samsung et calibration métriques toujours à faire. Détails `brain.md` / `todo.md`.
