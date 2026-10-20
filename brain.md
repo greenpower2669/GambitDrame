@@ -92,3 +92,9 @@ L'adversaire humain doit échantillonner des coups humains réels, avec continui
 - Cause potentielle établie dans le code : normalisation linéaire entre min et max, puis choix du voisin le plus proche de la cible; grands écarts CP => choix 100 même si 80 demandé; scores tous identiques => tous 100. Profondeur 1 n'est pas un indicateur de précision humaine.
 - 0.4.2 candidate : EngineDiagnostics journal SharedPreferences borné (~65k chars), logcat GambitEngine, persistant; StockfishOpponent enregistre par coup FEN, score CP enfant/racine, candidates qualifiés, score souhaité et réel, cas spéciaux, temps et erreurs; MainActivity affiche bouton GET ERR (copier/partager).
 - Ne pas modifier l'algorithme de sélection sur cette livraison : priorité à comprendre les données réelles. Branche proposal uniquement; test smartphone nécessaire.
+
+## GD-011 — Livrable v0.4.2 vérifié en CI, 20/10/2026
+- GitHub Actions #27 `39415650189` sur commit `4b5b68dc23f4c6c2938ec77c4db4509b8ea5906c`: completed success, BUILD SUCCESSFUL (1m20s). Tests précision 18, règles 18, revue/jauge 21, narrations 15, flèches 4.
+- Prérelease `gd-test-27` : APK directe `GambitDrame-v0.4.2-debug-arm64.apk` (176 673 417 octets), lien https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-27/GambitDrame-v0.4.2-debug-arm64.apk ; pas de ZIP à décompresser.
+- GET ERR : journal Stockfish local copiable et partageable, scores CP et rangs de tous les candidats, curseurs/modes, score réellement sélectionné, cas `BEST_FORCED_BY_NEAREST_SCORE` et `ALL_SCORES_EQUAL`, traces de l'analyse gauche en profondeur 11 vs choix profondeur 1, erreurs moteur.
+- Tests manuels Samsung Android 16 restent requis pour vérifier le moteur UCI et l'ergonomie réelle. Rien fusionné sur main.
