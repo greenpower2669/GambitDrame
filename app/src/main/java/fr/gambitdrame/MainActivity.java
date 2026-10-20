@@ -2,6 +2,7 @@ package fr.gambitdrame;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -18,6 +19,7 @@ import android.os.Build;
 import android.os.Looper;
 import android.view.Gravity;
 import android.view.MotionEvent;
+import android.view.WindowManager;
 import android.view.View;
 import android.widget.*;
 import java.util.ArrayList;
@@ -40,10 +42,12 @@ public final class MainActivity extends Activity {
     private final ExecutorService botWorker=Executors.newSingleThreadExecutor();
     private HumanPolicy humanPolicy;
     private StockfishOpponent stockfishOpponent;
-    private int opponentMode=0; // 0 = experimental Lichess, 1 = Stockfish relative precision
-    private int precisionTarget=75,precisionSigma=10;
+    private int opponentMode=1; // 0 = Lichess, 1 = Stockfish
+    private int precisionTarget=80,precisionSigma=5;
+    private boolean deepMode=false;
+    private int deepDepth=7;
     private long failedBotRevision=-1;
-    private int pieceTheme=0;
+    private int pieceTheme=3;
     private boolean trialMode=false,arrowMode=false;
     private final BoardArrows annotations=new BoardArrows();
     private final List<ChessGame.Position> trialPositions=new ArrayList<>();
@@ -68,6 +72,10 @@ public final class MainActivity extends Activity {
     private final Handler handler=new Handler(Looper.getMainLooper());
     private final Runnable botRunnable=this::botMove;
     private ChessView chessView;
+    private ChessView fullscreenChessView;
+    private Dialog fullscreenDialog;
+    private Switch normalArrowSwitch;
+    private Button fullscreenArrowsButton;
     private TextView status,history;
     private EditText moveInput;
     private Switch botSwitch;
@@ -78,13 +86,21 @@ public final class MainActivity extends Activity {
     @Override public void onCreate(Bundle state){
         super.onCreate(state);
         prefs=getSharedPreferences("gambitdrame-v1",MODE_PRIVATE);
+        if(!prefs.getBoolean("gd-v041-preset",false)){
+            prefs.edit().putBoolean("gd-v041-preset",true)
+                .putInt("opponentMode",1).putInt("precisionTarget",80)
+                .putInt("precisionSigma",5).putInt("pieceTheme",3)
+                .putBoolean("precisionDeep",false).putInt("precisionDepth",7).apply();
+        }
         botEnabled=prefs.getBoolean("bot",true);
         targetRating=prefs.getInt("targetRating",700);
         aggression=prefs.getFloat("aggression",0.4f);
-        opponentMode=prefs.getInt("opponentMode",0);
-        precisionTarget=prefs.getInt("precisionTarget",75);
-        precisionSigma=prefs.getInt("precisionSigma",10);
-        pieceTheme=prefs.getInt("pieceTheme",0);
+        opponentMode=prefs.getInt("opponentMode",1);
+        precisionTarget=prefs.getInt("precisionTarget",80);
+        precisionSigma=prefs.getInt("precisionSigma",5);
+        deepMode=prefs.getBoolean("precisionDeep",false);
+        deepDepth=prefs.getInt("precisionDepth",7);
+        pieceTheme=prefs.getInt("pieceTheme",3);
         stockfishOpponent=new StockfishOpponent(this);
         long seed=prefs.getLong("humanSeed",0L);
         if(seed==0L){seed=new Random().nextLong();prefs.edit().putLong("humanSeed",seed).apply();}
@@ -107,7 +123,7 @@ public final class MainActivity extends Activity {
             return insets;
         });
         heading(root,"♟ GambitDrame",25);
-        label(root,"Version 0.4.0 — voix continue, précision Stockfish, essais et flèches",16);
+        label(root,"Version 0.4.1 — Stockfish rapide, bois 3D, flèches et plein écran",16);
         label(root,"Niveaux 400–900 EXPÉRIMENTAUX, pas encore calibrés par parties complètes.",14);
         chessView=new ChessView();
         analysisPanel=new TextView(this);
@@ -130,6 +146,7 @@ public final class MainActivity extends Activity {
         }else{
             root.addView(chessView,new LinearLayout.LayoutParams(-1,-2));
         }
+        button(root,"⛶ ÉCHIQUIER PLEIN ÉCRAN — jouer ou tracer",this::openFullscreenBoard);
         // All five replay controls sit next to the board, including TalkBack labels.
         LinearLayout playbackControls=new LinearLayout(this);
         playbackControls.setOrientation(LinearLayout.HORIZONTAL);
@@ -157,17 +174,13 @@ public final class MainActivity extends Activity {
         button(trialButtons,"↶ Annuler essai",this::undoTrial);
         button(trialButtons,"Quitter essai",this::exitTrial);
         Switch arrowSwitch=new Switch(this);
+        normalArrowSwitch=arrowSwitch;
         arrowSwitch.setText("Tracer des flèches vectorielles (glisser d'une case à l'autre)");
         arrowSwitch.setTextColor(Color.BLACK);
         arrowSwitch.setTextSize(15);
         arrowSwitch.setChecked(false);
         root.addView(arrowSwitch);
-        arrowSwitch.setOnCheckedChangeListener((b,on)->{
-            arrowMode=on;
-            selected=-1;
-            chessView.invalidate();
-            if(audio!=null)audio.say(on?"Mode flèches activé. Faire glisser le doigt.":"Mode flèches désactivé.");
-        });
+        arrowSwitch.setOnCheckedChangeListener((b,on)->setArrowMode(on));
         button(root,"Effacer les flèches",()->{
             annotations.clear();
             chessView.invalidate();
@@ -176,7 +189,7 @@ public final class MainActivity extends Activity {
         heading(root,"Styles des pièces lisibles",17);
         Spinner pieceStyles=new Spinner(this);
         pieceStyles.setAdapter(new ArrayAdapter<String>(this,android.R.layout.simple_spinner_dropdown_item,
-            new String[]{"Ivoire et ébène · stylisé","Minimal · formes épurées","Très fort contraste · gros contours"}));
+            new String[]{"Ivoire et ébène · stylisé","Minimal · formes épurées","Très fort contraste · gros contours","Bois 3D · demi-pièces à plat","Bois 3D · perspective"}));
         pieceStyles.setSelection(pieceTheme);
         pieceStyles.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener(){
             @Override public void onItemSelected(android.widget.AdapterView<?> parent,View view,int index,long id){
@@ -315,6 +328,33 @@ public final class MainActivity extends Activity {
             @Override public void onNothingSelected(android.widget.AdapterView<?> parent){}
         });
         root.addView(opponents);
+        Switch advanced=new Switch(this);
+        advanced.setText("Activer MultiPV approfondi (désactivé par défaut)");
+        advanced.setTextColor(Color.BLACK);
+        advanced.setTextSize(16);advanced.setChecked(deepMode);
+        root.addView(advanced);
+        TextView advancedText=label(root,"Profondeur du mode approfondi : "+deepDepth,15);
+        SeekBar advancedDepth=new SeekBar(this);
+        advancedDepth.setMax(19);advancedDepth.setProgress(deepDepth-1);
+        advancedDepth.setEnabled(deepMode);
+        root.addView(advancedDepth);
+        advancedDepth.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener(){
+            @Override public void onProgressChanged(SeekBar s,int progress,boolean fromUser){
+                if(!fromUser)return;
+                deepDepth=progress+1;
+                advancedText.setText("Profondeur du mode approfondi : "+deepDepth);
+                prefs.edit().putInt("precisionDepth",deepDepth).apply();
+                revision++;failedBotRevision=-1;scheduleBot();
+            }
+            @Override public void onStartTrackingTouch(SeekBar s){}
+            @Override public void onStopTrackingTouch(SeekBar s){}
+        });
+        advanced.setOnCheckedChangeListener((b,on)->{
+            deepMode=on;advancedDepth.setEnabled(on);
+            prefs.edit().putBoolean("precisionDeep",on).apply();
+            revision++;failedBotRevision=-1;scheduleBot();
+        });
+        label(root,"Rapide (défaut) : chaque coup légal est joué sur une copie, puis sa position est évaluée à profondeur 1.",14);
         label(root,"Stockfish classe TOUS les coups légaux entre pire=0 et meilleur=100. Il s'agit d'une qualité RELATIVE à cette position, pas de l'indice de précision Chess.com ni d'un Elo.",13);
         TextView precisionLabel=label(root,"Précision cible Stockfish : "+precisionTarget+" %",16);
         SeekBar targetSlider=new SeekBar(this);
@@ -418,8 +458,8 @@ public final class MainActivity extends Activity {
             .setPositiveButton("Charger",(d,w)->loadOpening())
             .setNegativeButton("Annuler",null).show());
         button(root,"À propos de Stockfish GPLv3",()->new AlertDialog.Builder(this)
-            .setTitle("Stockfish 18 — analyse seulement")
-            .setMessage("Moteur libre GPLv3. Source exacte : github.com/official-stockfish/Stockfish/tree/sf_18. Le binaire est compilé sans modification depuis ce tag par GitHub Actions. Licence incluse dans les ressources APK. L'adversaire humain n'utilise jamais ce moteur pour choisir ses coups.")
+            .setTitle("Stockfish 18 — analyse et adversaire")
+            .setMessage("Moteur libre GPLv3. Source exacte : github.com/official-stockfish/Stockfish/tree/sf_18. Le binaire est compilé sans modification depuis ce tag par GitHub Actions. Licence incluse dans les ressources APK. Le mode Stockfish joue sur évaluation positionnelle. Le mode humain Lichess reste indépendant de Stockfish.")
             .setPositiveButton("Code source",(d,w)->{
                 android.content.Intent intent=new android.content.Intent(
                     android.content.Intent.ACTION_VIEW,
@@ -433,6 +473,7 @@ public final class MainActivity extends Activity {
             analysisPanel.setText(message);
             if(whiteCp!=null||whiteMate!=null){
                 chessView.setEvaluation(whiteCp,whiteMate);
+                if(fullscreenChessView!=null)fullscreenChessView.setEvaluation(whiteCp,whiteMate);
                 lastWhiteCp=whiteCp;
                 lastWhiteMate=whiteMate;
                 lastEvaluatedFen=fen;
@@ -447,6 +488,66 @@ public final class MainActivity extends Activity {
         refresh();
         analyzeDisplayed();
         scheduleBot();
+    }
+    private void setArrowMode(boolean on){
+        if(arrowMode==on)return;
+        arrowMode=on;selected=-1;
+        if(normalArrowSwitch!=null&&normalArrowSwitch.isChecked()!=on)
+            normalArrowSwitch.setChecked(on);
+        if(fullscreenArrowsButton!=null)
+            fullscreenArrowsButton.setText(on?"✓ Flèches : ON":"↗ Flèches : OFF");
+        if(chessView!=null)chessView.invalidate();
+        if(fullscreenChessView!=null)fullscreenChessView.invalidate();
+        if(audio!=null)audio.say(on?"Mode flèches activé. Faites glisser le doigt.":"Mode flèches désactivé.");
+    }
+    private void openFullscreenBoard(){
+        if(fullscreenDialog!=null&&fullscreenDialog.isShowing())return;
+        Dialog dialog=new Dialog(this,android.R.style.Theme_Material_Light_NoActionBar_Fullscreen);
+        fullscreenDialog=dialog;
+        LinearLayout area=new LinearLayout(this);
+        area.setOrientation(LinearLayout.VERTICAL);
+        area.setGravity(Gravity.CENTER_VERTICAL);
+        area.setPadding(dp(4),dp(10),dp(4),dp(16));
+        area.setBackgroundColor(0xfff7f7ef);
+        TextView title=new TextView(this);
+        title.setText("♟ GambitDrame · plein écran");
+        title.setGravity(Gravity.CENTER);title.setTextSize(19);
+        title.setTextColor(Color.BLACK);area.addView(title);
+        View space=new View(this);
+        area.addView(space,new LinearLayout.LayoutParams(1,0,1));
+        fullscreenChessView=new ChessView();
+        fullscreenChessView.setEvaluation(lastWhiteCp,lastWhiteMate);
+        area.addView(fullscreenChessView,new LinearLayout.LayoutParams(-1,-2));
+        View bottom=new View(this);
+        area.addView(bottom,new LinearLayout.LayoutParams(1,0,1));
+        LinearLayout controls=new LinearLayout(this);
+        controls.setOrientation(LinearLayout.HORIZONTAL);
+        area.addView(controls);
+        fullscreenArrowsButton=new Button(this);
+        fullscreenArrowsButton.setText(arrowMode?"✓ Flèches : ON":"↗ Flèches : OFF");
+        controls.addView(fullscreenArrowsButton,new LinearLayout.LayoutParams(0,-2,1));
+        fullscreenArrowsButton.setOnClickListener(v->setArrowMode(!arrowMode));
+        button(controls,"Effacer",()->{
+            annotations.clear();
+            if(chessView!=null)chessView.invalidate();
+            if(fullscreenChessView!=null)fullscreenChessView.invalidate();
+        });
+        button(controls,"Quitter ⤢",dialog::dismiss);
+        dialog.setContentView(area);
+        dialog.setOnDismissListener(d->{
+            fullscreenDialog=null;fullscreenChessView=null;fullscreenArrowsButton=null;
+            if(chessView!=null)chessView.invalidate();
+        });
+        dialog.show();
+        if(dialog.getWindow()!=null){
+            dialog.getWindow().setLayout(WindowManager.LayoutParams.MATCH_PARENT,
+                WindowManager.LayoutParams.MATCH_PARENT);
+            dialog.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN);
+            dialog.getWindow().getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_FULLSCREEN|View.SYSTEM_UI_FLAG_HIDE_NAVIGATION|
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+        }
     }
     private ChessGame.Position current(){return positions.get(positions.size()-1);}
     private ChessGame.Position displayed(){
@@ -484,6 +585,7 @@ public final class MainActivity extends Activity {
     }
     private void analyzeDisplayed(){
         if(chessView!=null)chessView.setEvaluation(null,null);
+        if(fullscreenChessView!=null)fullscreenChessView.setEvaluation(null,null);
         lastWhiteCp=null;lastWhiteMate=null;
         lastEvaluatedFen=null;
         lastSpokenEvaluationFen=null;
@@ -711,6 +813,7 @@ public final class MainActivity extends Activity {
             "Essai désactivé · flèches : "+annotations.all().size());
         updatePlaybackUi();
         chessView.invalidate();
+        if(fullscreenChessView!=null)fullscreenChessView.invalidate();
     }
     private void reconfigurePolicy(){
         // Keep the random seed stable throughout one game unless Fab explicitly restarts.
@@ -811,6 +914,7 @@ public final class MainActivity extends Activity {
             }
         }
         chessView.invalidate();
+        if(fullscreenChessView!=null)fullscreenChessView.invalidate();
     }
     private void scheduleBot(){
         handler.removeCallbacks(botRunnable);
@@ -826,15 +930,17 @@ public final class MainActivity extends Activity {
         final HumanPolicy policy=humanPolicy;
         final int engineMode=opponentMode;
         final int target=precisionTarget,spread=precisionSigma;
+        final boolean useDeep=deepMode;
+        final int useDepth=deepDepth;
         botRunning=true;
-        botInfo.setText(engineMode==1?"Stockfish : évaluation de TOUS les coups légaux…":
+        botInfo.setText(engineMode==1?(useDeep?"Stockfish MultiPV approfondi…":"Stockfish : toutes les positions à profondeur 1…"):
             "Profil Lichess expérimental : sélection d'un coup…");
         if(engineMode==1&&stockfishBridge!=null)stockfishBridge.stop();
         botWorker.execute(()->{
             String chosenUci=null,detail=null,error=null;
             try{
                 if(engineMode==1){
-                    StockfishOpponent.Result result=stockfishOpponent.select(initial,target,spread);
+                    StockfishOpponent.Result result=stockfishOpponent.select(initial,target,spread,useDeep,useDepth);
                     if(result!=null){chosenUci=result.uci;detail=result.details;}
                 }else{
                     Map<String,Integer> sampled=explorer.moves(initial,ply,online);
@@ -1018,6 +1124,7 @@ public final class MainActivity extends Activity {
                 paint.setStyle(Paint.Style.FILL);
                 if(pieceTheme==2)paint.setColor(light?0xfff5f6ee:0xff586b75);
                 else if(pieceTheme==1)paint.setColor(light?0xffeae5d9:0xff789087);
+                else if(pieceTheme>=3)paint.setColor(light?0xffe3e6d2:0xff78927b);
                 else paint.setColor(light?0xffdde4cf:0xff7d9582);
                 canvas.drawRect(left,top,left+cell,top+cell,paint);
                 if(selected==i){
@@ -1026,6 +1133,9 @@ public final class MainActivity extends Activity {
                 }
                 char piece=b[i];
                 if(piece!='.'){
+                    if(pieceTheme>=3){
+                        WoodPieces.draw(canvas,piece,left+cell/2f,top+cell/2f,cell,pieceTheme==4);
+                    }else{
                     boolean white=Character.isUpperCase(piece);
                     String glyph=glyph(piece);
                     float cx=left+cell/2f, cy=top+cell/2f;
@@ -1055,6 +1165,7 @@ public final class MainActivity extends Activity {
                     paint.setColor(white?(pieceTheme==2?0xffffffff:0xfffff3d0):
                         (pieceTheme==2?0xff080c12:0xff2c1b15));
                     canvas.drawText(glyph,cx,base,paint);
+                    }
                 }
             }
             if(selected>=0){
@@ -1075,7 +1186,7 @@ public final class MainActivity extends Activity {
                 if(d<cell*.5f)continue;
                 float ux=dx/d,uy=dy/d;
                 float tipX=bx-ux*cell*.18f,tipY=by-uy*cell*.18f;
-                paint.setColor(0xddffae23);
+                paint.setColor(0x88ffae23);
                 paint.setStyle(Paint.Style.STROKE);
                 paint.setStrokeWidth(Math.max(dp(3),cell*.13f));
                 paint.setStrokeCap(Paint.Cap.ROUND);
@@ -1107,6 +1218,7 @@ public final class MainActivity extends Activity {
             int action=e.getActionMasked();
             if(arrowMode){
                 if(action==MotionEvent.ACTION_DOWN){
+                    getParent().requestDisallowInterceptTouchEvent(true);
                     arrowStart=squareAt(e.getX(),e.getY());
                     return true;
                 }
@@ -1119,9 +1231,10 @@ public final class MainActivity extends Activity {
                         refresh();
                     }
                     arrowStart=-1;
+                    getParent().requestDisallowInterceptTouchEvent(false);
                     performClick();return true;
                 }
-                if(action==MotionEvent.ACTION_CANCEL){arrowStart=-1;return true;}
+                if(action==MotionEvent.ACTION_CANCEL){arrowStart=-1;getParent().requestDisallowInterceptTouchEvent(false);return true;}
                 return true;
             }
             if(action!=MotionEvent.ACTION_UP)return true;
