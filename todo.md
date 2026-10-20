@@ -128,3 +128,18 @@ Les commits purement Markdown n'ont pas besoin de recompiler Android ; workflow 
 - Tests confirmés dans le log : `TACTICAL_GUARD_TESTS_OK 8`, `STOCKFISH_PRECISION_TESTS_OK 18`, `CHESS_TESTS_OK 18`, `BOARD_ARROWS_TESTS_OK 4`; `BUILD SUCCESSFUL in 1m 19s`.
 - Prérelease `gd-test-37`, APK **directe non ZIP** `GambitDrame-v0.4.3-debug-arm64.apk`, 176684097 octets : https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-37/GambitDrame-v0.4.3-debug-arm64.apk.
 - ⚠️ Validation Android 16 physique à faire : UCI pause/reprise, latence MultiPV12, score et bande prédictive, voix, journal GET ERR. CI ≠ preuve de performance réelle sur Samsung. Pas de fusion main.
+
+
+## GD-013 — Analyse des parties et tendances (20/10/2026)
+- [x] Moteur d'étude local à profondeur 9 sur les positions historisées, hors du moteur de sélection de l'adversaire et annulable sur pause ; aucune partie modifiée pendant analyse.
+- [x] Mesure indicative par coup basée sur la perte en centipions, moyenne et écart-type séparés Blancs/Noirs, erreurs graves et suivi qualitatif après une erreur ; NE PAS confondre avec Lichess Accuracy ou sigma du curseur.
+- [x] Bibliothèque locale limitée d'ouvertures et proportion du début concordant ; sortie du livre non considérée comme erreur.
+- [x] Journal local de 40 dernières analyses, détails coup par coup, conservation pendant mises à jour, export/import SAF JSON avec validation des coups, dédoublonnage, graphiques précision par partie.
+- [x] Résultat des parties terminées et synthèse de réussite par ouverture (points Blancs, échantillons faibles signalés).
+- [x] Tests JVM StudyMetricsTest intégrés CI et version 0.4.4 code 11 ; garde-fou activé par défaut préservé.
+- [ ] Vérifier CI GitHub v0.4.4 Android complète et l'existence de l'APK directe ; les tentatives #42/#43 ont échoué à cause de StudyTrendView.drawText avant correctif, corrigé au commit 7dcb94c.
+- [ ] Tester Samsung SM-A576B Android 16 : durée d'analyse 30–100 demi-coups, mémoire concurrente, annulation sur pause, restauration après retour, graphique lisible et TalkBack, SAF export/import réel, journal inchangé à réinstallation sans effacement des données.
+- [ ] Implémenter plus tard un vrai répertoire d'ouverture exhaustif et statistiques cohérentes selon couleur/rating via Lichess, comparer les résultats par variante plutôt qu'étiquette sommaire.
+- [ ] Vérifier calibration de la métrique de précision et de variabilité avec corpus de parties ; ne pas présenter l'écart-type individuel comme sigma du sélecteur sans validation.
+- [ ] Ajouter le PGN/SAN pour importer des parties externes ; l'import initial accepte uniquement les sauvegardes de journal JSON v1.
+- [ ] Pas de merge main/release publique sans autorisation explicite de Fab.
