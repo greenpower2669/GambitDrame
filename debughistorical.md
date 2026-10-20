@@ -97,3 +97,9 @@
 - ATTENTION : CI n'a pas testé l'exécution réelle sur Samsung, ni la sélection all-MultiPV à profondeur7 sur téléphone, ni audio Piper avec première phrase / enchaînement, ni glissés/couleurs en contexte réel. Ne pas prétendre « testé téléphone ».
 
 - Les classes sont compilées sur Android et tests Java ont passé. Avertissement Gradle « Unable to strip libonnxruntime.so, libsherpa-onnx..., libstockfish.so » n'a pas empêché le packaging natif, tous binaires présents.
+
+## 20/10/2026 — GD-010 v0.4.1, état CI intermédiaire
+- Build #16 `39393967417`: tests JVM, compilation Stockfish ARM64, Gradle, vérification APK **tous réussis**, mais publication GitHub Release refusée HTTP 403 «Resource not accessible by integration». Pas de Release #16 confirmée.
+- Build #18 `39394049308`: `success` complet jusqu'à l'étape «Publish direct test APK in GitHub pre-release», commit `2c0cfc82d4e225ce3c1db6a8cc259629a0759dcf`. Les mises à jour ultérieures d'essais d'orientation de score et flèches continuent sur des runs distincts.
+- Dernier code opérationnel candidat commit `d8aac2e3d21d47b3ac35340f34cf9d9c94b76b63`, workflow #22 `39394368345` en cours à la première observation. NE PAS revendiquer une livraison finale sans résultat du run courant et présence de l'asset direct .apk.
+- Tests sur matériel Samsung toujours non réalisés par CI. Le score d'un coup est l'évaluation après son application à depth=1 depuis l'autre trait, renversée; ce choix peut donner une force réelle bien inférieure à celle du mode approfondi.
