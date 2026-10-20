@@ -98,3 +98,11 @@ L'adversaire humain doit échantillonner des coups humains réels, avec continui
 - Prérelease `gd-test-27` : APK directe `GambitDrame-v0.4.2-debug-arm64.apk` (176 673 417 octets), lien https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-27/GambitDrame-v0.4.2-debug-arm64.apk ; pas de ZIP à décompresser.
 - GET ERR : journal Stockfish local copiable et partageable, scores CP et rangs de tous les candidats, curseurs/modes, score réellement sélectionné, cas `BEST_FORCED_BY_NEAREST_SCORE` et `ALL_SCORES_EQUAL`, traces de l'analyse gauche en profondeur 11 vs choix profondeur 1, erreurs moteur.
 - Tests manuels Samsung Android 16 restent requis pour vérifier le moteur UCI et l'ergonomie réelle. Rien fusionné sur main.
+
+
+## GD-012 — Filtre tactique profondeur11→12 avec témoin visuel
+- Fab souhaite récupérer le calcul profondeur 11 de la jauge avant de pousser Stockfish d'un cran; ancien calcul séparé profondeur1 insuffisant (dame f6f5 perdue).
+- `StockfishBridge` assure jauge à 11 puis, quand l'adversaire Stockfish joue et la case garde-fou est activée, poursuit dans le même processus UCI/hash avec MultiPV égal au nombre de coups légaux à profondeur12. Cache de transposition conservé, sans prétendre qu'ajouter 1 au CP soit valide.
+- `TacticalGuard` : échantillonnage relatif existant puis plafond autorisé de perte par rapport au meilleur CP; à 80 %, limite 60cp ; à 0 %, 1020cp. Valeurs expérimentales non calibrées Elo.
+- `MainActivity` : CheckBox garde-fou en haut; en mode rapide sans case garde l'ancien moteur profondeur1; profondeur approfondie legacy reste paramétrable. Deuxième jauge fine juxtaposée dans la jauge gauche; bleu clair=future position profondeur12, doré=choix, rose=meilleur candidat. GET ERR encore accessible.
+- Portée : ne garantit ni détection absolue de tous les pièges profonds ni force humaine calibrée ; MultiPV12 de tous les coups peut être coûteux sur Samsung, avec délai maximal 90sec et erreur visible plutôt qu'un choix non évalué.
