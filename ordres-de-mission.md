@@ -84,3 +84,8 @@
 - GitHub Actions #22 (39394368345) sur d8aac2e3d21d47b3ac35340f34cf9d9c94b76b63 : completed success ; BUILD SUCCESSFUL in 58s, règles 18 tests, politique humaine 130, précision/orientation Stockfish 15, flèches 4.
 - APK directe .apk (pas ZIP), v0.4.1 code 8, dans gd-test-22 : https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-22/GambitDrame-v0.4.1-debug-arm64.apk ; taille 176659809 octets.
 - Livrée pour test réel Samsung SM-A576B Android 16. CI ne vérifie pas la qualité de l'affichage 3D, les gestes physiques ni le temps de réponse de Stockfish sur ce téléphone. Pas de merge main.
+
+## GD-011 — Mission demandée par Fab, 20 octobre 2026
+- Fab juge incohérente la force de Stockfish malgré le curseur, veut `log` et `GET ERR` pour comprendre. Conserver comportement de sélection existant pour enregistrer des preuves, ne pas le modifier silencieusement.
+- Journal local exportable depuis interface sans ADB/PC, dernier réglage (cible/variabilité/mode), FEN, rangs et CP de chaque coup légal, score cible tiré et score réellement choisi, raisons de sélection à 100 %, erreurs UCI avec stacktrace, durées et coups.
+- Mise à jour tests, APK directe en prérelease depuis Actions, mémoires vivantes du projet ; pas de main merge.

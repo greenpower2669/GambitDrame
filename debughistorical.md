@@ -108,3 +108,9 @@
 - GitHub Actions #22 (39394368345) sur d8aac2e3d21d47b3ac35340f34cf9d9c94b76b63 : completed success ; BUILD SUCCESSFUL in 58s, règles 18 tests, politique humaine 130, précision/orientation Stockfish 15, flèches 4.
 - APK directe .apk (pas ZIP), v0.4.1 code 8, dans gd-test-22 : https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-22/GambitDrame-v0.4.1-debug-arm64.apk ; taille 176659809 octets.
 - Livrée pour test réel Samsung SM-A576B Android 16. CI ne vérifie pas la qualité de l'affichage 3D, les gestes physiques ni le temps de réponse de Stockfish sur ce téléphone. Pas de merge main.
+
+## GD-011 — Audit 0.4.1 sur Samsung et instrumentation 0.4.2, 20/10/2026
+- Fab signale : moteur Stockfish semble jouer 100 %, même après curseur de précision modifié et partie relancée ; comportement jugé incohérent. Capture utilisateur avec 20 demi-coups.
+- Lecture code : `precisionTarget` est transmis au sélectionneur, mais seule la distance au pourcentage relatif le plus proche compte. Ex: coups relatifs 100,45,0 => cible 80 sélectionne 100. `normalize` en cas de CP tous égaux définit tous les coups à 100. Cela peut expliquer l'effet, sans prouver ce qui a eu lieu sur son appareil.
+- Avant 0.4.2 : aucune liste des coups évalués ni trace du choix accessible à l'utilisateur, d'où impossibilité d'expliquer une partie précise a posteriori.
+- Correctif d'observabilité : `EngineDiagnostics`, logs par score, paramètres et résultat, GET ERR copiable/partageable, dernier message UCI si profondeur1 manquante; CI à vérifier.

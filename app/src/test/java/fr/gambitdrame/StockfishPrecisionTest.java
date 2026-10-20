@@ -36,6 +36,15 @@ public final class StockfishPrecisionTest {
         List<StockfishPrecision.Candidate> black=StockfishPrecision.normalize(
             Arrays.asList("blackWeak","blackStrong"),Arrays.asList(-45,120));
         check(black.get(1).relativeQuality==100,"score must follow player perspective");
+        // Regression for reported 100%-strength behaviour: a target of 80
+        // often rounds to the best available relative candidate, NOT 80%.
+        List<StockfishPrecision.Candidate> gap=StockfishPrecision.normalize(
+            Arrays.asList("onlyBest","bad"),Arrays.asList(500,-100));
+        StockfishPrecision.Pick forcedBest=StockfishPrecision.choose(gap,80,0,new Random(8));
+        check(forcedBest.move.uci.equals("onlyBest"),"80 target may choose 100 best");
+        check(forcedBest.move.relativeQuality==100,"report actual 100, not target 80");
+        StockfishPrecision.Pick flat=StockfishPrecision.choose(equal,35,0,new Random(4));
+        check(flat.move.relativeQuality==100,"all tied scores always become 100");
         System.out.println("STOCKFISH_PRECISION_TESTS_OK "+n);
     }
 }

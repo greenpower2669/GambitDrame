@@ -95,3 +95,9 @@
 - GitHub Actions #22 (39394368345) sur d8aac2e3d21d47b3ac35340f34cf9d9c94b76b63 : completed success ; BUILD SUCCESSFUL in 58s, règles 18 tests, politique humaine 130, précision/orientation Stockfish 15, flèches 4.
 - APK directe .apk (pas ZIP), v0.4.1 code 8, dans gd-test-22 : https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-22/GambitDrame-v0.4.1-debug-arm64.apk ; taille 176659809 octets.
 - Livrée pour test réel Samsung SM-A576B Android 16. CI ne vérifie pas la qualité de l'affichage 3D, les gestes physiques ni le temps de réponse de Stockfish sur ce téléphone. Pas de merge main.
+
+## GD-011 — Diagnostic de précision et GET ERR (20/10/2026)
+- Nouveau `EngineDiagnostics.java`: journal embarqué local persistant sous SharedPreferences `gambit-engine-diagnostics` (65 k caractères récents), tag Logcat `GambitEngine`.
+- `StockfishOpponent.java`: log des scores CP de toutes les FEN enfants et classement relatif de tous les coups (même en MultiPV), cible gaussienne, coup choisi, raisons valeur 100 %, durée et erreurs UCI.
+- `MainActivity.java`: affichage des valeurs du curseur appliquées, GET ERR en haut (voir / COPIER TOUT / PARTAGER), réglages/choix de coups/erreurs/positions consignés.
+- `StockfishPrecisionTest.java`: régression 'cible 80 % peut choisir 100 %' et égalités 100 %. Version 0.4.2 code9; CI finale et validation appareil requises.

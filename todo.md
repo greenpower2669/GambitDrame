@@ -96,3 +96,12 @@ Les commits purement Markdown n'ont pas besoin de recompiler Android ; workflow 
 - GitHub Actions #22 (39394368345) sur d8aac2e3d21d47b3ac35340f34cf9d9c94b76b63 : completed success ; BUILD SUCCESSFUL in 58s, règles 18 tests, politique humaine 130, précision/orientation Stockfish 15, flèches 4.
 - APK directe .apk (pas ZIP), v0.4.1 code 8, dans gd-test-22 : https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-22/GambitDrame-v0.4.1-debug-arm64.apk ; taille 176659809 octets.
 - Livrée pour test réel Samsung SM-A576B Android 16. CI ne vérifie pas la qualité de l'affichage 3D, les gestes physiques ni le temps de réponse de Stockfish sur ce téléphone. Pas de merge main.
+
+## GD-011 — 20/10/2026 : Stockfish 0.4.1 peut jouer à 100 % malgré curseur 80 %
+- [x] Audit source : curseur sauvegardé et transmis. Ratio 0/100 relatif par position ; l'algorithme du plus proche peut sélectionner 100 même avec cible 80, notamment grands écarts ou scores tous égaux.
+- [x] Ajouter diagnostic automatique par coup : mode, profondeur, valeurs cible/sigma (y compris sauvegardées), FEN, CP pour tous coups, pourcentages de classement, valeur gaussienne tirée, résultat réellement joué, raisons ALL_SCORES_EQUAL / BEST_FORCED_BY_NEAREST_SCORE.
+- [x] Ajouter GET ERR près de l'échiquier : journal local persistant, lecture, copier tout, partage explicite ; stacktrace en cas d'erreur, erreurs UCI manquantes détaillées.
+- [x] Tests de régression prouvant qu'une cible 80 % peut aboutir à un coup classé 100 % ; ne pas modifier le gameplay avant collecte de logs.
+- [ ] CI v0.4.2 code9 : confirmer build et asset .apk direct, puis tester physiquement Samsung Android16.
+- [ ] Faire plusieurs coups noirs avec cible 0 %, 30 %, 80 % et 100 %, copier GET ERR complet et analyser les écarts CP / valeurs relatives / causes, temps de réponse et FEN.
+- [ ] Après preuve, revoir mapping cible-vers-force (rang, CP, distribution, seuil de pertes positionnelles), sans prétendre Elo ou précision officielle.
