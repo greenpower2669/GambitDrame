@@ -253,6 +253,7 @@ public final class StockfishBridge {
             synchronized(lock){failRequest("Stockfish terminé");}
             if(!closed)dispatch(null,"Stockfish : processus terminé.",null,null);
         }catch(Exception ex){
+            synchronized(lock){failRequest("Stockfish lecture UCI interrompue: "+ex);}
             if(!closed)dispatch(null,"Stockfish : flux d'analyse interrompu.",null,null);
         }
     }
