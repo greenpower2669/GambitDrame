@@ -189,6 +189,7 @@ public final class StockfishBridge {
         }
     }
     public void analyze(String fen){
+        if(desiredFen!=null&&!desiredFen.equals(fen))cancelGuard();
         desiredFen=fen;
         paused=false;
         dispatch(fen,"Stockfish : analyse de cette position…",null,null);
@@ -202,6 +203,7 @@ public final class StockfishBridge {
         synchronized(lock){
             if(closed||!ready||paused||awaitingReady)return;
             activeFen=null;
+            phase=0;
             awaitingReady=true;
             send("stop");
             send("isready");
@@ -215,6 +217,8 @@ public final class StockfishBridge {
             if(paused||desiredFen==null)return;
             fen=desiredFen;
             activeFen=fen;
+            phase=1;
+            send("setoption name MultiPV value 3");
             variants.clear();
             currentWdl="WDL —";
             send("position fen "+fen);
@@ -237,10 +241,16 @@ public final class StockfishBridge {
                 }else if(line.equals("readyok")){
                     onReady();
                     // If a newer FEN arrived during the barrier, onReady uses it.
+                }else if(line.startsWith("bestmove ")){
+                    finishedSearch();
                 }else if(line.startsWith("info ")&&line.contains(" score ")&&line.contains(" pv ")){
-                    if(!paused&&!awaitingReady&&activeFen!=null)onInfo(line);
+                    if(!paused&&!awaitingReady&&activeFen!=null){
+                        if(phase==2)guardInfo(line);
+                        else if(phase==1)onInfo(line);
+                    }
                 }
             }
+            synchronized(lock){failRequest("Stockfish terminé");}
             if(!closed)dispatch(null,"Stockfish : processus terminé.",null,null);
         }catch(Exception ex){
             if(!closed)dispatch(null,"Stockfish : flux d'analyse interrompu.",null,null);
@@ -301,11 +311,14 @@ public final class StockfishBridge {
         }
     }
     public void stop(){
+        cancelGuard();
         paused=true;
+        phase=0;
         activeFen=null;
         send("stop");
     }
     public void close(){
+        cancelGuard();
         closed=true;
         ready=false;
         synchronized(lock){
