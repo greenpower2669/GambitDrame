@@ -102,6 +102,13 @@ Les commits purement Markdown n'ont pas besoin de recompiler Android ; workflow 
 - [x] Ajouter diagnostic automatique par coup : mode, profondeur, valeurs cible/sigma (y compris sauvegardées), FEN, CP pour tous coups, pourcentages de classement, valeur gaussienne tirée, résultat réellement joué, raisons ALL_SCORES_EQUAL / BEST_FORCED_BY_NEAREST_SCORE.
 - [x] Ajouter GET ERR près de l'échiquier : journal local persistant, lecture, copier tout, partage explicite ; stacktrace en cas d'erreur, erreurs UCI manquantes détaillées.
 - [x] Tests de régression prouvant qu'une cible 80 % peut aboutir à un coup classé 100 % ; ne pas modifier le gameplay avant collecte de logs.
-- [ ] CI v0.4.2 code9 : confirmer build et asset .apk direct, puis tester physiquement Samsung Android16.
+- [x] CI v0.4.2 code9 et asset .apk direct vérifiés (run 27). 
+- [ ] Tester physiquement sur Samsung Android16 le bouton GET ERR, la journalisation de plusieurs coups et copier le résultat.
 - [ ] Faire plusieurs coups noirs avec cible 0 %, 30 %, 80 % et 100 %, copier GET ERR complet et analyser les écarts CP / valeurs relatives / causes, temps de réponse et FEN.
 - [ ] Après preuve, revoir mapping cible-vers-force (rang, CP, distribution, seuil de pertes positionnelles), sans prétendre Elo ou précision officielle.
+
+## GD-011 — Livrable v0.4.2 vérifié en CI, 20/10/2026
+- GitHub Actions #27 `39415650189` sur commit `4b5b68dc23f4c6c2938ec77c4db4509b8ea5906c`: completed success, BUILD SUCCESSFUL (1m20s). Tests précision 18, règles 18, revue/jauge 21, narrations 15, flèches 4.
+- Prérelease `gd-test-27` : APK directe `GambitDrame-v0.4.2-debug-arm64.apk` (176 673 417 octets), lien https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-27/GambitDrame-v0.4.2-debug-arm64.apk ; pas de ZIP à décompresser.
+- GET ERR : journal Stockfish local copiable et partageable, scores CP et rangs de tous les candidats, curseurs/modes, score réellement sélectionné, cas `BEST_FORCED_BY_NEAREST_SCORE` et `ALL_SCORES_EQUAL`, traces de l'analyse gauche en profondeur 11 vs choix profondeur 1, erreurs moteur.
+- Tests manuels Samsung Android 16 restent requis pour vérifier le moteur UCI et l'ergonomie réelle. Rien fusionné sur main.
