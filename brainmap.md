@@ -107,3 +107,11 @@
 - Prérelease `gd-test-27` : APK directe `GambitDrame-v0.4.2-debug-arm64.apk` (176 673 417 octets), lien https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-27/GambitDrame-v0.4.2-debug-arm64.apk ; pas de ZIP à décompresser.
 - GET ERR : journal Stockfish local copiable et partageable, scores CP et rangs de tous les candidats, curseurs/modes, score réellement sélectionné, cas `BEST_FORCED_BY_NEAREST_SCORE` et `ALL_SCORES_EQUAL`, traces de l'analyse gauche en profondeur 11 vs choix profondeur 1, erreurs moteur.
 - Tests manuels Samsung Android 16 restent requis pour vérifier le moteur UCI et l'ergonomie réelle. Rien fusionné sur main.
+
+
+## GD-012 — Architecture garde-fou (20/10/2026)
+- `StockfishBridge.java` : processus UCI unique, 3 phases idle / jauge depth11 / sélection gardée depth12 MultiPV=nombre de coups légaux; même hash partagé, synchronisation FEN, annulation et timeout; publication résultat via latch au worker bot.
+- `TacticalGuard.java` + `TacticalGuardTest.java`: pure Java, perte CP maximum quadratique selon précision, interdiction relative des sacrifices catastrophiques pour 80%, tolérance élevée bas réglage; cas test de la dame.
+- `StockfishOpponent.Result` : données score blanc prévu choisi/meilleur, perte CP, seuil et intervention; moteur profondeur1/mode approfondi originaux toujours disponibles.
+- `MainActivity.java` : checkbox persistée, affichage double jauge dans Canvas à gauche, diagnostic GET ERR, moteur bot choisit pont partagé si garde activée et mode profond désactivé.
+- `app/build.gradle` 0.4.3 code 10, `.github/workflows/android-debug.yml` teste TacticalGuard en Java et produit APK direct non zip. CI et test matériel à vérifier.
