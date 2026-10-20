@@ -1067,7 +1067,7 @@ public final class MainActivity extends Activity {
     private final class ChessView extends View {
         private final Paint paint=new Paint(3);
         private final String symbols="♔♕♖♗♘♙♚♛♜♝♞♟";
-        private int arrowStart=-1;
+        private int arrowStart=-1,arrowEnd=-1;
         private Integer whiteCp=null,whiteMate=null;
         private double whiteFraction=0.5;
         private final int gaugeWidth=dp(44);
@@ -1179,28 +1179,33 @@ public final class MainActivity extends Activity {
             canvas.restore();
         }
         private void drawArrows(Canvas canvas,float cell){
-            for(BoardArrows.Arrow arrow:annotations.all()){
-                float ax=(arrow.from%8+.5f)*cell,ay=(arrow.from/8+.5f)*cell;
-                float bx=(arrow.to%8+.5f)*cell,by=(arrow.to/8+.5f)*cell;
-                float dx=bx-ax,dy=by-ay,d=(float)Math.hypot(dx,dy);
-                if(d<cell*.5f)continue;
-                float ux=dx/d,uy=dy/d;
-                float tipX=bx-ux*cell*.18f,tipY=by-uy*cell*.18f;
-                paint.setColor(0x88ffae23);
-                paint.setStyle(Paint.Style.STROKE);
-                paint.setStrokeWidth(Math.max(dp(3),cell*.13f));
-                paint.setStrokeCap(Paint.Cap.ROUND);
-                canvas.drawLine(ax,ay,tipX-ux*cell*.22f,tipY-uy*cell*.22f,paint);
-                Path head=new Path();
-                head.moveTo(tipX,tipY);
-                head.lineTo(tipX-ux*cell*.41f-uy*cell*.24f,
-                    tipY-uy*cell*.41f+ux*cell*.24f);
-                head.lineTo(tipX-ux*cell*.41f+uy*cell*.24f,
-                    tipY-uy*cell*.41f-ux*cell*.24f);
-                head.close();
-                paint.setStyle(Paint.Style.FILL);
-                canvas.drawPath(head,paint);
-            }
+            for(BoardArrows.Arrow arrow:annotations.all())
+                drawVector(canvas,cell,arrow.from,arrow.to);
+            // Show a live translucent preview as the finger moves.
+            if(arrowMode&&arrowStart>=0&&arrowEnd>=0&&arrowEnd!=arrowStart)
+                drawVector(canvas,cell,arrowStart,arrowEnd);
+        }
+        private void drawVector(Canvas canvas,float cell,int from,int to){
+            float ax=(from%8+.5f)*cell,ay=(from/8+.5f)*cell;
+            float bx=(to%8+.5f)*cell,by=(to/8+.5f)*cell;
+            float dx=bx-ax,dy=by-ay,d=(float)Math.hypot(dx,dy);
+            if(d<cell*.5f)return;
+            float ux=dx/d,uy=dy/d;
+            float tipX=bx-ux*cell*.18f,tipY=by-uy*cell*.18f;
+            paint.setColor(0x88ffae23);
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(Math.max(dp(3),cell*.12f));
+            paint.setStrokeCap(Paint.Cap.ROUND);
+            canvas.drawLine(ax,ay,tipX-ux*cell*.22f,tipY-uy*cell*.22f,paint);
+            Path head=new Path();
+            head.moveTo(tipX,tipY);
+            head.lineTo(tipX-ux*cell*.41f-uy*cell*.24f,
+                tipY-uy*cell*.41f+ux*cell*.24f);
+            head.lineTo(tipX-ux*cell*.41f+uy*cell*.24f,
+                tipY-uy*cell*.41f-ux*cell*.24f);
+            head.close();
+            paint.setStyle(Paint.Style.FILL);
+            canvas.drawPath(head,paint);
         }
         private String glyph(char p){
             String all="KQRBNPkqrbnp";
@@ -1220,6 +1225,12 @@ public final class MainActivity extends Activity {
                 if(action==MotionEvent.ACTION_DOWN){
                     getParent().requestDisallowInterceptTouchEvent(true);
                     arrowStart=squareAt(e.getX(),e.getY());
+                    arrowEnd=-1;
+                    return true;
+                }
+                if(action==MotionEvent.ACTION_MOVE){
+                    int next=squareAt(e.getX(),e.getY());
+                    if(arrowEnd!=next){arrowEnd=next;invalidate();}
                     return true;
                 }
                 if(action==MotionEvent.ACTION_UP){
@@ -1230,11 +1241,12 @@ public final class MainActivity extends Activity {
                             " vers "+ChessNarration.square(target));
                         refresh();
                     }
-                    arrowStart=-1;
+                    arrowStart=-1;arrowEnd=-1;
                     getParent().requestDisallowInterceptTouchEvent(false);
+                    invalidate();
                     performClick();return true;
                 }
-                if(action==MotionEvent.ACTION_CANCEL){arrowStart=-1;getParent().requestDisallowInterceptTouchEvent(false);return true;}
+                if(action==MotionEvent.ACTION_CANCEL){arrowStart=-1;arrowEnd=-1;getParent().requestDisallowInterceptTouchEvent(false);invalidate();return true;}
                 return true;
             }
             if(action!=MotionEvent.ACTION_UP)return true;
