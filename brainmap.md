@@ -115,3 +115,9 @@
 - `StockfishOpponent.Result` : données score blanc prévu choisi/meilleur, perte CP, seuil et intervention; moteur profondeur1/mode approfondi originaux toujours disponibles.
 - `MainActivity.java` : checkbox persistée, affichage double jauge dans Canvas à gauche, diagnostic GET ERR, moteur bot choisit pont partagé si garde activée et mode profond désactivé.
 - `app/build.gradle` 0.4.3 code 10, `.github/workflows/android-debug.yml` teste TacticalGuard en Java et produit APK direct non zip. CI et test matériel à vérifier.
+
+## GD-012 — Livraison CI confirmée
+- GitHub Actions #37, https://github.com/greenpower2669/GambitDrame/actions/runs/39426144750 : success, commit `faa696ba9e86c52808087e8f3f04a640b4a36c59`.
+- Tests confirmés dans le log : `TACTICAL_GUARD_TESTS_OK 8`, `STOCKFISH_PRECISION_TESTS_OK 18`, `CHESS_TESTS_OK 18`, `BOARD_ARROWS_TESTS_OK 4`; `BUILD SUCCESSFUL in 1m 19s`.
+- Prérelease `gd-test-37`, APK **directe non ZIP** `GambitDrame-v0.4.3-debug-arm64.apk`, 176684097 octets : https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-37/GambitDrame-v0.4.3-debug-arm64.apk.
+- ⚠️ Validation Android 16 physique à faire : UCI pause/reprise, latence MultiPV12, score et bande prédictive, voix, journal GET ERR. CI ≠ preuve de performance réelle sur Samsung. Pas de fusion main.
