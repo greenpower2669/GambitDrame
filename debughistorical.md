@@ -149,3 +149,9 @@
 - Voix : le code antérieur ne possédait pas de signal explicite de fin AudioTrack pour bloquer l'application du coup IA. `PiperSpeechEngine` fournira un callback après réellement joué, Android TTS via onDone ; un délai de secours 45 secondes évite le blocage en cas de pilote dysfonctionnel. Ne pas présenter ce délai comme une preuve de lecture terminée ; tester matériel.
 - Visuel et assistances ajoutés au code, mais rendu/voix/explications exactes non certifiés sur SM-A576B par les seules Actions.
 - CI code v0.4.6 en cours : premier run #67 échoué lors de compilation Java car appel selectGuarded ancien nombre d'arguments (version transitoire). Appel corrigé avant dernier build ; attendre CI réussie. Historiser ensuite SHA/run/tag direct APK.
+
+## GD-015 — Résultat final de CI 20/10/2026
+- GitHub Actions run #70 : https://github.com/greenpower2669/GambitDrame/actions/runs/39497491157 ; `success`, `BUILD SUCCESSFUL in 1m 17s`, code testé 294c4e0f60e6374cc12db7ca7c8c8b6f3557f0a4.
+- Tests confirmés : ADAPTIVE_OPPONENT_TESTS_OK 504, OPENING_COACH_TESTS_OK 10, BOARD_ARROWS_TESTS_OK 46, CHESS_TESTS_OK 18, HUMAN_POLICY_TESTS_OK 130, STOCKFISH_PRECISION_TESTS_OK 18, TACTICAL_GUARD_TESTS_OK 8, STUDY_METRICS_TESTS_OK 9.
+- APK ARM64 directe, sans ZIP : https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-70/GambitDrame-v0.4.6-debug-arm64.apk ; taille 176749305 octets, MIME application/vnd.android.package-archive ; Release https://github.com/greenpower2669/GambitDrame/releases/tag/gd-test-70.
+- Statut : livré à valider sur Samsung SM-A576B Android16. Pas de test physique, pas de mesure sur parties complètes, pas de calibration Elo ni de certification AudioTrack sur téléphone. Ancien mode conservé, main inchangé.
