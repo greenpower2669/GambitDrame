@@ -47,6 +47,11 @@ public final class MainActivity extends Activity {
     private int precisionTarget=80,precisionSigma=5;
     private boolean deepMode=false;
     private int deepDepth=7;
+    private boolean tacticalGuard=true;
+    private String guardPreviewFen;
+    private Integer guardPreviewWhiteCp,guardPreviewBestWhiteCp;
+    private CheckBox tacticalCheck;
+    private TextView guardInfo;
     private long failedBotRevision=-1;
     private int pieceTheme=3;
     private boolean trialMode=false,arrowMode=false;
@@ -104,10 +109,11 @@ public final class MainActivity extends Activity {
         precisionSigma=prefs.getInt("precisionSigma",5);
         deepMode=prefs.getBoolean("precisionDeep",false);
         deepDepth=prefs.getInt("precisionDepth",7);
+        tacticalGuard=prefs.getBoolean("tacticalGuard",true);
         pieceTheme=prefs.getInt("pieceTheme",3);
         stockfishOpponent=new StockfishOpponent(this);
         stockfishOpponent.setDiagnostics(engineLog);
-        engineLog.record("APP","GambitDrame v0.4.2 launched; mode="+opponentMode+
+        engineLog.record("APP","GambitDrame v0.4.3 launched; mode="+opponentMode+
             " target="+precisionTarget+" sigma="+precisionSigma+
             " deep="+deepMode+" depth="+deepDepth);
         long seed=prefs.getLong("humanSeed",0L);
@@ -131,7 +137,7 @@ public final class MainActivity extends Activity {
             return insets;
         });
         heading(root,"♟ GambitDrame",25);
-        label(root,"Version 0.4.2 — diagnostic Stockfish / GET ERR, bois 3D et plein écran",16);
+        label(root,"Version 0.4.3 — jauge 11 + garde-fou 12, pièces en bois, GET ERR",16);
         label(root,"Niveaux 400–900 EXPÉRIMENTAUX, pas encore calibrés par parties complètes.",14);
         chessView=new ChessView();
         analysisPanel=new TextView(this);
@@ -155,6 +161,24 @@ public final class MainActivity extends Activity {
             root.addView(chessView,new LinearLayout.LayoutParams(-1,-2));
         }
         button(root,"⛶ ÉCHIQUIER PLEIN ÉCRAN — jouer ou tracer",this::openFullscreenBoard);
+        tacticalCheck=new CheckBox(this);
+        tacticalCheck.setText("Garde-fou tactique (profondeur 11 → 12, toutes pièces)");
+        tacticalCheck.setTextSize(16);
+        tacticalCheck.setTextColor(Color.BLACK);
+        tacticalCheck.setChecked(tacticalGuard);
+        root.addView(tacticalCheck);
+        guardInfo=label(root,"Jauge gauche : principale (11). Filet vertical coloré :"+
+            " coup anticipé (12), trait clair : meilleure possibilité.",14);
+        tacticalCheck.setOnCheckedChangeListener((button,on)->{
+            tacticalGuard=on;
+            prefs.edit().putBoolean("tacticalGuard",on).apply();
+            engineLog.record("SETTING","tacticalGuard="+on+" mainGauge=11 guardGauge=12");
+            if(stockfishBridge!=null)stockfishBridge.cancelGuard();
+            if(!on){guardPreviewFen=null;guardPreviewWhiteCp=null;guardPreviewBestWhiteCp=null;}
+            applyGuardOverlay();
+            revision++;failedBotRevision=-1;
+            scheduleBot();
+        });
         engineDebugStatus=label(root,"Stockfish : mode="+(opponentMode==1?"moteur":"Lichess")+
             ", cible="+precisionTarget+" %, variabilité="+precisionSigma,15);
         engineDebugStatus.setTypeface(null,Typeface.BOLD);
@@ -517,6 +541,7 @@ public final class MainActivity extends Activity {
                 }
             }
         });
+        stockfishBridge.setDiagnostics(engineLog);
         stockfishBridge.start();
         refresh();
         analyzeDisplayed();
@@ -582,6 +607,14 @@ public final class MainActivity extends Activity {
                 View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
         }
     }
+    private void applyGuardOverlay(){
+        boolean show=tacticalGuard&&guardPreviewFen!=null&&
+            guardPreviewFen.equals(displayed().fen());
+        Integer chosen=show?guardPreviewWhiteCp:null;
+        Integer best=show?guardPreviewBestWhiteCp:null;
+        if(chessView!=null)chessView.setGuardEstimate(chosen,best);
+        if(fullscreenChessView!=null)fullscreenChessView.setGuardEstimate(chosen,best);
+    }
     private void updateEngineDebugStatus(String description){
         if(engineDebugStatus!=null)
             engineDebugStatus.setText("Stockfish : "+(opponentMode==1?(deepMode?"MultiPV":"rapide"):"Lichess")+
@@ -592,6 +625,7 @@ public final class MainActivity extends Activity {
         return "GambitDrame 0.4.2 / Android "+Build.VERSION.RELEASE+
             "\nMode adversaire="+opponentMode+" (0=Lichess, 1=Stockfish)"+
             "\nMoteur approfondi="+deepMode+" / profondeur="+deepDepth+
+            "\nGarde fou partagé prof11→12="+tacticalGuard+
             "\nCurseur précision="+precisionTarget+" % / variabilité sigma="+precisionSigma+
             "\nPersisté="+prefs.getInt("precisionTarget",-1)+"/"+prefs.getInt("precisionSigma",-1)+
             " mode="+prefs.getInt("opponentMode",-1)+
@@ -664,6 +698,7 @@ public final class MainActivity extends Activity {
         }
     }
     private void analyzeDisplayed(){
+        applyGuardOverlay();
         if(chessView!=null)chessView.setEvaluation(null,null);
         if(fullscreenChessView!=null)fullscreenChessView.setEvaluation(null,null);
         lastWhiteCp=null;lastWhiteMate=null;
@@ -1012,18 +1047,23 @@ public final class MainActivity extends Activity {
         final int target=precisionTarget,spread=precisionSigma;
         final boolean useDeep=deepMode;
         final int useDepth=deepDepth;
+        final boolean useGuard=tacticalGuard&&!useDeep;
         engineLog.record("TURN","START ply="+ply+" rev="+expectedRevision+
             " mode="+engineMode+" target="+target+" sigma="+spread+
-            " deep="+useDeep+" depth="+useDepth+" fen="+initial.fen());
+            " deep="+useDeep+" depth="+useDepth+" guard="+useGuard+" fen="+initial.fen());
         botRunning=true;
-        botInfo.setText(engineMode==1?(useDeep?"Stockfish MultiPV approfondi…":"Stockfish : toutes les positions à profondeur 1…"):
+        botInfo.setText(engineMode==1?(useDeep?"Stockfish MultiPV approfondi…":useGuard?"Jauge 11 → garde-fou MultiPV 12…":"Stockfish rapide sans garde-fou (profondeur 1)…"):
             "Profil Lichess expérimental : sélection d'un coup…");
-        if(engineMode==1&&stockfishBridge!=null)stockfishBridge.stop();
+        if(engineMode==1&&stockfishBridge!=null&&!useGuard)stockfishBridge.stop();
         botWorker.execute(()->{
             String chosenUci=null,detail=null,error=null;
+            StockfishOpponent.Result engineResult=null;
             try{
                 if(engineMode==1){
-                    StockfishOpponent.Result result=stockfishOpponent.select(initial,target,spread,useDeep,useDepth);
+                    StockfishOpponent.Result result=useGuard?
+                        stockfishBridge.selectGuarded(initial,target,spread):
+                        stockfishOpponent.select(initial,target,spread,useDeep,useDepth);
+                    engineResult=result;
                     if(result!=null){
                         chosenUci=result.uci;detail=result.details;
                         engineLog.record("RESULT",result.details);
@@ -1042,6 +1082,7 @@ public final class MainActivity extends Activity {
                 android.util.Log.w("GambitOpponent","Moteur incapable de sélectionner le coup",ex);
             }
             final String moveUci=chosenUci,explanation=detail,failure=error;
+            final StockfishOpponent.Result resolvedResult=engineResult;
             handler.post(()->{
                 botRunning=false;
                 if(trialMode||review.reviewing()||revision!=expectedRevision||!botEnabled||
@@ -1064,6 +1105,17 @@ public final class MainActivity extends Activity {
                 for(ChessGame.Move m:ChessGame.legal(current())){
                     if(m.uci().equals(moveUci)){
                         botInfo.setText(explanation==null?moveUci:explanation);
+                        if(resolvedResult!=null&&resolvedResult.guarded){
+                            ChessGame.Position after=ChessGame.apply(initial,m);
+                            guardPreviewFen=after.fen();
+                            guardPreviewWhiteCp=resolvedResult.projectedWhiteCp;
+                            guardPreviewBestWhiteCp=resolvedResult.bestWhiteCp;
+                            guardInfo.setText("Garde-fou prof.12 : perte "+
+                                resolvedResult.lossCp+"/"+resolvedResult.limitCp+
+                                " centipions. "+(resolvedResult.intervened?
+                                    "Coup risqué remplacé.":"Coup accepté.")+
+                                " Bande secondaire sur la jauge.");
+                        }
                         updateEngineDebugStatus(engineMode==1?
                             "Coup "+moveUci+" : "+(explanation==null?"":explanation):
                             "Coup expérimental Lichess "+moveUci);
@@ -1177,6 +1229,14 @@ public final class MainActivity extends Activity {
         private int arrowStart=-1,arrowEnd=-1;
         private Integer whiteCp=null,whiteMate=null;
         private double whiteFraction=0.5;
+        private Double guardFraction=null,bestFraction=null;
+        void setGuardEstimate(Integer projectedWhiteCp,Integer bestWhiteCp){
+            guardFraction=projectedWhiteCp==null?null:
+                EvaluationScale.whiteFraction(projectedWhiteCp,null);
+            bestFraction=bestWhiteCp==null?null:
+                EvaluationScale.whiteFraction(bestWhiteCp,null);
+            invalidate();
+        }
         private final int gaugeWidth=dp(44);
         ChessView(){
             super(MainActivity.this);
@@ -1213,6 +1273,25 @@ public final class MainActivity extends Activity {
             canvas.drawText("N",bar/2,dp(17),paint);
             paint.setColor(Color.BLACK);
             canvas.drawText("B",bar/2,h-dp(7),paint);
+            // Narrow independent gauge immediately adjacent to the main gauge.
+            // Projected evaluation depth12 is drawn vertically with its own split,
+            // while the main evaluation remains depth11.
+            if(guardFraction!=null){
+                float gLeft=bar-dp(11),gRight=bar-dp(2);
+                paint.setStyle(Paint.Style.FILL);
+                paint.setColor(0xff173e48);
+                canvas.drawRect(gLeft,0,gRight,h,paint);
+                paint.setColor(0xffb7eff0);
+                canvas.drawRect(gLeft,(float)(h*(1-guardFraction)),gRight,h,paint);
+                paint.setColor(0xffed9a25);
+                float guardCut=(float)(h*(1-guardFraction));
+                canvas.drawRect(gLeft-dp(1),guardCut-dp(1),gRight+dp(1),guardCut+dp(1),paint);
+                if(bestFraction!=null){
+                    float bestY=(float)(h*(1-bestFraction));
+                    paint.setColor(0xffff5b6a);
+                    canvas.drawRect(gLeft-dp(2),bestY-dp(1),gRight+dp(1),bestY+dp(1),paint);
+                }
+            }
             // Clear split marker makes small shifts perceptible.
             float cut=(float)(h*(1.0-whiteFraction));
             paint.setColor(0xffd0a332);
