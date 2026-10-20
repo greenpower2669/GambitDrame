@@ -103,3 +103,8 @@
 - Build #18 `39394049308`: `success` complet jusqu'à l'étape «Publish direct test APK in GitHub pre-release», commit `2c0cfc82d4e225ce3c1db6a8cc259629a0759dcf`. Les mises à jour ultérieures d'essais d'orientation de score et flèches continuent sur des runs distincts.
 - Dernier code opérationnel candidat commit `d8aac2e3d21d47b3ac35340f34cf9d9c94b76b63`, workflow #22 `39394368345` en cours à la première observation. NE PAS revendiquer une livraison finale sans résultat du run courant et présence de l'asset direct .apk.
 - Tests sur matériel Samsung toujours non réalisés par CI. Le score d'un coup est l'évaluation après son application à depth=1 depuis l'autre trait, renversée; ce choix peut donner une force réelle bien inférieure à celle du mode approfondi.
+
+## GD-010 — Validation CI finale, 20/10/2026
+- GitHub Actions #22 (39394368345) sur d8aac2e3d21d47b3ac35340f34cf9d9c94b76b63 : completed success ; BUILD SUCCESSFUL in 58s, règles 18 tests, politique humaine 130, précision/orientation Stockfish 15, flèches 4.
+- APK directe .apk (pas ZIP), v0.4.1 code 8, dans gd-test-22 : https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-22/GambitDrame-v0.4.1-debug-arm64.apk ; taille 176659809 octets.
+- Livrée pour test réel Samsung SM-A576B Android 16. CI ne vérifie pas la qualité de l'affichage 3D, les gestes physiques ni le temps de réponse de Stockfish sur ce téléphone. Pas de merge main.
