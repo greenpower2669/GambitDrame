@@ -95,3 +95,11 @@
 - Prérelease `gd-test-27` : APK directe `GambitDrame-v0.4.2-debug-arm64.apk` (176 673 417 octets), lien https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-27/GambitDrame-v0.4.2-debug-arm64.apk ; pas de ZIP à décompresser.
 - GET ERR : journal Stockfish local copiable et partageable, scores CP et rangs de tous les candidats, curseurs/modes, score réellement sélectionné, cas `BEST_FORCED_BY_NEAREST_SCORE` et `ALL_SCORES_EQUAL`, traces de l'analyse gauche en profondeur 11 vs choix profondeur 1, erreurs moteur.
 - Tests manuels Samsung Android 16 restent requis pour vérifier le moteur UCI et l'ergonomie réelle. Rien fusionné sur main.
+
+
+## GD-012 — Fab : garde-fou superposé à la jauge (20/10/2026)
+- Autorisation de coder, branche proposal uniquement. Continuer le score de jauge profondeur 11 par un seul demi-coup de recherche vers profondeur 12, dans le même processus Stockfish / sans vider sa table de transposition.
+- Générer et scorer *tous* les coups légaux des Noirs (dame, roi, tour, fou, cavalier, pions), sans exclure menaces de roi ou sacrifices corrects.
+- Checkbox garde-fou activée initialement en mode rapide, désactivable pour comparer profondeur1. Algorithme filtrant les candidats selon pertes centipions réelles, pas seulement pourcentage linéaire pire/meilleur. Préserver mode approfondi manuel en option distincte.
+- Jauge prédictive secondaire mince superposée dans la colonne gauche (résultat profondeur12 du coup choisi et repère meilleur possible), jauge principale à profondeur11 inchangée.
+- GET ERR inclut classements MultiPV12, coup initial, coup retenu, plafond centipions, annulations/erreurs; pas de publication main. Livraison APK .apk directe depuis GitHub CI et validation Samsung.
