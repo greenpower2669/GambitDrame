@@ -76,17 +76,24 @@ public final class GaugeTensorPolicy {
         String selectedPlan="";
         double chosenRank=100;
         int accepted=0,discarded=0;
+        boolean formerPlanLegal=false,formerPlanAllowed=false;
+        double formerPlanClosest=Double.POSITIVE_INFINITY;
         for(int i=0;i<sorted.size();i++){
             StockfishPrecision.Candidate c=sorted.get(i);
             final int loss=best-c.scoreCp;
-            if(loss>cap){discarded++;continue;}
-            accepted++;
-            double rank=sorted.size()==1?100:100.0*(sorted.size()-1-i)/(sorted.size()-1);
             String plan="";
             for(ChessGame.Move m:legal)
                 if(m.uci().equals(c.uci)){
                     plan=AdaptiveOpponent.planOf(root,m,rootCp);break;
                 }
+            if(!previous.isEmpty()&&previous.equals(plan))formerPlanLegal=true;
+            if(loss>cap){discarded++;continue;}
+            accepted++;
+            double rank=sorted.size()==1?100:100.0*(sorted.size()-1-i)/(sorted.size()-1);
+            if(!previous.isEmpty()&&previous.equals(plan)){
+                formerPlanAllowed=true;
+                formerPlanClosest=Math.min(formerPlanClosest,Math.abs(rank-drawn));
+            }
             double continuity=!previous.isEmpty()&&previous.equals(plan)?
                 8.0*clamp(stability,0,100)/100.0:0;
             // A previous deep variation carries a little more weight, but
@@ -105,11 +112,14 @@ public final class GaugeTensorPolicy {
         String[] pv=newLine.trim().split("\\s+");
         if(pv.length>=3&&pv[0].equals(selected.uci))followup=pv[2];
         String why;
-        if(kept)why="plan conservé : cohérence et score admissible";
+        if(kept)why="plan conservé : admissible et cohérent avec le rang sous tension";
         else if(previous.isEmpty())why="premier plan sélectionné";
+        else if(!formerPlanLegal)why="ancien plan abandonné : aucun coup légal du même type";
+        else if(!formerPlanAllowed)why="ancien plan abandonné : perte tactique au-delà du plafond";
         else if(!expected.isEmpty()&&!expected.equals(selected.uci))
-            why="variante précédente non retenue : nouveau rang/tension ou position réévaluée";
-        else why="plan abandonné : préférence de rang/tension ou évaluation modifiée";
+            why="ancienne variante abandonnée : rang déplacé par les seuils et position réévaluée";
+        else why="ancien plan abandonné : écart au rang sous tension plus faible que celui de l'ancien plan ("+
+            String.format(Locale.FRANCE,"%.1f",formerPlanClosest)+" points)";
         StringBuilder alternatives=new StringBuilder();
         for(int i=0;i<Math.min(6,sorted.size());i++){
             StockfishPrecision.Candidate c=sorted.get(i);
