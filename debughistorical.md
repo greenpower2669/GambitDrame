@@ -155,3 +155,10 @@
 - Tests confirmés : ADAPTIVE_OPPONENT_TESTS_OK 504, OPENING_COACH_TESTS_OK 10, BOARD_ARROWS_TESTS_OK 46, CHESS_TESTS_OK 18, HUMAN_POLICY_TESTS_OK 130, STOCKFISH_PRECISION_TESTS_OK 18, TACTICAL_GUARD_TESTS_OK 8, STUDY_METRICS_TESTS_OK 9.
 - APK ARM64 directe, sans ZIP : https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-70/GambitDrame-v0.4.6-debug-arm64.apk ; taille 176749305 octets, MIME application/vnd.android.package-archive ; Release https://github.com/greenpower2669/GambitDrame/releases/tag/gd-test-70.
 - Statut : livré à valider sur Samsung SM-A576B Android16. Pas de test physique, pas de mesure sur parties complètes, pas de calibration Elo ni de certification AudioTrack sur téléphone. Ancien mode conservé, main inchangé.
+
+
+## GD-016 — Retour Samsung niveau 30/40 joue comme 90 (21/10/2026)
+- Capture v0.4.6 : cible 40%, sigma10 ; dernier coup g8g7 classé 100% / perte 0/132cp, en mode adaptatif, jauge noire défavorable. Un seul meilleur coup n'est pas une preuve de force sur une partie complète.
+- Audit code : `effectiveTarget` ajoutait jusqu'à 95% de l'écart vers 100 selon déficit de CP; exemple niveau30 / −300cp => 97, ce qui écrasait le niveau nominal; `softmax` et budget de pertes très serrés faisaient par ailleurs privilégier des coups quasi parfaits.
+- Correctif GD-016 : cible positionnelle séparée, jamais de mutation de niveau, hystérésis jusqu'au seuil, température nominale plus étendue à bas niveau, contre-jeu modéré, CP plafonnés et logs séparés. La recherche n'assure pas de remonter la jauge et la précision 30/90 n'est pas Elo mesuré.
+- Risques : profondeur MultiPV 12–14 selon retard, délai téléphone, choix de défense/sacrifice, curseur seuil si l'utilisateur change en pleine partie ; tests CI & Samsung à consigner sans inventer succès.

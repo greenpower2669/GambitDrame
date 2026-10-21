@@ -145,3 +145,11 @@
 - Tests confirmés : ADAPTIVE_OPPONENT_TESTS_OK 504, OPENING_COACH_TESTS_OK 10, BOARD_ARROWS_TESTS_OK 46, CHESS_TESTS_OK 18, HUMAN_POLICY_TESTS_OK 130, STOCKFISH_PRECISION_TESTS_OK 18, TACTICAL_GUARD_TESTS_OK 8, STUDY_METRICS_TESTS_OK 9.
 - APK ARM64 directe, sans ZIP : https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-70/GambitDrame-v0.4.6-debug-arm64.apk ; taille 176749305 octets, MIME application/vnd.android.package-archive ; Release https://github.com/greenpower2669/GambitDrame/releases/tag/gd-test-70.
 - Statut : livré à valider sur Samsung SM-A576B Android16. Pas de test physique, pas de mesure sur parties complètes, pas de calibration Elo ni de certification AudioTrack sur téléphone. Ancien mode conservé, main inchangé.
+
+
+## GD-016 — Flux récup niveau / seuil (21/10/2026)
+- `MainActivity.java` lit/écrit `gd016RecoveryGoalCp` via curseur [-500..0] par pas 25 cp, étiquette du niveau nominal stable. Passe nom 30 / sigma 10, seuil -100 indépendamment à `StockfishBridge.selectGuarded(..., recoveryGoalCp)`.
+- `StockfishBridge.GuardRequest.recoveryGoalCp` transporte le but positionnel; `gaugeRootCp` prend score UCI vu du camp Stockfish à la profondeur11. Il détermine si la récupération vise la barre, et la profondeur MultiPV 12 (normal) / 13 ou 14 si déficit; log `GUARD_SEARCH`, `ADAPTIVE` séparé; `gd016Recovering`, `gd016RecoveryGoalLast` maintiennent la progression à la reprise.
+- `AdaptiveOpponent.State.recovering` et `.recoveryGoalCp` encapsulent la cible, hystérésis d'entrée et sortie seulement à `rootCp>=goalCp`. `AdaptiveOpponent.choose(...,rootCp,goalCp)` garde nominal, ajuste la température et le plafond de perte de manière bornée, donne bonus modeste au progrès vers la barre, maintient un léger bonus de continuité du plan. `AdaptiveOpponentTest` vérifie objectifs, distribution 30 vs 90 et absence de hausse nominale.
+- `StockfishOpponent.Result` fournit une description adaptée sans confondre qualité relative du coup (100%) et difficulté demandée; ancien constructeur conservé pour comparaison.
+- `app/build.gradle` v0.4.7 code14 ; GitHub Actions prérelease APK directe. Résultats CI à confirmer, Android16 non testé physiquement.

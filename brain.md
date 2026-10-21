@@ -139,3 +139,11 @@ L'adversaire humain doit échantillonner des coups humains réels, avec continui
 - Tests confirmés : ADAPTIVE_OPPONENT_TESTS_OK 504, OPENING_COACH_TESTS_OK 10, BOARD_ARROWS_TESTS_OK 46, CHESS_TESTS_OK 18, HUMAN_POLICY_TESTS_OK 130, STOCKFISH_PRECISION_TESTS_OK 18, TACTICAL_GUARD_TESTS_OK 8, STUDY_METRICS_TESTS_OK 9.
 - APK ARM64 directe, sans ZIP : https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-70/GambitDrame-v0.4.6-debug-arm64.apk ; taille 176749305 octets, MIME application/vnd.android.package-archive ; Release https://github.com/greenpower2669/GambitDrame/releases/tag/gd-test-70.
 - Statut : livré à valider sur Samsung SM-A576B Android16. Pas de test physique, pas de mesure sur parties complètes, pas de calibration Elo ni de certification AudioTrack sur téléphone. Ancien mode conservé, main inchangé.
+
+
+## GD-016 — Contrat de la correction niveau vs jauge (21/10/2026)
+- **Niveau habituel** : `precisionTarget` / nominal (0–100) reste inchangé à tous les coups, même quand l'IA est en grande difficulté; aucune montée fictive `effectiveTarget(30,-300) ≈97`.
+- **Objectif de récupération** : `recoveryGoalCp`, valeur positionnelle côté IA réglable de −5,00 à 0,00 pion (défaut −1,00); la récupération s'active avec une hystérésis dépendant de sensibilité, persiste jusqu'à rejoindre le seuil, puis cesse. L'objectif peut ne jamais être atteint.
+- Intensité de récupération : renforce modérément les préférences de contre-jeu et la profondeur 13/14 quand sous le seuil, sans changer le nominal. Choix aléatoire pondéré par force et sigma; distribution nominale 30% plus large qu'à 90%, avec limite de perte en centipions, pas d'erreur systématique. Elo non calibré.
+- UI : niveau habituel distinct de l'objectif positionnel ; GET ERR trace rootCp, goalCp, nominal, état de récupération et perte. Compatible anciens modes manuel et tactique.
+- Tests pure Java : seuil activé/maintenu/atteint/retiré; niveau 30 constant en récupération, distribution statistique 30 vs 90, plafonds CP; test appareil Android encore requis.

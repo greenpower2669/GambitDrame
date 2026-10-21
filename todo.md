@@ -180,3 +180,14 @@ Les commits purement Markdown n'ont pas besoin de recompiler Android ; workflow 
 - Tests confirmés : ADAPTIVE_OPPONENT_TESTS_OK 504, OPENING_COACH_TESTS_OK 10, BOARD_ARROWS_TESTS_OK 46, CHESS_TESTS_OK 18, HUMAN_POLICY_TESTS_OK 130, STOCKFISH_PRECISION_TESTS_OK 18, TACTICAL_GUARD_TESTS_OK 8, STUDY_METRICS_TESTS_OK 9.
 - APK ARM64 directe, sans ZIP : https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-70/GambitDrame-v0.4.6-debug-arm64.apk ; taille 176749305 octets, MIME application/vnd.android.package-archive ; Release https://github.com/greenpower2669/GambitDrame/releases/tag/gd-test-70.
 - Statut : livré à valider sur Samsung SM-A576B Android16. Pas de test physique, pas de mesure sur parties complètes, pas de calibration Elo ni de certification AudioTrack sur téléphone. Ancien mode conservé, main inchangé.
+
+
+## GD-016 — Séparation du seuil positionnel et niveau (21/10/2026)
+- [x] Lire invariants et mémoire projet ; auditer ADAPTIVE et UI ; cause niveau30→97 confirmée dans `effectiveTarget`.
+- [x] Extraire objectif de récupération en centipions (défaut −100 côté IA), hystérésis d'entrée/sortie ; conserver niveau nominal constant.
+- [x] Distribution de coups plus large à 30% qu'à 90%, perte CP et récupération contrôlées, pas de catastrophe imposée par coup ; garder anciens modes et préférences.
+- [x] Brancher seuil réglable et indépendant au panneau Android, logs GET ERR, recherche profondeur 12–14 guidée par la distance au seuil.
+- [x] Ajouter tests Java de seuil et comparaison répétée des sélections 30%/90%.
+- [ ] Vérifier réussite de la **dernière** CI et existence du fichier .apk direct v0.4.7 ; consigner le lien réel et les tests.
+- [ ] Sur Samsung Android16, jouer plusieurs parties à 30 puis 90 et observer fréquence des meilleurs coups, perte moyenne en CP, maintien défense/contre-jeu, temps CPU, comportement après atteinte du seuil.
+- [ ] Calibrer une force jouée réelle : chiffres % nominal restent un réglage expérimental, pas un Elo ni un taux de coups exact.
