@@ -75,18 +75,23 @@ public final class StockfishBridge {
         final ChessGame.Position root; final int target,sigma;
         final boolean adaptive;
         final int sensitivity,recovery,stability,maxDepth,recoveryGoalCp;
+        final boolean tensorMode;
+        final int redCp,greenCp;
+        final Map<String,String> pvLines=new HashMap<>();
         int searchDepth=12;
         final List<String> legal=new ArrayList<>();
         final Map<String,Integer> cp=new HashMap<>();
         final CountDownLatch latch=new CountDownLatch(1);
         StockfishOpponent.Result result; Exception failure;
         GuardRequest(ChessGame.Position root,int target,int sigma,
-                     boolean adaptive,int sensitivity,int recovery,int stability,int maxDepth,int recoveryGoalCp){
+                     boolean adaptive,int sensitivity,int recovery,int stability,int maxDepth,int recoveryGoalCp,
+                     boolean tensorMode,int redCp,int greenCp){
             this.root=root;this.target=target;this.sigma=sigma;
             this.adaptive=adaptive;this.sensitivity=sensitivity;
             this.recovery=recovery;this.stability=stability;
             this.maxDepth=Math.max(12,Math.min(16,maxDepth));
             this.recoveryGoalCp=Math.max(-500,Math.min(0,recoveryGoalCp));
+            this.tensorMode=tensorMode;this.redCp=redCp;this.greenCp=greenCp;
             for(ChessGame.Move m:ChessGame.legal(root))legal.add(m.uci());
         }
     }
@@ -113,8 +118,14 @@ public final class StockfishBridge {
     public StockfishOpponent.Result selectGuarded(ChessGame.Position root,int target,int sigma,
                            boolean adaptive,int sensitivity,int recovery,int stability,int maxDepth,
                            int recoveryGoalCp)throws Exception{
+        return selectGuarded(root,target,sigma,adaptive,sensitivity,recovery,stability,
+            maxDepth,recoveryGoalCp,false,250,-250);
+    }
+    public StockfishOpponent.Result selectGuarded(ChessGame.Position root,int target,int sigma,
+                           boolean adaptive,int sensitivity,int recovery,int stability,int maxDepth,
+                           int recoveryGoalCp,boolean tensorMode,int redCp,int greenCp)throws Exception{
         GuardRequest r=new GuardRequest(root,target,sigma,adaptive,sensitivity,recovery,stability,
-            maxDepth,recoveryGoalCp);
+            maxDepth,recoveryGoalCp,tensorMode,redCp,greenCp);
         if(r.legal.isEmpty())return null;
         if(r.legal.size()==1)return new StockfishOpponent.Result(r.legal.get(0),100,100,1);
         synchronized(lock){
@@ -124,6 +135,7 @@ public final class StockfishBridge {
             request=r;
             trace("GUARD_START","Réutilisation moteur et hash jauge11→MultiPV12, coups="+r.legal.size()+
                 " target="+target+" sigma="+sigma+" recoveryGoalCp="+r.recoveryGoalCp+
+                " tensorMode="+tensorMode+" red="+redCp+" green="+greenCp+
                 " adaptive="+adaptive+
                 " sensitivity="+sensitivity+" recovery="+recovery+" stability="+stability+
                 " fen="+root.fen());
@@ -141,11 +153,13 @@ public final class StockfishBridge {
         GuardRequest r=request;
         if(r==null||phase!=0||paused||awaitingReady||closed)return;
         if(!r.root.fen().equals(activeFen)){failRequest("FEN active incompatible");return;}
-        phase=2;r.cp.clear();
+        phase=2;r.cp.clear();r.pvLines.clear();
         // A positional threshold controls recovery, never the nominal difficulty.
-        boolean seeking=r.adaptive&&AdaptiveOpponent.updateRecovery(
-            strategy,gaugeRootCp,r.recoveryGoalCp,r.sensitivity);
-        int gap=r.recoveryGoalCp-gaugeRootCp;
+        boolean seeking=r.tensorMode?
+            GaugeTensorPolicy.tension(gaugeRootCp,r.target,r.redCp,r.greenCp).green>0:
+            r.adaptive&&AdaptiveOpponent.updateRecovery(
+                strategy,gaugeRootCp,r.recoveryGoalCp,r.sensitivity);
+        int gap=(r.tensorMode?r.greenCp:r.recoveryGoalCp)-gaugeRootCp;
         r.searchDepth=seeking&&gap>=300?Math.min(r.maxDepth,14):
             seeking?Math.min(r.maxDepth,13):12;
         send("setoption name MultiPV value "+r.legal.size());
@@ -154,7 +168,8 @@ public final class StockfishBridge {
         trace("GUARD_SEARCH","same Stockfish process + hash, MultiPV="+r.legal.size()+
             " depth="+r.searchDepth+" gaugeRootCp="+gaugeRootCp+
             " recoveryGoalCp="+r.recoveryGoalCp+" recovering="+seeking+
-            " nominal="+r.target+" opening="+openingContext);
+            " nominal="+r.target+" tensorMode="+r.tensorMode+
+            " redCp="+r.redCp+" greenCp="+r.greenCp+" opening="+openingContext);
     }
     private void guardInfo(String line){
         synchronized(lock){
@@ -167,6 +182,8 @@ public final class StockfishBridge {
                 if(cp==null&&mate==null)return;
                 r.cp.put(move,cp!=null?Integer.parseInt(cp):
                     (Integer.parseInt(mate)>0?10000:-10000));
+                int start=line.indexOf(" pv ");
+                if(start>=0)r.pvLines.put(move,line.substring(start+4).trim());
             }catch(RuntimeException ex){trace("GUARD_PARSE_ERR",String.valueOf(ex));}
         }
     }
@@ -191,14 +208,44 @@ public final class StockfishBridge {
                     List<StockfishPrecision.Candidate> ranking=StockfishPrecision.normalize(r.legal,scores);
                     TacticalGuard.Decision choice=null;
                     AdaptiveOpponent.Choice strategic=null;
-                    if(r.adaptive) strategic=AdaptiveOpponent.choose(r.root,ranking,r.target,r.sigma,
+                    GaugeTensorPolicy.Decision tensor=null;
+                    if(r.tensorMode)tensor=GaugeTensorPolicy.choose(r.root,ranking,r.target,r.sigma,
+                        gaugeRootCp,r.redCp,r.greenCp,strategy,guardRandom,
+                        r.stability,r.pvLines);
+                    else if(r.adaptive)strategic=AdaptiveOpponent.choose(r.root,ranking,r.target,r.sigma,
                         r.sensitivity,r.recovery,r.stability,strategy,guardRandom,gaugeRootCp,r.recoveryGoalCp);
                     else choice=TacticalGuard.choose(ranking,r.target,r.sigma,guardRandom);
                     int whiteSign=r.root.white?1:-1;
                     for(StockfishPrecision.Candidate m:ranking)
                         trace("GUARD_RANK",m.uci+" cp="+m.scoreCp+
                             " relative="+String.format(java.util.Locale.US,"%.1f",m.relativeQuality)+"%");
-                    if(strategic!=null){
+                    if(tensor!=null){
+                        trace("TENSOR_DECISION","depth="+r.searchDepth+" opening="+openingContext+
+                            " rootCp="+gaugeRootCp+" move="+tensor.move.uci+
+                            " "+tensor.reason+" alternatives="+tensor.alternatives);
+                        if(!tensor.planPreserved&&strategy.plan!=null&&!strategy.plan.isEmpty())
+                            trace("PLAN_CHANGE","ancien="+strategy.plan+" nouveau="+tensor.plan+
+                                " explication="+tensor.reason);
+                        else trace("PLAN_KEEP","ancien="+strategy.plan+" nouveau="+tensor.plan+
+                            " suite_attendue="+tensor.planLine);
+                        strategy.plan=tensor.plan;
+                        strategy.lastMove=tensor.planLine; // next expected bot move, if PV survives
+                        strategy.lastScoreCp=tensor.move.scoreCp;
+                        strategyPrefs.edit().putString("gd015Plan",strategy.plan)
+                            .putString("gd015LastMove",strategy.lastMove).apply();
+                        r.result=new StockfishOpponent.Result(tensor.move.uci,
+                            tensor.move.relativeQuality,tensor.drawnRank,r.legal.size(),
+                            tensor.move.scoreCp*whiteSign,
+                            (tensor.move.scoreCp+tensor.lossCp)*whiteSign,
+                            tensor.lossCp,tensor.capCp,false,
+                            String.format(java.util.Locale.FRANCE,
+                              "Jauge colorée : coup %s | gris %d%%, rouge %.0f%%, vert %.0f%%"+
+                              " | rang visé %.1f%%, joué %.1f%% | perte %d/%dcp | %s",
+                              tensor.move.uci,tensor.nominal,
+                              tensor.redTension*100,tensor.greenTension*100,
+                              tensor.targetRank,tensor.chosenRank,
+                              tensor.lossCp,tensor.capCp,tensor.plan));
+                    }else if(strategic!=null){
                         trace("ADAPTIVE","depth="+r.searchDepth+" opening="+openingContext+
                             " rootCp="+strategic.rootCp+" nominal="+strategic.effectiveTarget+
                             " recoveryGoalCp="+strategic.recoveryGoalCp+
