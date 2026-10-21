@@ -34,10 +34,15 @@ public final class StockfishOpponent {
         }
         public Result(String uci,double quality,double requested,int legal,
                       int whiteCp,int bestWhite,int loss,int cap,boolean override){
+            this(uci,quality,requested,legal,whiteCp,bestWhite,loss,cap,override,null);
+        }
+        public Result(String uci,double quality,double requested,int legal,
+                      int whiteCp,int bestWhite,int loss,int cap,boolean override,
+                      String adaptedDetails){
             this.uci=uci;selectedQuality=quality;requestedQuality=requested;
             projectedWhiteCp=whiteCp;bestWhiteCp=bestWhite;
             lossCp=loss;limitCp=cap;intervened=override;guarded=true;
-            details=String.format(java.util.Locale.FRANCE,
+            details=adaptedDetails!=null?adaptedDetails:String.format(java.util.Locale.FRANCE,
                 "Stockfish profondeur 12 : %s, qualité %.1f%%, cible %.1f%% ; perte %d/%d cp%s ; %d coups",
                 uci,quality,requested,loss,cap,override?" (garde-fou actif)":"",legal);
         }
