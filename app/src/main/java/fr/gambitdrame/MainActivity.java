@@ -55,6 +55,7 @@ public final class MainActivity extends Activity {
     private int precisionTarget=80,precisionSigma=5;
     private boolean adaptiveOpponent=true;
     private int adaptiveSensitivity=70,adaptiveRecovery=95,adaptiveStability=70,adaptiveMaxDepth=14;
+    private int recoveryGoalCp=-100;
     private boolean speechPending=false;
     private long speechSequence=0;
     private Runnable waitingBotApply;
@@ -133,6 +134,7 @@ public final class MainActivity extends Activity {
         adaptiveRecovery=prefs.getInt("gd015Recovery",95);
         adaptiveStability=prefs.getInt("gd015Stability",70);
         adaptiveMaxDepth=prefs.getInt("gd015MaxDepth",14);
+        recoveryGoalCp=Math.max(-500,Math.min(0,prefs.getInt("gd016RecoveryGoalCp",-100)));
         deepMode=prefs.getBoolean("precisionDeep",false);
         deepDepth=prefs.getInt("precisionDepth",7);
         tacticalGuard=prefs.getBoolean("tacticalGuard",true);
@@ -163,7 +165,7 @@ public final class MainActivity extends Activity {
             return insets;
         });
         heading(root,"♟ GambitDrame",25);
-        label(root,"Version 0.4.6 — adversaire adaptatif, voix et aides aux ouvertures",16);
+        label(root,"Version 0.4.7 — niveau séparé de la barre de récupération, voix et ouvertures",16);
         label(root,"Niveaux 400–900 EXPÉRIMENTAUX, pas encore calibrés par parties complètes.",14);
         chessView=new ChessView();
         analysisPanel=new TextView(this);
@@ -399,6 +401,28 @@ public final class MainActivity extends Activity {
             n->{adaptiveSensitivity=n;prefs.edit().putInt("gd015Sensitivity",n).apply();});
         addAdaptiveSlider(root,"Intensité de récupération",adaptiveRecovery,
             n->{adaptiveRecovery=n;prefs.edit().putInt("gd015Recovery",n).apply();});
+        label(root,"Barre positionnelle à reconquérir (score du camp Stockfish, distinct du niveau de jeu)",14);
+        TextView goalLabel=label(root,"Objectif de récupération : "+
+            String.format(java.util.Locale.FRANCE,"%.2f",recoveryGoalCp/100.0)+" pion",16);
+        SeekBar goalSlider=new SeekBar(this);
+        goalSlider.setMax(20);goalSlider.setProgress((recoveryGoalCp+500)/25);
+        goalSlider.setContentDescription("Seuil positionnel de sortie de récupération, entre moins cinq et zéro pion");
+        root.addView(goalSlider);
+        goalSlider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
+            public void onProgressChanged(SeekBar b,int progress,boolean fromUser){
+                if(!fromUser)return;
+                recoveryGoalCp=-500+progress*25;
+                goalLabel.setText("Objectif de récupération : "+
+                    String.format(java.util.Locale.FRANCE,"%.2f",recoveryGoalCp/100.0)+" pion");
+                prefs.edit().putInt("gd016RecoveryGoalCp",recoveryGoalCp).apply();
+                engineLog.record("SETTING","recoveryGoalCp="+recoveryGoalCp+
+                    " nominalRemains="+precisionTarget);
+                if(stockfishBridge!=null)stockfishBridge.cancelGuard();
+                revision++;failedBotRevision=-1;scheduleBot();
+            }
+            public void onStartTrackingTouch(SeekBar b){}
+            public void onStopTrackingTouch(SeekBar b){}
+        });
         addAdaptiveSlider(root,"Stabilité du plan",adaptiveStability,
             n->{adaptiveStability=n;prefs.edit().putInt("gd015Stability",n).apply();});
         TextView depthTitle=label(root,"Profondeur maximale adaptative : "+adaptiveMaxDepth,14);
@@ -680,13 +704,17 @@ public final class MainActivity extends Activity {
     }
     private void updateEngineDebugStatus(String description){
         if(engineDebugStatus!=null)
-            engineDebugStatus.setText("Stockfish : "+(opponentMode==1?(deepMode?"MultiPV":"rapide"):"Lichess")+
-                " | cible "+precisionTarget+" % | sigma "+precisionSigma+
+            engineDebugStatus.setText("Stockfish : "+(opponentMode==1?
+                (adaptiveOpponent?"adaptatif":deepMode?"MultiPV":"rapide"):"Lichess")+
+                " | niveau "+precisionTarget+" % | sigma "+precisionSigma+
+                (adaptiveOpponent?" | objectif jauge "+
+                    String.format(java.util.Locale.FRANCE,"%.2f",recoveryGoalCp/100.0):"")+
                 " | "+description);
     }
     private String currentEngineReport(){
-        return "GambitDrame 0.4.6 / Android "+Build.VERSION.RELEASE+
+        return "GambitDrame 0.4.7 / Android "+Build.VERSION.RELEASE+
             "\\nAdaptatif="+adaptiveOpponent+" paramètres="+adaptiveSensitivity+"/"+adaptiveRecovery+"/"+adaptiveStability+"/"+adaptiveMaxDepth+
+            "\\nBut positionnel distinct du niveau (camp IA)="+recoveryGoalCp+"cp"+
             "\nMode adversaire="+opponentMode+" (0=Lichess, 1=Stockfish)"+
             "\nMoteur approfondi="+deepMode+" / profondeur="+deepDepth+
             "\nGarde fou partagé prof11→12="+tacticalGuard+
@@ -721,7 +749,7 @@ public final class MainActivity extends Activity {
             .setNeutralButton("PARTAGER",(d,w)->{
                 Intent send=new Intent(Intent.ACTION_SEND);
                 send.setType("text/plain");
-                send.putExtra(Intent.EXTRA_SUBJECT,"GambitDrame 0.4.6 GET ERR");
+                send.putExtra(Intent.EXTRA_SUBJECT,"GambitDrame 0.4.7 GET ERR");
                 send.putExtra(Intent.EXTRA_TEXT,report);
                 startActivity(Intent.createChooser(send,"Partager le diagnostic GambitDrame"));
             })
@@ -1201,15 +1229,18 @@ public final class MainActivity extends Activity {
         final boolean useAdaptive=adaptiveOpponent&&engineMode==1;
         final int sensitivity=adaptiveSensitivity,recovery=adaptiveRecovery,stability=adaptiveStability;
         final int maximumDepth=adaptiveMaxDepth;
+        final int recoveryGoal=recoveryGoalCp;
         if(stockfishBridge!=null)stockfishBridge.setOpeningContext(
             OpeningTheory.measure(moves).name);
         engineLog.record("TURN","START ply="+ply+" rev="+expectedRevision+
             " mode="+engineMode+" target="+target+" sigma="+spread+
             " deep="+useDeep+" depth="+useDepth+" guard="+useGuard+
             " adaptive="+useAdaptive+" sensitivity="+sensitivity+" recovery="+recovery+
-            " stability="+stability+" maxDepth="+maximumDepth+" fen="+initial.fen());
+            " stability="+stability+" maxDepth="+maximumDepth+
+            " goalCp="+recoveryGoal+" fen="+initial.fen());
         botRunning=true;
-        botInfo.setText(engineMode==1?(useAdaptive?"Adversaire adaptatif : maintien du plan et contre-jeu…":useDeep?"Stockfish MultiPV approfondi…":useGuard?"Jauge 11 → garde-fou MultiPV 12…":"Stockfish rapide ancien (profondeur 1)…"):
+        botInfo.setText(engineMode==1?(useAdaptive?"Adversaire adaptatif : niveau "+target+" %, objectif jauge "+
+            String.format(java.util.Locale.FRANCE,"%.2f",recoveryGoal/100.0)+" pion…":useDeep?"Stockfish MultiPV approfondi…":useGuard?"Jauge 11 → garde-fou MultiPV 12…":"Stockfish rapide ancien (profondeur 1)…"):
             "Profil Lichess expérimental : sélection d'un coup…");
         if(engineMode==1&&stockfishBridge!=null&&!useGuard&&!useAdaptive)stockfishBridge.stop();
         botWorker.execute(()->{
@@ -1218,7 +1249,7 @@ public final class MainActivity extends Activity {
             try{
                 if(engineMode==1){
                     StockfishOpponent.Result result=useAdaptive?
-                        stockfishBridge.selectGuarded(initial,target,spread,true,sensitivity,recovery,stability,maximumDepth):
+                        stockfishBridge.selectGuarded(initial,target,spread,true,sensitivity,recovery,stability,maximumDepth,recoveryGoal):
                         useGuard?stockfishBridge.selectGuarded(initial,target,spread):
                         stockfishOpponent.select(initial,target,spread,useDeep,useDepth);
                     engineResult=result;
@@ -1268,7 +1299,10 @@ public final class MainActivity extends Activity {
                             guardPreviewFen=after.fen();
                             guardPreviewWhiteCp=resolvedResult.projectedWhiteCp;
                             guardPreviewBestWhiteCp=resolvedResult.bestWhiteCp;
-                            guardInfo.setText("Garde-fou prof.12 : perte "+
+                            guardInfo.setText((useAdaptive?"Mode adaptatif : niveau "+target+
+                                " %, barre de récupération "+
+                                String.format(java.util.Locale.FRANCE,"%.2f",recoveryGoal/100.0)+
+                                " pion, ":"Garde-fou : ")+"perte "+
                                 resolvedResult.lossCp+"/"+resolvedResult.limitCp+
                                 " centipions. "+(resolvedResult.intervened?
                                     "Coup risqué remplacé.":"Coup accepté.")+
@@ -1303,7 +1337,7 @@ public final class MainActivity extends Activity {
         engineLog.record("NEW_GAME","New game; kept settings opponent="+opponentMode+
             " target="+precisionTarget+" sigma="+precisionSigma+
             " deep="+deepMode+" depth="+deepDepth);
-        updateEngineDebugStatus("Nouvelle partie — réglages conservés");
+        updateEngineDebugStatus("Nouvelle partie — niveau et objectif conservés");
         if(trialMode)exitTrial();
         annotations.clear();
         leaveReview();
