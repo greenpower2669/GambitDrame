@@ -196,3 +196,15 @@ Les commits purement Markdown n'ont pas besoin de recompiler Android ; workflow 
 - GitHub Actions run #79 https://github.com/greenpower2669/GambitDrame/actions/runs/39669050938 : **completed success**, BUILD SUCCESSFUL (1m17s) ; commit code `525f333139f957be6b3e8c18b9bb9defd977f856`. Couverture : ADAPTIVE_OPPONENT_TESTS_OK **1113**, CHESS_TESTS_OK 18, STOCKFISH_PRECISION_TESTS_OK 18, TACTICAL_GUARD_TESTS_OK 8, BOARD_ARROWS_TESTS_OK 46, STUDY_METRICS_TESTS_OK 9, OPENING_COACH_TESTS_OK 10.
 - Prérelease gd-test-79 https://github.com/greenpower2669/GambitDrame/releases/tag/gd-test-79 ; APK directe non ZIP, MIME application/vnd.android.package-archive, **176754465 octets** : https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-79/GambitDrame-v0.4.7-debug-arm64.apk.
 - Jauge turquoise signale l'objectif de récupération (score du côté Noir dans le mode actuel), sans modifier la valeur nominale 30/40/90. Test CI de logique oui ; **test de jeu réel Samsung non réalisé**. Conserver ancien mode et toutes les données ; main non fusionnée.
+
+
+## GD-017 — Trois curseurs colorés sur jauge (21/10/2026)
+- [x] Audit v0.4.7 et lecture consignes FabCopilot / cinq mémoires, index Djipie.
+- [x] Nouveau modèle indépendant gris/rang, rouge/limite d'écrasement, vert/limite de soumission ; progression continue et explication numérique des deux tenseurs ; conservation anciennes options.
+- [x] Modifier la jauge Android N/R/V : glisser/toucher dans trois colonnes, sauvegarde directe, légende en couleurs, invalider la décision de l'IA prise avant le changement ; anciennes commandes masquées dans Avancé.
+- [x] GET ERR journalise tensions, rang souhaité/tiré/joué, perte CP, variantes et motifs maintien/changement du plan.
+- [x] Tests unitaires Java ciblés, version candidate 0.4.8 code 15, workflow APK directe ARM64.
+- [ ] Vérifier **dernier commit** GitHub Actions success, logs de tests, APK directe publiée et lien final exact.
+- [ ] Essai sur Samsung SM-A576B Android16 : drag des 3 marqueurs, lisibilité accessible, plein écran, barres système, stabilité partie/voix et sauvegardes ; contraste des flèches et jauge.
+- [ ] Mesurer séries de parties à gris 30/50/90 avec différents seuils, fréquence coups plus forts/faibles, bascule jauge et continuité des plans ; calibrer force réelle sans assimiler pourcentage à Elo.
+- [ ] Surveiller temps/mémoire du MultiPV profondeur12–14, interaction avec changement de paramètres durant la réflexion et aucune sélection sur FEN périmée.
