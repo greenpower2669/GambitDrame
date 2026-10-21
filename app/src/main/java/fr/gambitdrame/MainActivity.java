@@ -207,6 +207,7 @@ public final class MainActivity extends Activity {
         guardInfo=label(root,"Jauge Stockfish : position réelle et prévision tactique ; les trois curseurs colorés règlent la façon de choisir.",14);
         gaugeLegend=label(root,gaugeLegendText(),16);
         gaugeLegend.setTypeface(null,Typeface.BOLD);
+        gaugeLegend.setText(coloredGaugeLegend());
         tacticalCheck.setOnCheckedChangeListener((button,on)->{
             tacticalGuard=on;
             prefs.edit().putBoolean("tacticalGuard",on).apply();
@@ -526,7 +527,7 @@ public final class MainActivity extends Activity {
                 engineLog.record("SETTING","precisionTarget="+value+"%");
                 updateEngineDebugStatus("Cible modifiée");
                 invalidateAllBoards();
-                if(gaugeLegend!=null)gaugeLegend.setText(gaugeLegendText());
+                if(gaugeLegend!=null)gaugeLegend.setText(coloredGaugeLegend());
                 revision++;failedBotRevision=-1;scheduleBot();
             }
             @Override public void onStartTrackingTouch(SeekBar b){}
@@ -749,6 +750,20 @@ public final class MainActivity extends Activity {
             String.format(java.util.Locale.FRANCE,"%.2f",gaugeGreenCp/100.0)+" pion"+
             "\nGlisser N, R ou V directement sur la jauge. Rouge et vert"+
             " agissent progressivement sur le choix des coups.";
+    }
+    private android.text.SpannableString coloredGaugeLegend(){
+        String raw=gaugeLegendText();
+        android.text.SpannableString styled=new android.text.SpannableString(raw);
+        String[] words={"GRIS","ROUGE","VERT"};
+        int[] shades={0xff626871,0xffd13125,0xff148b44};
+        for(int i=0;i<words.length;i++){
+            int start=raw.indexOf(words[i]);
+            if(start>=0)
+                styled.setSpan(new android.text.style.ForegroundColorSpan(shades[i]),
+                    Math.max(0,start-2),start+words[i].length(),
+                    android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+        return styled;
     }
     private void invalidateAllBoards(){
         if(chessView!=null)chessView.invalidate();
@@ -2039,6 +2054,11 @@ public final class MainActivity extends Activity {
                (draggedGaugeLane>=0||e.getX()<gaugeWidth)){
                 if(action==MotionEvent.ACTION_DOWN){
                     draggedGaugeLane=Math.min(2,Math.max(0,(int)(e.getX()*3/gaugeWidth)));
+                    // Invalidate an ongoing move selection as soon as the user
+                    // grabs a control, not only after lifting their finger.
+                    revision++;failedBotRevision=-1;
+                    handler.removeCallbacks(botRunnable);
+                    if(stockfishBridge!=null)stockfishBridge.cancelGuard();
                     if(getParent()!=null)getParent().requestDisallowInterceptTouchEvent(true);
                     return true;
                 }
@@ -2063,7 +2083,7 @@ public final class MainActivity extends Activity {
                     if(legacyPrecisionSlider!=null)
                         legacyPrecisionSlider.setProgress(precisionTarget);
                     updateEngineDebugStatus("Réglage sur jauge");
-                    if(gaugeLegend!=null)gaugeLegend.setText(gaugeLegendText());
+                    if(gaugeLegend!=null)gaugeLegend.setText(coloredGaugeLegend());
                     invalidateAllBoards();
                     if(action==MotionEvent.ACTION_UP){
                         engineLog.record("GAUGE_TOUCH","lane="+draggedGaugeLane+
