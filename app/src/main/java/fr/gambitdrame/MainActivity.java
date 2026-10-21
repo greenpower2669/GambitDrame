@@ -419,6 +419,8 @@ public final class MainActivity extends Activity {
             if(stockfishBridge!=null)stockfishBridge.cancelGuard();
             revision++;failedBotRevision=-1;scheduleBot();
         });
+        ((android.view.ViewGroup)tacticalCheck.getParent()).removeView(tacticalCheck);
+        tacticalCheck.setVisibility(View.VISIBLE);
         advancedControls.addView(tacticalCheck);
         CheckBox adaptiveBox=new CheckBox(this);
         adaptiveBox.setText("Adversaire stratégique adaptatif (défaut) — ancien algorithme accessible");
