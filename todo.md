@@ -204,7 +204,13 @@ Les commits purement Markdown n'ont pas besoin de recompiler Android ; workflow 
 - [x] Modifier la jauge Android N/R/V : glisser/toucher dans trois colonnes, sauvegarde directe, légende en couleurs, invalider la décision de l'IA prise avant le changement ; anciennes commandes masquées dans Avancé.
 - [x] GET ERR journalise tensions, rang souhaité/tiré/joué, perte CP, variantes et motifs maintien/changement du plan.
 - [x] Tests unitaires Java ciblés, version candidate 0.4.8 code 15, workflow APK directe ARM64.
-- [ ] Vérifier **dernier commit** GitHub Actions success, logs de tests, APK directe publiée et lien final exact.
+- [x] CI #88 dernier commit vérifié : BUILD SUCCESSFUL, GaugeTensorPolicyTest 17 et APK directe v0.4.8 dans gd-test-88.
 - [ ] Essai sur Samsung SM-A576B Android16 : drag des 3 marqueurs, lisibilité accessible, plein écran, barres système, stabilité partie/voix et sauvegardes ; contraste des flèches et jauge.
 - [ ] Mesurer séries de parties à gris 30/50/90 avec différents seuils, fréquence coups plus forts/faibles, bascule jauge et continuité des plans ; calibrer force réelle sans assimiler pourcentage à Elo.
 - [ ] Surveiller temps/mémoire du MultiPV profondeur12–14, interaction avec changement de paramètres durant la réflexion et aucune sélection sur FEN périmée.
+
+## GD-017 — Livraison vérifiée GitHub Actions (21/10/2026)
+- CI **#88** https://github.com/greenpower2669/GambitDrame/actions/runs/39681424964 : completed success, BUILD SUCCESSFUL 1m22s. Commit code `aa1a6e403657aa88ed70f9bb367fcfea0a4526c2`.
+- Tests CI explicitement confirmés : `GAUGE_TENSOR_TESTS_OK 17` (50% = milieu du classement, rouge/vert progressive, maintien de plan/filtre), `ADAPTIVE_OPPONENT_TESTS_OK 1113`, `CHESS_TESTS_OK 18`, `STOCKFISH_PRECISION_TESTS_OK 18`, `BOARD_ARROWS_TESTS_OK 46`.
+- Pré-release `gd-test-88` https://github.com/greenpower2669/GambitDrame/releases/tag/gd-test-88 ; APK directe `GambitDrame-v0.4.8-debug-arm64.apk`, 176771129 octets, MIME application/vnd.android.package-archive (sans ZIP) https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-88/GambitDrame-v0.4.8-debug-arm64.apk.
+- Statut : **livré pour tests sur Samsung SM-A576B Android16**. Compilation et tests Java ne prouvent PAS qualité visuelle, tactile, variation d'Elo ou absence de retard MultiPV en usage réel. Branch proposal préservée, pas de merge main.
