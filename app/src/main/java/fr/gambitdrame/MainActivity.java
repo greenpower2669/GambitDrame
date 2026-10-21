@@ -56,6 +56,11 @@ public final class MainActivity extends Activity {
     private boolean adaptiveOpponent=true;
     private int adaptiveSensitivity=70,adaptiveRecovery=95,adaptiveStability=70,adaptiveMaxDepth=14;
     private int recoveryGoalCp=-100;
+    private boolean gaugeTensorMode=true;
+    private int gaugeRedCp=250,gaugeGreenCp=-250;
+    private TextView gaugeLegend;
+    private SeekBar legacyPrecisionSlider;
+    private TextView legacyPrecisionLabel;
     private boolean speechPending=false;
     private long speechSequence=0;
     private Runnable waitingBotApply;
@@ -135,6 +140,9 @@ public final class MainActivity extends Activity {
         adaptiveStability=prefs.getInt("gd015Stability",70);
         adaptiveMaxDepth=prefs.getInt("gd015MaxDepth",14);
         recoveryGoalCp=Math.max(-500,Math.min(0,prefs.getInt("gd016RecoveryGoalCp",-100)));
+        gaugeTensorMode=prefs.getBoolean("gd017TensorMode",true);
+        gaugeRedCp=Math.max(50,Math.min(800,prefs.getInt("gd017RedCp",250)));
+        gaugeGreenCp=Math.max(-800,Math.min(-50,prefs.getInt("gd017GreenCp",-250)));
         deepMode=prefs.getBoolean("precisionDeep",false);
         deepDepth=prefs.getInt("precisionDepth",7);
         tacticalGuard=prefs.getBoolean("tacticalGuard",true);
@@ -165,7 +173,7 @@ public final class MainActivity extends Activity {
             return insets;
         });
         heading(root,"♟ GambitDrame",25);
-        label(root,"Version 0.4.7 — niveau séparé de la barre de récupération, voix et ouvertures",16);
+        label(root,"Version 0.4.8 — jauge à trois curseurs colorés et tenseurs stratégiques",16);
         label(root,"Niveaux 400–900 EXPÉRIMENTAUX, pas encore calibrés par parties complètes.",14);
         chessView=new ChessView();
         analysisPanel=new TextView(this);
@@ -195,8 +203,10 @@ public final class MainActivity extends Activity {
         tacticalCheck.setTextColor(Color.BLACK);
         tacticalCheck.setChecked(tacticalGuard);
         root.addView(tacticalCheck);
-        guardInfo=label(root,"Jauge gauche : principale (11). Filet vertical coloré :"+
-            " coup anticipé (12), trait clair : meilleure possibilité.",14);
+        tacticalCheck.setVisibility(View.GONE);
+        guardInfo=label(root,"Jauge Stockfish : position réelle et prévision tactique ; les trois curseurs colorés règlent la façon de choisir.",14);
+        gaugeLegend=label(root,gaugeLegendText(),16);
+        gaugeLegend.setTypeface(null,Typeface.BOLD);
         tacticalCheck.setOnCheckedChangeListener((button,on)->{
             tacticalGuard=on;
             prefs.edit().putBoolean("tacticalGuard",on).apply();
@@ -387,27 +397,50 @@ public final class MainActivity extends Activity {
             @Override public void onNothingSelected(android.widget.AdapterView<?> parent){}
         });
         root.addView(opponents);
+        // The visual gauge is the primary control. Legacy knobs remain available
+        // under one collapsible advanced section, preserving saved preferences.
+        LinearLayout advancedControls=new LinearLayout(this);
+        advancedControls.setOrientation(LinearLayout.VERTICAL);
+        advancedControls.setVisibility(View.GONE);
+        button(root,"⚙ Réglages avancés et anciens algorithmes",
+            ()->advancedControls.setVisibility(advancedControls.getVisibility()==View.VISIBLE?
+                View.GONE:View.VISIBLE));
+        root.addView(advancedControls);
+        CheckBox tensorModeBox=new CheckBox(this);
+        tensorModeBox.setText("Trois curseurs sur la jauge (mode actuel) — décocher : ancien algorithme");
+        tensorModeBox.setChecked(gaugeTensorMode);
+        tensorModeBox.setTextColor(Color.BLACK);
+        advancedControls.addView(tensorModeBox);
+        tensorModeBox.setOnCheckedChangeListener((button,enabled)->{
+            gaugeTensorMode=enabled;
+            prefs.edit().putBoolean("gd017TensorMode",enabled).apply();
+            engineLog.record("SETTING","gaugeTensorMode="+enabled);
+            invalidateAllBoards();
+            if(stockfishBridge!=null)stockfishBridge.cancelGuard();
+            revision++;failedBotRevision=-1;scheduleBot();
+        });
+        advancedControls.addView(tacticalCheck);
         CheckBox adaptiveBox=new CheckBox(this);
         adaptiveBox.setText("Adversaire stratégique adaptatif (défaut) — ancien algorithme accessible");
         adaptiveBox.setChecked(adaptiveOpponent);adaptiveBox.setTextColor(Color.BLACK);
-        root.addView(adaptiveBox);
+        advancedControls.addView(adaptiveBox);
         adaptiveBox.setOnCheckedChangeListener((b,on)->{
             adaptiveOpponent=on;prefs.edit().putBoolean("gd015Adaptive",on).apply();
             engineLog.record("SETTING","adaptative="+on);
             if(stockfishBridge!=null)stockfishBridge.cancelGuard();
             revision++;failedBotRevision=-1;scheduleBot();
         });
-        addAdaptiveSlider(root,"Sensibilité aux positions déséquilibrées",adaptiveSensitivity,
+        addAdaptiveSlider(advancedControls,"Sensibilité aux positions déséquilibrées",adaptiveSensitivity,
             n->{adaptiveSensitivity=n;prefs.edit().putInt("gd015Sensitivity",n).apply();});
-        addAdaptiveSlider(root,"Intensité de récupération",adaptiveRecovery,
+        addAdaptiveSlider(advancedControls,"Intensité de récupération",adaptiveRecovery,
             n->{adaptiveRecovery=n;prefs.edit().putInt("gd015Recovery",n).apply();});
-        label(root,"Barre turquoise sur la jauge de gauche : objectif de récupération (score du camp Stockfish), indépendant du niveau de jeu.",14);
-        TextView goalLabel=label(root,"Objectif de récupération : "+
+        label(advancedControls,"Barre turquoise sur la jauge de gauche : objectif de récupération (score du camp Stockfish), indépendant du niveau de jeu.",14);
+        TextView goalLabel=label(advancedControls,"Objectif de récupération : "+
             String.format(java.util.Locale.FRANCE,"%.2f",recoveryGoalCp/100.0)+" pion",16);
         SeekBar goalSlider=new SeekBar(this);
         goalSlider.setMax(20);goalSlider.setProgress((recoveryGoalCp+500)/25);
         goalSlider.setContentDescription("Seuil positionnel de sortie de récupération, entre moins cinq et zéro pion");
-        root.addView(goalSlider);
+        advancedControls.addView(goalSlider);
         goalSlider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
             public void onProgressChanged(SeekBar b,int progress,boolean fromUser){
                 if(!fromUser)return;
@@ -423,12 +456,12 @@ public final class MainActivity extends Activity {
             public void onStartTrackingTouch(SeekBar b){}
             public void onStopTrackingTouch(SeekBar b){}
         });
-        addAdaptiveSlider(root,"Stabilité du plan",adaptiveStability,
+        addAdaptiveSlider(advancedControls,"Stabilité du plan",adaptiveStability,
             n->{adaptiveStability=n;prefs.edit().putInt("gd015Stability",n).apply();});
-        TextView depthTitle=label(root,"Profondeur maximale adaptative : "+adaptiveMaxDepth,14);
+        TextView depthTitle=label(advancedControls,"Profondeur maximale adaptative : "+adaptiveMaxDepth,14);
         SeekBar maxDepthBar=new SeekBar(this);
         maxDepthBar.setMax(4);maxDepthBar.setProgress(adaptiveMaxDepth-12);
-        root.addView(maxDepthBar);
+        advancedControls.addView(maxDepthBar);
         maxDepthBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
             public void onProgressChanged(SeekBar b,int value,boolean fromUser){
                 if(!fromUser)return;
@@ -446,13 +479,13 @@ public final class MainActivity extends Activity {
         advanced.setText("Activer MultiPV approfondi (désactivé par défaut)");
         advanced.setTextColor(Color.BLACK);
         advanced.setTextSize(16);advanced.setChecked(deepMode);
-        root.addView(advanced);
-        TextView advancedText=label(root,"Profondeur du mode approfondi : "+deepDepth,15);
+        advancedControls.addView(advanced);
+        TextView advancedText=label(advancedControls,"Profondeur du mode approfondi : "+deepDepth,15);
         SeekBar advancedDepth=new SeekBar(this);
         advancedDepth.setMax(19);advancedDepth.setProgress(deepDepth-1);
         advancedDepth.setEnabled(deepMode);
         tacticalCheck.setEnabled(!deepMode);
-        root.addView(advancedDepth);
+        advancedControls.addView(advancedDepth);
         advancedDepth.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener(){
             @Override public void onProgressChanged(SeekBar s,int progress,boolean fromUser){
                 if(!fromUser)return;
@@ -473,13 +506,15 @@ public final class MainActivity extends Activity {
             updateEngineDebugStatus("Mode de calcul modifié");
             revision++;failedBotRevision=-1;scheduleBot();
         });
-        label(root,"Mode adaptatif : niveau habituel constant ; la récupération cherche uniquement à atteindre la barre en centipions. Décochez adaptatif pour comparer les modes anciens (garde-fou et MultiPV).",14);
-        label(root,"Stockfish classe TOUS les coups légaux entre pire=0 et meilleur=100. Il s'agit d'une qualité RELATIVE à cette position, pas de l'indice de précision Chess.com ni d'un Elo.",13);
-        TextView precisionLabel=label(root,"Niveau habituel Stockfish : "+precisionTarget+" %",16);
+        label(advancedControls,"Mode adaptatif : niveau habituel constant ; la récupération cherche uniquement à atteindre la barre en centipions. Décochez adaptatif pour comparer les modes anciens (garde-fou et MultiPV).",14);
+        label(advancedControls,"Stockfish classe TOUS les coups légaux entre pire=0 et meilleur=100. Il s'agit d'une qualité RELATIVE à cette position, pas de l'indice de précision Chess.com ni d'un Elo.",13);
+        TextView precisionLabel=label(advancedControls,"Niveau habituel Stockfish : "+precisionTarget+" %",16);
+        legacyPrecisionLabel=precisionLabel;
         SeekBar targetSlider=new SeekBar(this);
+        legacyPrecisionSlider=targetSlider;
         targetSlider.setMax(100);
         targetSlider.setProgress(precisionTarget);
-        root.addView(targetSlider);
+        advancedControls.addView(targetSlider);
         targetSlider.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener(){
             @Override public void onProgressChanged(SeekBar b,int value,boolean fromUser){
                 if(!fromUser)return;
@@ -488,16 +523,18 @@ public final class MainActivity extends Activity {
                 prefs.edit().putInt("precisionTarget",value).apply();
                 engineLog.record("SETTING","precisionTarget="+value+"%");
                 updateEngineDebugStatus("Cible modifiée");
+                invalidateAllBoards();
+                if(gaugeLegend!=null)gaugeLegend.setText(gaugeLegendText());
                 revision++;failedBotRevision=-1;scheduleBot();
             }
             @Override public void onStartTrackingTouch(SeekBar b){}
             @Override public void onStopTrackingTouch(SeekBar b){}
         });
-        TextView deviationLabel=label(root,"Variabilité habituelle : ± "+precisionSigma+" points",16);
+        TextView deviationLabel=label(advancedControls,"Variabilité habituelle : ± "+precisionSigma+" points",16);
         SeekBar varianceSlider=new SeekBar(this);
         varianceSlider.setMax(30);
         varianceSlider.setProgress(precisionSigma);
-        root.addView(varianceSlider);
+        advancedControls.addView(varianceSlider);
         varianceSlider.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener(){
             @Override public void onProgressChanged(SeekBar b,int value,boolean fromUser){
                 if(!fromUser)return;
@@ -702,17 +739,33 @@ public final class MainActivity extends Activity {
         if(chessView!=null)chessView.setGuardEstimate(chosen,best);
         if(fullscreenChessView!=null)fullscreenChessView.setGuardEstimate(chosen,best);
     }
+    private String gaugeLegendText(){
+        return "● GRIS — niveau : "+precisionTarget+" % (rang des coups)"+
+            "\n● ROUGE — limite d'écrasement : +"+
+            String.format(java.util.Locale.FRANCE,"%.2f",gaugeRedCp/100.0)+" pion"+
+            "\n● VERT — limite de soumission : "+
+            String.format(java.util.Locale.FRANCE,"%.2f",gaugeGreenCp/100.0)+" pion"+
+            "\nGlisser N, R ou V directement sur la jauge. Rouge et vert"+
+            " agissent progressivement sur le choix des coups.";
+    }
+    private void invalidateAllBoards(){
+        if(chessView!=null)chessView.invalidate();
+        if(fullscreenChessView!=null)fullscreenChessView.invalidate();
+    }
     private void updateEngineDebugStatus(String description){
         if(engineDebugStatus!=null)
             engineDebugStatus.setText("Stockfish : "+(opponentMode==1?
-                (adaptiveOpponent?"adaptatif":deepMode?"MultiPV":"rapide"):"Lichess")+
+                (gaugeTensorMode?"jauge colorée":adaptiveOpponent?"adaptatif ancien":deepMode?"MultiPV":"rapide"):"Lichess")+
                 " | niveau "+precisionTarget+" % | sigma "+precisionSigma+
-                (adaptiveOpponent?" | objectif jauge "+
+                (gaugeTensorMode?" | rouge +"+gaugeRedCp+"cp | vert "+gaugeGreenCp+"cp":
+                 adaptiveOpponent?" | objectif jauge "+
                     String.format(java.util.Locale.FRANCE,"%.2f",recoveryGoalCp/100.0):"")+
                 " | "+description);
     }
     private String currentEngineReport(){
-        return "GambitDrame 0.4.7 / Android "+Build.VERSION.RELEASE+
+        return "GambitDrame 0.4.8 / Android "+Build.VERSION.RELEASE+
+            "\nJauge 3 curseurs="+gaugeTensorMode+" gris="+precisionTarget+
+            "% rouge=+"+gaugeRedCp+"cp vert="+gaugeGreenCp+"cp"+
             "\\nAdaptatif="+adaptiveOpponent+" paramètres="+adaptiveSensitivity+"/"+adaptiveRecovery+"/"+adaptiveStability+"/"+adaptiveMaxDepth+
             "\\nBut positionnel distinct du niveau (camp IA)="+recoveryGoalCp+"cp"+
             "\nMode adversaire="+opponentMode+" (0=Lichess, 1=Stockfish)"+
@@ -749,7 +802,7 @@ public final class MainActivity extends Activity {
             .setNeutralButton("PARTAGER",(d,w)->{
                 Intent send=new Intent(Intent.ACTION_SEND);
                 send.setType("text/plain");
-                send.putExtra(Intent.EXTRA_SUBJECT,"GambitDrame 0.4.7 GET ERR");
+                send.putExtra(Intent.EXTRA_SUBJECT,"GambitDrame 0.4.8 GET ERR");
                 send.putExtra(Intent.EXTRA_TEXT,report);
                 startActivity(Intent.createChooser(send,"Partager le diagnostic GambitDrame"));
             })
@@ -1227,9 +1280,11 @@ public final class MainActivity extends Activity {
         final int useDepth=deepDepth;
         final boolean useGuard=tacticalGuard&&!useDeep;
         final boolean useAdaptive=adaptiveOpponent&&engineMode==1;
+        final boolean useTensor=gaugeTensorMode&&engineMode==1;
         final int sensitivity=adaptiveSensitivity,recovery=adaptiveRecovery,stability=adaptiveStability;
         final int maximumDepth=adaptiveMaxDepth;
         final int recoveryGoal=recoveryGoalCp;
+        final int redCp=gaugeRedCp,greenCp=gaugeGreenCp;
         if(stockfishBridge!=null)stockfishBridge.setOpeningContext(
             OpeningTheory.measure(moves).name);
         engineLog.record("TURN","START ply="+ply+" rev="+expectedRevision+
@@ -1237,18 +1292,22 @@ public final class MainActivity extends Activity {
             " deep="+useDeep+" depth="+useDepth+" guard="+useGuard+
             " adaptive="+useAdaptive+" sensitivity="+sensitivity+" recovery="+recovery+
             " stability="+stability+" maxDepth="+maximumDepth+
-            " goalCp="+recoveryGoal+" fen="+initial.fen());
+            " goalCp="+recoveryGoal+" tensor="+useTensor+" redCp="+redCp+
+            " greenCp="+greenCp+" fen="+initial.fen());
         botRunning=true;
-        botInfo.setText(engineMode==1?(useAdaptive?"Adversaire adaptatif : niveau "+target+" %, objectif jauge "+
+        botInfo.setText(engineMode==1?(useTensor?"Jauge colorée : gris "+target+" %, rouge +"+redCp+"cp, vert "+greenCp+"cp…":useAdaptive?"Adversaire adaptatif : niveau "+target+" %, objectif jauge "+
             String.format(java.util.Locale.FRANCE,"%.2f",recoveryGoal/100.0)+" pion…":useDeep?"Stockfish MultiPV approfondi…":useGuard?"Jauge 11 → garde-fou MultiPV 12…":"Stockfish rapide ancien (profondeur 1)…"):
             "Profil Lichess expérimental : sélection d'un coup…");
-        if(engineMode==1&&stockfishBridge!=null&&!useGuard&&!useAdaptive)stockfishBridge.stop();
+        if(engineMode==1&&stockfishBridge!=null&&!useGuard&&!useAdaptive&&!useTensor)stockfishBridge.stop();
         botWorker.execute(()->{
             String chosenUci=null,detail=null,error=null;
             StockfishOpponent.Result engineResult=null;
             try{
                 if(engineMode==1){
-                    StockfishOpponent.Result result=useAdaptive?
+                    StockfishOpponent.Result result=useTensor?
+                        stockfishBridge.selectGuarded(initial,target,spread,true,sensitivity,
+                            recovery,stability,maximumDepth,recoveryGoal,true,redCp,greenCp):
+                        useAdaptive?
                         stockfishBridge.selectGuarded(initial,target,spread,true,sensitivity,recovery,stability,maximumDepth,recoveryGoal):
                         useGuard?stockfishBridge.selectGuarded(initial,target,spread):
                         stockfishOpponent.select(initial,target,spread,useDeep,useDepth);
@@ -1737,7 +1796,8 @@ public final class MainActivity extends Activity {
                 EvaluationScale.whiteFraction(bestWhiteCp,null);
             invalidate();
         }
-        private final int gaugeWidth=dp(44);
+        private final int gaugeWidth=dp(75);
+        private int draggedGaugeLane=-1;
         ChessView(){
             super(MainActivity.this);
             setContentDescription("Échiquier tactile avec jauge Stockfish. Alternative accessible : saisir e2e4.");
@@ -1752,6 +1812,26 @@ public final class MainActivity extends Activity {
         @Override protected void onMeasure(int w,int h){
             int width=MeasureSpec.getSize(w);
             setMeasuredDimension(width,Math.max(1,width-gaugeWidth));
+        }
+        private int gaugeCpAt(float yFraction){
+            // Monotone bounded inverse to the graphical sigmoid. It keeps a
+            // finger on the same point of the gauge after a drag.
+            double fraction=Math.min(.979999,Math.max(.020001,1-yFraction));
+            double x=(.96/(fraction-.02))-1;
+            return (int)Math.round(-240.0*Math.log(x));
+        }
+        private void drawColoredHandle(Canvas canvas,float x,float y,int color,String symbol,float height){
+            float radius=dp(9);
+            y=Math.max(radius+2,Math.min(height-radius-2,y));
+            paint.setStyle(Paint.Style.FILL);
+            paint.setColor(0xff121b1e);
+            canvas.drawCircle(x,y,radius+dp(2),paint);
+            paint.setColor(color);
+            canvas.drawCircle(x,y,radius,paint);
+            paint.setTypeface(Typeface.create("sans-serif",Typeface.BOLD));
+            paint.setTextSize(dp(11));paint.setTextAlign(Paint.Align.CENTER);
+            paint.setColor(0xff101417);
+            canvas.drawText(symbol,x,y-(paint.ascent()+paint.descent())/2,paint);
         }
         private void drawGauge(Canvas canvas,int boardSide){
             float h=boardSide,bar=gaugeWidth-3f;
@@ -1796,7 +1876,23 @@ public final class MainActivity extends Activity {
             float cut=(float)(h*(1.0-whiteFraction));
             paint.setColor(0xffd0a332);
             canvas.drawRect(1,Math.max(0,cut-dp(1)),bar,Math.min(h,cut+dp(1)),paint);
-            if(adaptiveOpponent&&opponentMode==1){
+            if(gaugeTensorMode&&opponentMode==1){
+                float x1=dp(12),x2=dp(36),x3=dp(60);
+                float greyY=(float)(h*(1-precisionTarget/100.0));
+                float redY=(float)(h*(1-EvaluationScale.whiteFraction(-gaugeRedCp,null)));
+                float greenY=(float)(h*(1-EvaluationScale.whiteFraction(-gaugeGreenCp,null)));
+                // Three separate thumb lanes; the board itself remains untouched.
+                paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(dp(1));
+                paint.setColor(0x77a0a0a0);
+                canvas.drawLine(x1,dp(2),x1,h-dp(2),paint);
+                canvas.drawLine(x2,dp(2),x2,h-dp(2),paint);
+                canvas.drawLine(x3,dp(2),x3,h-dp(2),paint);
+                paint.setStyle(Paint.Style.FILL);
+                drawColoredHandle(canvas,x1,greyY,0xffaeb0b5,"N",h);
+                drawColoredHandle(canvas,x2,redY,0xfff25b50,"R",h);
+                drawColoredHandle(canvas,x3,greenY,0xff55cf7d,"V",h);
+            }
+            if(!gaugeTensorMode&&adaptiveOpponent&&opponentMode==1){
                 // Turquoise goal is a positional threshold for BLACK; it is
                 // deliberately independent of the nominal playing-level slider.
                 float goalY=(float)(h*(1-EvaluationScale.whiteFraction(-recoveryGoalCp,null)));
@@ -1937,6 +2033,54 @@ public final class MainActivity extends Activity {
         }
         @Override public boolean onTouchEvent(MotionEvent e){
             int action=e.getActionMasked();
+            if(gaugeTensorMode&&opponentMode==1&&
+               (draggedGaugeLane>=0||e.getX()<gaugeWidth)){
+                if(action==MotionEvent.ACTION_DOWN){
+                    draggedGaugeLane=Math.min(2,Math.max(0,(int)(e.getX()*3/gaugeWidth)));
+                    if(getParent()!=null)getParent().requestDisallowInterceptTouchEvent(true);
+                    return true;
+                }
+                if(draggedGaugeLane>=0&&(action==MotionEvent.ACTION_MOVE||action==MotionEvent.ACTION_UP)){
+                    float pos=Math.max(0,Math.min(1,e.getY()/Math.max(1f,getHeight())));
+                    if(draggedGaugeLane==0)
+                        precisionTarget=Math.max(0,Math.min(100,Math.round((1-pos)*100)));
+                    else {
+                        // Gauge height tracks centipawns through EvaluationScale.
+                        // Snap to 25 cp and constrain red/green to their own side.
+                        int whiteCp=gaugeCpAt(pos);
+                        int blackCp=-whiteCp;
+                        if(draggedGaugeLane==1)
+                            gaugeRedCp=25*Math.max(2,Math.min(32,Math.round(blackCp/25f)));
+                        else gaugeGreenCp=-25*Math.max(2,Math.min(32,Math.round(-blackCp/25f)));
+                    }
+                    prefs.edit().putInt("precisionTarget",precisionTarget)
+                        .putInt("gd017RedCp",gaugeRedCp)
+                        .putInt("gd017GreenCp",gaugeGreenCp).apply();
+                    if(legacyPrecisionLabel!=null)
+                        legacyPrecisionLabel.setText("Niveau habituel Stockfish : "+precisionTarget+" %");
+                    if(legacyPrecisionSlider!=null)
+                        legacyPrecisionSlider.setProgress(precisionTarget);
+                    updateEngineDebugStatus("Réglage sur jauge");
+                    if(gaugeLegend!=null)gaugeLegend.setText(gaugeLegendText());
+                    invalidateAllBoards();
+                    if(action==MotionEvent.ACTION_UP){
+                        engineLog.record("GAUGE_TOUCH","lane="+draggedGaugeLane+
+                            " nominal="+precisionTarget+" redCp="+gaugeRedCp+
+                            " greenCp="+gaugeGreenCp+" currentWhiteCp="+lastWhiteCp);
+                        draggedGaugeLane=-1;
+                        if(getParent()!=null)getParent().requestDisallowInterceptTouchEvent(false);
+                        if(stockfishBridge!=null)stockfishBridge.cancelGuard();
+                        revision++;failedBotRevision=-1;scheduleBot();
+                        performClick();
+                    }
+                    return true;
+                }
+                if(action==MotionEvent.ACTION_CANCEL){
+                    draggedGaugeLane=-1;
+                    if(getParent()!=null)getParent().requestDisallowInterceptTouchEvent(false);
+                    return true;
+                }
+            }
             if(arrowMode){
                 if(action==MotionEvent.ACTION_DOWN){
                     getParent().requestDisallowInterceptTouchEvent(true);
