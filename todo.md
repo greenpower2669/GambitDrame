@@ -188,6 +188,11 @@ Les commits purement Markdown n'ont pas besoin de recompiler Android ; workflow 
 - [x] Distribution de coups plus large à 30% qu'à 90%, perte CP et récupération contrôlées, pas de catastrophe imposée par coup ; garder anciens modes et préférences.
 - [x] Brancher seuil réglable et indépendant au panneau Android, logs GET ERR, recherche profondeur 12–14 guidée par la distance au seuil.
 - [x] Ajouter tests Java de seuil et comparaison répétée des sélections 30%/90%.
-- [ ] Vérifier réussite de la **dernière** CI et existence du fichier .apk direct v0.4.7 ; consigner le lien réel et les tests.
+- [x] CI #79 succès, APK ARM64 directe v0.4.7 vérifiée sur prérelease gd-test-79 ; 1113 assertions adaptatives réussies.
 - [ ] Sur Samsung Android16, jouer plusieurs parties à 30 puis 90 et observer fréquence des meilleurs coups, perte moyenne en CP, maintien défense/contre-jeu, temps CPU, comportement après atteinte du seuil.
 - [ ] Calibrer une force jouée réelle : chiffres % nominal restent un réglage expérimental, pas un Elo ni un taux de coups exact.
+
+## GD-016 — Vérification CI finale et APK 0.4.7 (21/10/2026)
+- GitHub Actions run #79 https://github.com/greenpower2669/GambitDrame/actions/runs/39669050938 : **completed success**, BUILD SUCCESSFUL (1m17s) ; commit code `525f333139f957be6b3e8c18b9bb9defd977f856`. Couverture : ADAPTIVE_OPPONENT_TESTS_OK **1113**, CHESS_TESTS_OK 18, STOCKFISH_PRECISION_TESTS_OK 18, TACTICAL_GUARD_TESTS_OK 8, BOARD_ARROWS_TESTS_OK 46, STUDY_METRICS_TESTS_OK 9, OPENING_COACH_TESTS_OK 10.
+- Prérelease gd-test-79 https://github.com/greenpower2669/GambitDrame/releases/tag/gd-test-79 ; APK directe non ZIP, MIME application/vnd.android.package-archive, **176754465 octets** : https://github.com/greenpower2669/GambitDrame/releases/download/gd-test-79/GambitDrame-v0.4.7-debug-arm64.apk.
+- Jauge turquoise signale l'objectif de récupération (score du côté Noir dans le mode actuel), sans modifier la valeur nominale 30/40/90. Test CI de logique oui ; **test de jeu réel Samsung non réalisé**. Conserver ancien mode et toutes les données ; main non fusionnée.
