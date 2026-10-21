@@ -22,7 +22,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p build/chess-test-classes
-          javac -d build/chess-test-classes             app/src/main/java/fr/gambitdrame/ChessGame.java             app/src/main/java/fr/gambitdrame/HumanPolicy.java             app/src/test/java/fr/gambitdrame/ChessGameTest.java             app/src/test/java/fr/gambitdrame/HumanPolicyTest.java app/src/main/java/fr/gambitdrame/ReviewCursor.java app/src/main/java/fr/gambitdrame/EvaluationScale.java app/src/test/java/fr/gambitdrame/ReviewTest.java app/src/main/java/fr/gambitdrame/ChessNarration.java app/src/test/java/fr/gambitdrame/ChessNarrationTest.java app/src/main/java/fr/gambitdrame/StockfishPrecision.java app/src/main/java/fr/gambitdrame/TacticalGuard.java app/src/test/java/fr/gambitdrame/StockfishPrecisionTest.java app/src/test/java/fr/gambitdrame/TacticalGuardTest.java app/src/main/java/fr/gambitdrame/BoardArrows.java app/src/test/java/fr/gambitdrame/BoardArrowsTest.java app/src/main/java/fr/gambitdrame/StudyMetrics.java app/src/main/java/fr/gambitdrame/OpeningTheory.java app/src/main/java/fr/gambitdrame/OpeningCoach.java app/src/main/java/fr/gambitdrame/AdaptiveOpponent.java app/src/test/java/fr/gambitdrame/StudyMetricsTest.java app/src/test/java/fr/gambitdrame/OpeningCoachTest.java app/src/test/java/fr/gambitdrame/AdaptiveOpponentTest.java
+          javac -d build/chess-test-classes             app/src/main/java/fr/gambitdrame/ChessGame.java             app/src/main/java/fr/gambitdrame/HumanPolicy.java             app/src/test/java/fr/gambitdrame/ChessGameTest.java             app/src/test/java/fr/gambitdrame/HumanPolicyTest.java app/src/main/java/fr/gambitdrame/ReviewCursor.java app/src/main/java/fr/gambitdrame/EvaluationScale.java app/src/test/java/fr/gambitdrame/ReviewTest.java app/src/main/java/fr/gambitdrame/ChessNarration.java app/src/test/java/fr/gambitdrame/ChessNarrationTest.java app/src/main/java/fr/gambitdrame/StockfishPrecision.java app/src/main/java/fr/gambitdrame/TacticalGuard.java app/src/test/java/fr/gambitdrame/StockfishPrecisionTest.java app/src/test/java/fr/gambitdrame/TacticalGuardTest.java app/src/main/java/fr/gambitdrame/BoardArrows.java app/src/test/java/fr/gambitdrame/BoardArrowsTest.java app/src/main/java/fr/gambitdrame/StudyMetrics.java app/src/main/java/fr/gambitdrame/OpeningTheory.java app/src/main/java/fr/gambitdrame/OpeningCoach.java app/src/main/java/fr/gambitdrame/AdaptiveOpponent.java app/src/main/java/fr/gambitdrame/GaugeTensorPolicy.java app/src/test/java/fr/gambitdrame/GaugeTensorPolicyTest.java app/src/test/java/fr/gambitdrame/StudyMetricsTest.java app/src/test/java/fr/gambitdrame/OpeningCoachTest.java app/src/test/java/fr/gambitdrame/AdaptiveOpponentTest.java
           java -cp build/chess-test-classes fr.gambitdrame.ChessGameTest
           java -cp build/chess-test-classes fr.gambitdrame.HumanPolicyTest
           java -cp build/chess-test-classes fr.gambitdrame.ReviewTest
@@ -33,6 +33,7 @@ jobs:
           java -cp build/chess-test-classes fr.gambitdrame.StudyMetricsTest
           java -cp build/chess-test-classes fr.gambitdrame.OpeningCoachTest
           java -cp build/chess-test-classes fr.gambitdrame.AdaptiveOpponentTest
+          java -cp build/chess-test-classes fr.gambitdrame.GaugeTensorPolicyTest
       - name: Install Android SDK and NDK r27c
         run: |
           set -euo pipefail
@@ -127,6 +128,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          cp app/build/outputs/apk/debug/app-debug.apk GambitDrame-v0.4.7-debug-arm64.apk
+          cp app/build/outputs/apk/debug/app-debug.apk GambitDrame-v0.4.8-debug-arm64.apk
           tag="gd-test-${{ github.run_number }}"
-          gh release create "$tag" GambitDrame-v0.4.7-debug-arm64.apk             --target "${{ github.sha }}" --prerelease             --title "GambitDrame 0.4.7 recovery threshold test ${{ github.run_number }}"             --notes "Recovery gauge target independent of nominal playing level, adaptive depth and play-to-target, fixed 30 versus 90 regression, previous comparison mode preserved, voice sync and opening help. Colored arrows, study, Stockfish GPLv3 and Piper retained. Android16 device test pending; no main merge."
+          gh release create "$tag" GambitDrame-v0.4.8-debug-arm64.apk             --target "${{ github.sha }}" --prerelease             --title "GambitDrame 0.4.8 three-color gauge tensors test ${{ github.run_number }}"             --notes "Three draggable on-board gauge handles: grey ranked move target, red easing dominance, green recovering from submission, plan continuation and GET ERR tension audit; previous modes preserved, voice sync and opening help. Colored arrows, study, Stockfish GPLv3 and Piper retained. Android16 device test pending; no main merge."
