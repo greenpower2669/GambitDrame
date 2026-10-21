@@ -62,7 +62,8 @@ public final class StockfishBridge {
     private volatile int gaugeRootCp=0;
     public void resetPlan(){
         strategy.clear();
-        strategyPrefs.edit().remove("gd015Plan").remove("gd015LastMove").apply();
+        strategyPrefs.edit().remove("gd015Plan").remove("gd015LastMove")
+            .remove("gd016Recovering").apply();
         trace("PLAN","Réinitialisé");
     }
     private String openingContext="";
@@ -73,18 +74,19 @@ public final class StockfishBridge {
     private static final class GuardRequest {
         final ChessGame.Position root; final int target,sigma;
         final boolean adaptive;
-        final int sensitivity,recovery,stability,maxDepth;
+        final int sensitivity,recovery,stability,maxDepth,recoveryGoalCp;
         int searchDepth=12;
         final List<String> legal=new ArrayList<>();
         final Map<String,Integer> cp=new HashMap<>();
         final CountDownLatch latch=new CountDownLatch(1);
         StockfishOpponent.Result result; Exception failure;
         GuardRequest(ChessGame.Position root,int target,int sigma,
-                     boolean adaptive,int sensitivity,int recovery,int stability,int maxDepth){
+                     boolean adaptive,int sensitivity,int recovery,int stability,int maxDepth,int recoveryGoalCp){
             this.root=root;this.target=target;this.sigma=sigma;
             this.adaptive=adaptive;this.sensitivity=sensitivity;
             this.recovery=recovery;this.stability=stability;
             this.maxDepth=Math.max(12,Math.min(16,maxDepth));
+            this.recoveryGoalCp=Math.max(-500,Math.min(0,recoveryGoalCp));
             for(ChessGame.Move m:ChessGame.legal(root))legal.add(m.uci());
         }
     }
@@ -106,11 +108,13 @@ public final class StockfishBridge {
         }
     }
     public StockfishOpponent.Result selectGuarded(ChessGame.Position root,int target,int sigma)throws Exception{
-        return selectGuarded(root,target,sigma,false,75,95,70,12);
+        return selectGuarded(root,target,sigma,false,75,95,70,12,-100);
     }
     public StockfishOpponent.Result selectGuarded(ChessGame.Position root,int target,int sigma,
-                           boolean adaptive,int sensitivity,int recovery,int stability,int maxDepth)throws Exception{
-        GuardRequest r=new GuardRequest(root,target,sigma,adaptive,sensitivity,recovery,stability,maxDepth);
+                           boolean adaptive,int sensitivity,int recovery,int stability,int maxDepth,
+                           int recoveryGoalCp)throws Exception{
+        GuardRequest r=new GuardRequest(root,target,sigma,adaptive,sensitivity,recovery,stability,
+            maxDepth,recoveryGoalCp);
         if(r.legal.isEmpty())return null;
         if(r.legal.size()==1)return new StockfishOpponent.Result(r.legal.get(0),100,100,1);
         synchronized(lock){
@@ -119,7 +123,8 @@ public final class StockfishBridge {
             if(!root.fen().equals(desiredFen))throw new IllegalStateException("FEN jauge différente de la partie");
             request=r;
             trace("GUARD_START","Réutilisation moteur et hash jauge11→MultiPV12, coups="+r.legal.size()+
-                " target="+target+" sigma="+sigma+" adaptive="+adaptive+
+                " target="+target+" sigma="+sigma+" recoveryGoalCp="+r.recoveryGoalCp+
+                " adaptive="+adaptive+
                 " sensitivity="+sensitivity+" recovery="+recovery+" stability="+stability+
                 " fen="+root.fen());
             if(ready&&!awaitingReady&&phase==0&&root.fen().equals(activeFen))startGuard();
@@ -137,15 +142,19 @@ public final class StockfishBridge {
         if(r==null||phase!=0||paused||awaitingReady||closed)return;
         if(!r.root.fen().equals(activeFen)){failRequest("FEN active incompatible");return;}
         phase=2;r.cp.clear();
-        // Deeper search only while genuinely behind. No artificial weakening on
-        // every move, and never beyond the explicit adaptive depth limit.
-        r.searchDepth=r.adaptive&&gaugeRootCp < -400?Math.min(r.maxDepth,14):
-            r.adaptive&&gaugeRootCp < -150?Math.min(r.maxDepth,13):12;
+        // A positional threshold controls recovery, never the nominal difficulty.
+        boolean seeking=r.adaptive&&AdaptiveOpponent.updateRecovery(
+            strategy,gaugeRootCp,r.recoveryGoalCp,r.sensitivity);
+        int gap=r.recoveryGoalCp-gaugeRootCp;
+        r.searchDepth=seeking&&gap>=300?Math.min(r.maxDepth,14):
+            seeking?Math.min(r.maxDepth,13):12;
         send("setoption name MultiPV value "+r.legal.size());
         send("position fen "+activeFen);
         send("go depth "+r.searchDepth);
         trace("GUARD_SEARCH","same Stockfish process + hash, MultiPV="+r.legal.size()+
-            " depth="+r.searchDepth+" gaugeRootCp="+gaugeRootCp+" opening="+openingContext);
+            " depth="+r.searchDepth+" gaugeRootCp="+gaugeRootCp+
+            " recoveryGoalCp="+r.recoveryGoalCp+" recovering="+seeking+
+            " nominal="+r.target+" opening="+openingContext);
     }
     private void guardInfo(String line){
         synchronized(lock){
@@ -183,7 +192,7 @@ public final class StockfishBridge {
                     TacticalGuard.Decision choice=null;
                     AdaptiveOpponent.Choice strategic=null;
                     if(r.adaptive) strategic=AdaptiveOpponent.choose(r.root,ranking,r.target,r.sigma,
-                        r.sensitivity,r.recovery,r.stability,strategy,guardRandom,gaugeRootCp);
+                        r.sensitivity,r.recovery,r.stability,strategy,guardRandom,gaugeRootCp,r.recoveryGoalCp);
                     else choice=TacticalGuard.choose(ranking,r.target,r.sigma,guardRandom);
                     int whiteSign=r.root.white?1:-1;
                     for(StockfishPrecision.Candidate m:ranking)
@@ -191,7 +200,8 @@ public final class StockfishBridge {
                             " relative="+String.format(java.util.Locale.US,"%.1f",m.relativeQuality)+"%");
                     if(strategic!=null){
                         trace("ADAPTIVE","depth="+r.searchDepth+" opening="+openingContext+
-                            " rootCp="+strategic.rootCp+" effective="+strategic.effectiveTarget+
+                            " rootCp="+strategic.rootCp+" nominal="+strategic.effectiveTarget+
+                            " recoveryGoalCp="+strategic.recoveryGoalCp+
                             " bestCp="+strategic.bestCp+" chosen="+strategic.move.uci+
                             " choiceCp="+strategic.move.scoreCp+
                             " lossCp="+strategic.lossCp+" cap="+strategic.limitCp+
@@ -201,11 +211,21 @@ public final class StockfishBridge {
                         strategy.plan=strategic.plan;
                         strategy.lastScoreCp=strategic.move.scoreCp;
                         strategyPrefs.edit().putString("gd015Plan",strategy.plan)
-                            .putString("gd015LastMove",strategy.lastMove).apply();
+                            .putString("gd015LastMove",strategy.lastMove)
+                            .putBoolean("gd016Recovering",strategy.recovering)
+                            .putInt("gd016RecoveryGoalLast",strategy.recoveryGoalCp).apply();
                         r.result=new StockfishOpponent.Result(strategic.move.uci,
                             strategic.move.relativeQuality,r.target,r.legal.size(),
                             strategic.move.scoreCp*whiteSign,strategic.bestCp*whiteSign,
-                            strategic.lossCp,strategic.limitCp,false);
+                            strategic.lossCp,strategic.limitCp,false,
+                            "Stockfish adaptatif : "+strategic.move.uci+
+                            " | niveau nominal "+r.target+" % | perte "+
+                            strategic.lossCp+"/"+strategic.limitCp+" cp | "+
+                            (strategic.recovery?"récupération vers "+
+                                String.format(java.util.Locale.FRANCE,"%.2f",
+                                    strategic.recoveryGoalCp/100.0)+" pion":
+                                "jeu habituel")+
+                            " | profondeur "+r.searchDepth+" | "+r.legal.size()+" coups évalués");
                     }else{
                         trace("GUARD_CHOSEN","raw="+choice.original.move.uci+" chosen="+choice.chosen.move.uci+
                             " draw="+choice.chosen.requested+" lossCp="+choice.lossCp+
@@ -227,6 +247,8 @@ public final class StockfishBridge {
         strategyPrefs=activity.getSharedPreferences("gambitdrame-v1",Activity.MODE_PRIVATE);
         strategy.plan=strategyPrefs.getString("gd015Plan","");
         strategy.lastMove=strategyPrefs.getString("gd015LastMove","");
+        strategy.recovering=strategyPrefs.getBoolean("gd016Recovering",false);
+        strategy.recoveryGoalCp=strategyPrefs.getInt("gd016RecoveryGoalLast",-100);
     }
     private void dispatch(String fen,String text,Integer cp,Integer mate){
         if(closed)return;
