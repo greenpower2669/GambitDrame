@@ -473,9 +473,9 @@ public final class MainActivity extends Activity {
             updateEngineDebugStatus("Mode de calcul modifié");
             revision++;failedBotRevision=-1;scheduleBot();
         });
-        label(root,"Garde-fou coché : même Stockfish que la jauge 11, continuation profondeur 12 sur tous les coups. Mode approfondi : MultiPV paramétrable. Garde-fou décoché : ancien mode rapide profondeur 1.",14);
+        label(root,"Mode adaptatif : niveau habituel constant ; la récupération cherche uniquement à atteindre la barre en centipions. Décochez adaptatif pour comparer les modes anciens (garde-fou et MultiPV).",14);
         label(root,"Stockfish classe TOUS les coups légaux entre pire=0 et meilleur=100. Il s'agit d'une qualité RELATIVE à cette position, pas de l'indice de précision Chess.com ni d'un Elo.",13);
-        TextView precisionLabel=label(root,"Précision cible Stockfish : "+precisionTarget+" %",16);
+        TextView precisionLabel=label(root,"Niveau habituel Stockfish : "+precisionTarget+" %",16);
         SeekBar targetSlider=new SeekBar(this);
         targetSlider.setMax(100);
         targetSlider.setProgress(precisionTarget);
@@ -484,7 +484,7 @@ public final class MainActivity extends Activity {
             @Override public void onProgressChanged(SeekBar b,int value,boolean fromUser){
                 if(!fromUser)return;
                 precisionTarget=value;
-                precisionLabel.setText("Précision cible Stockfish : "+value+" %");
+                precisionLabel.setText("Niveau habituel Stockfish : "+value+" %");
                 prefs.edit().putInt("precisionTarget",value).apply();
                 engineLog.record("SETTING","precisionTarget="+value+"%");
                 updateEngineDebugStatus("Cible modifiée");
