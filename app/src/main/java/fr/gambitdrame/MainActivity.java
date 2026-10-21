@@ -401,7 +401,7 @@ public final class MainActivity extends Activity {
             n->{adaptiveSensitivity=n;prefs.edit().putInt("gd015Sensitivity",n).apply();});
         addAdaptiveSlider(root,"Intensité de récupération",adaptiveRecovery,
             n->{adaptiveRecovery=n;prefs.edit().putInt("gd015Recovery",n).apply();});
-        label(root,"Barre positionnelle à reconquérir (score du camp Stockfish, distinct du niveau de jeu)",14);
+        label(root,"Barre turquoise sur la jauge de gauche : objectif de récupération (score du camp Stockfish), indépendant du niveau de jeu.",14);
         TextView goalLabel=label(root,"Objectif de récupération : "+
             String.format(java.util.Locale.FRANCE,"%.2f",recoveryGoalCp/100.0)+" pion",16);
         SeekBar goalSlider=new SeekBar(this);
@@ -1796,6 +1796,15 @@ public final class MainActivity extends Activity {
             float cut=(float)(h*(1.0-whiteFraction));
             paint.setColor(0xffd0a332);
             canvas.drawRect(1,Math.max(0,cut-dp(1)),bar,Math.min(h,cut+dp(1)),paint);
+            if(adaptiveOpponent&&opponentMode==1){
+                // Turquoise goal is a positional threshold for BLACK; it is
+                // deliberately independent of the nominal playing-level slider.
+                float goalY=(float)(h*(1-EvaluationScale.whiteFraction(-recoveryGoalCp,null)));
+                paint.setColor(0xff153640);
+                canvas.drawRect(1,Math.max(0,goalY-dp(3)),bar,Math.min(h,goalY+dp(3)),paint);
+                paint.setColor(0xff35d6e2);
+                canvas.drawRect(1,Math.max(0,goalY-dp(2)),bar,Math.min(h,goalY+dp(2)),paint);
+            }
         }
         @Override protected void onDraw(Canvas canvas){
             int side=getWidth()-gaugeWidth;
